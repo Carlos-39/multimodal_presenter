@@ -28,3 +28,10 @@ packages = ["src/smart_presenter"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+# Silencia SOLO deprecaciones internas de starlette/fastapi/anyio (su TestClient).
+# No son de nuestro código y se resolverán al actualizar esas dependencias.
+# Se filtran por mensaje específico para no ocultar warnings propios en el futuro.
+filterwarnings = [
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:Warning",
+    "ignore:The anyio.abc.BlockingPortal alias is deprecated:Warning",
+]
