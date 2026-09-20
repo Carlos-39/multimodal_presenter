@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     )
 
     # Identidad / entorno
-    app_name: str = "Smart Presenter API"
+    app_name: str = "Multimodal Presenter API"
     environment: str = "development"
 
     # Secretos (opcionales en Hito 0: el backend arranca sin ellos).
@@ -33,7 +33,7 @@ class Settings(BaseSettings):
 
     # Observabilidad (Logfire)
     logfire_token: str | None = None
-    logfire_service_name: str = "smart-presenter-backend"
+    logfire_service_name: str = "multimodal-presenter-backend"
 
 
 @lru_cache
