@@ -1,6 +1,37 @@
-"""Contrato de datos tipado (Pydantic).
+"""Contrato de datos tipado (Pydantic) — frontera backend↔frontend.
 
-Vacío en el Hito 0. El schema de la presentación estructurada — con el hueco
-`content_type`↔`content` cerrado vía discriminated unions — se implementa en el Hito 1.
+El schema de la presentación estructurada, con el hueco `content_type`↔`content`
+cerrado vía discriminated union. Ver `presentation.py`.
 """
-# TODO(Hito1): definir Section, los content types y la Presentation con discriminated union.
+
+from .presentation import (
+    ChartContent,
+    ChartData,
+    ChartSeries,
+    ChartType,
+    Presentation,
+    Section,
+    SectionContent,
+    SectionRole,
+    SourceReference,
+    TableContent,
+    TextContent,
+    TimelineContent,
+    TimelineEvent,
+)
+
+__all__ = [
+    "ChartContent",
+    "ChartData",
+    "ChartSeries",
+    "ChartType",
+    "Presentation",
+    "Section",
+    "SectionContent",
+    "SectionRole",
+    "SourceReference",
+    "TableContent",
+    "TextContent",
+    "TimelineContent",
+    "TimelineEvent",
+]
