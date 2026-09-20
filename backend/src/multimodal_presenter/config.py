@@ -27,9 +27,12 @@ class Settings(BaseSettings):
     app_name: str = "Multimodal Presenter API"
     environment: str = "development"
 
-    # Secretos (opcionales en Hito 0: el backend arranca sin ellos).
-    # TODO(Hito2): GEMINI_API_KEY pasa a ser obligatoria cuando se conecte el modelo.
+    # Modelo (Gemini vía PydanticAI).
+    # gemini_api_key es OBLIGATORIA para ejecutar el pipeline: se valida en runtime al
+    # construir el modelo (model_provider.build_google_model), no al importar la app, para
+    # que el CI (que mockea el LLM) no requiera clave real. Nunca se hardcodea.
     gemini_api_key: str | None = None
+    gemini_model: str = "gemini-3.1-pro"  # no una variante flash (decisión de PROYECTO.md §4)
 
     # Observabilidad (Logfire)
     logfire_token: str | None = None
