@@ -8,7 +8,7 @@ real — el bug del PoC anterior. El test que falla pesa tanto como el que pasa.
 import pytest
 from pydantic import ValidationError
 
-from smart_presenter.schemas import (
+from multimodal_presenter.schemas import (
     ChartType,
     Presentation,
     Section,

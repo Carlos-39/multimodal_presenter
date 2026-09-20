@@ -6,7 +6,7 @@ Verifica que la app FastAPI levanta y responde. Con Logfire en modo
 
 from fastapi.testclient import TestClient
 
-from smart_presenter.main import app
+from multimodal_presenter.main import app
 
 client = TestClient(app)
 

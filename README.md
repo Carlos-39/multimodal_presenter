@@ -1,4 +1,4 @@
-# Smart Presenter
+# Multimodal Presenter
 
 Prototipo de trabajo de grado (Ingeniería de Sistemas — Universidad del Valle).
 
@@ -25,11 +25,11 @@ El resto de hitos (pipeline, frontend, multimodal, etc.) aún no está implement
 ## Estructura del repositorio
 
 ```
-smart_presenter/
+multimodal_presenter/
 ├── PROYECTO.md            # Contexto maestro del sistema
 ├── docs/                  # Documentos de diseño y decisiones (Fase 1 y 2)
 ├── backend/               # API Python (FastAPI + PydanticAI) — gestionada con uv
-│   ├── src/smart_presenter/
+│   ├── src/multimodal_presenter/
 │   │   ├── main.py        #   app FastAPI + health check
 │   │   ├── config.py      #   settings tipadas (lee .env)
 │   │   ├── observability.py  # integración con Logfire
@@ -53,14 +53,14 @@ Requiere [uv](https://docs.astral.sh/uv/) instalado. Desde `backend/`:
 cd backend
 uv sync                       # crea el entorno e instala dependencias (descarga Python 3.12)
 cp .env.example .env          # y rellena tus claves reales (opcional en Hito 0/1)
-uv run uvicorn smart_presenter.main:app --reload
+uv run uvicorn multimodal_presenter.main:app --reload
 ```
 
 La API queda en `http://127.0.0.1:8000`. Verifica el health check:
 
 ```bash
 curl http://127.0.0.1:8000/health
-# {"status":"ok","service":"smart-presenter-backend","environment":"development"}
+# {"status":"ok","service":"multimodal-presenter-backend","environment":"development"}
 ```
 
 Documentación interactiva de la API en `http://127.0.0.1:8000/docs`.
