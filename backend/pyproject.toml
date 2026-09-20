@@ -9,6 +9,7 @@ dependencies = [
     "pydantic>=2.9",
     "pydantic-settings>=2.5",
     "logfire[fastapi]>=3.0",
+    "pydantic-ai-slim[google]>=2.46.0",
 ]
 
 [dependency-groups]
@@ -27,7 +28,11 @@ packages = ["src/multimodal_presenter"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+# Por defecto NO corre los tests de integración (API real). Para correrlos: pytest -m integration
+addopts = "-q -m 'not integration'"
+markers = [
+    "integration: test que llama a la API real de Gemini; solo local, saltado sin clave.",
+]
 # Silencia SOLO deprecaciones internas de starlette/fastapi/anyio (su TestClient).
 # No son de nuestro código y se resolverán al actualizar esas dependencias.
 # Se filtran por mensaje específico para no ocultar warnings propios en el futuro.

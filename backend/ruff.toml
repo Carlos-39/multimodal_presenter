@@ -4,3 +4,7 @@ src = ["src", "tests"]
 
 [lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[lint.flake8-bugbear]
+# El patrón Depends(...)/Query(...) en argumentos por defecto es idiomático de FastAPI.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body"]
