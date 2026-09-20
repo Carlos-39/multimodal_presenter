@@ -7,6 +7,7 @@ Logfire. Nada de pipeline, modelo ni lógica de negocio todavía (eso es Hito 2+
 import logfire
 from fastapi import FastAPI
 
+from .api.routes import router as pipeline_router
 from .config import get_settings
 from .observability import configure_observability
 
@@ -21,8 +22,11 @@ app = FastAPI(
     description="Transformador de información multimodal — trabajo de grado (Univalle).",
 )
 
-# Instrumenta FastAPI: cada request genera un span automáticamente.
+# Instrumenta FastAPI (span por request) y PydanticAI (llamadas al modelo, tokens, reintentos).
 logfire.instrument_fastapi(app)
+logfire.instrument_pydantic_ai()
+
+app.include_router(pipeline_router)
 
 
 @app.get("/health", tags=["infra"])
