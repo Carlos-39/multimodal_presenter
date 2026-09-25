@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import {
   Bar,
   BarChart,
@@ -20,19 +20,37 @@ import {
 } from "recharts";
 import type { ChartContent } from "@/lib/types";
 
-// Paleta sobria y contenida (anti "look de IA"): tonos apagados, sin colores chillones.
-const PALETTE = ["#334155", "#0f766e", "#92600a", "#64748b", "#475569"];
-const AXIS = "#71717a";
-const GRID = "#e4e4e7";
+// Paleta categórica validada (CVD-safe, guía dataviz), vía tokens CSS → cambia con el tema.
+// Confinada a las marcas de datos; el resto del gráfico usa el chrome neutro.
+const PALETTE = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--chart-6)",
+  "var(--chart-7)",
+  "var(--chart-8)",
+];
+const AXIS = "var(--chart-muted)";
+const GRID = "var(--chart-grid)";
 const HEIGHT = 288;
+// Ejes/etiquetas en monoespaciada tabular (números como "herramienta de datos").
+const TICK = { fontFamily: "var(--font-geist-mono)", fontSize: 12, fill: AXIS } as const;
 
 /**
  * Render de gráficos con Recharts. En este hito renderiza lo que llega; la regla
  * determinista de isomorfismo (qué tipo de gráfico admite cada forma de datos) es Hito 5.
  */
+// SSR-safe: false en el servidor, true en el cliente — sin setState en un efecto.
+const subscribe = () => () => {};
+
 export function ChartSection({ content }: { content: ChartContent }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
 
   // Evita medir con ancho 0 durante el SSR/hidratación.
   if (!mounted) {
@@ -60,8 +78,8 @@ export function ChartSection({ content }: { content: ChartContent }) {
       chart = (
         <LineChart data={rows}>
           <CartesianGrid stroke={GRID} vertical={false} />
-          <XAxis dataKey="name" stroke={AXIS} fontSize={12} />
-          <YAxis stroke={AXIS} fontSize={12} />
+          <XAxis dataKey="name" stroke={AXIS} tick={TICK} />
+          <YAxis stroke={AXIS} tick={TICK} />
           <Tooltip />
           <Legend />
           {data.series.map((s, i) => (
@@ -80,8 +98,8 @@ export function ChartSection({ content }: { content: ChartContent }) {
       chart = (
         <BarChart data={rows}>
           <CartesianGrid stroke={GRID} vertical={false} />
-          <XAxis dataKey="name" stroke={AXIS} fontSize={12} />
-          <YAxis stroke={AXIS} fontSize={12} />
+          <XAxis dataKey="name" stroke={AXIS} tick={TICK} />
+          <YAxis stroke={AXIS} tick={TICK} />
           <Tooltip />
           <Legend />
           {data.series.map((s, i) => (
@@ -112,8 +130,8 @@ export function ChartSection({ content }: { content: ChartContent }) {
       chart = (
         <ScatterChart>
           <CartesianGrid stroke={GRID} />
-          <XAxis dataKey="x" type="number" stroke={AXIS} fontSize={12} />
-          <YAxis dataKey="y" type="number" stroke={AXIS} fontSize={12} />
+          <XAxis dataKey="x" type="number" stroke={AXIS} tick={TICK} />
+          <YAxis dataKey="y" type="number" stroke={AXIS} tick={TICK} />
           <Tooltip />
           <Legend />
           {data.series.map((s, i) => (

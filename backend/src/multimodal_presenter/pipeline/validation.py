@@ -10,7 +10,11 @@ Nivel barato (determinista): grounding de fuentes, adaptado al tipo de fuente.
 Nivel LLM (coherencia semántica): interfaz real ya cableada, hoy no-op. TODO(Hito2.1).
 """
 
+from pydantic_ai import Agent, BinaryContent
+from pydantic_ai.models import Model
+
 from ..schemas import Presentation
+from ..schemas.presentation import ChartContent, Section
 from ..schemas.transform import (
     GroundingReport,
     SectionGrounding,
@@ -79,13 +83,62 @@ def verify_grounding(
     return enriched, report
 
 
-def verify_semantic_coherence(
-    presentation: Presentation, extraction: ExtractionResult
-) -> SemanticCoherenceReport:
-    """Fase 3 (nivel LLM) — coherencia semántica contenido↔fuente.
+_SEMANTIC_PROMPT = """\
+Eres un verificador de coherencia. Recibes un documento fuente y una lista de gráficos ya \
+generados a partir de él. Tu tarea: comprobar si cada gráfico refleja FIELMENTE lo que dice \
+el documento (valores, categorías, relación representada), no solo si tiene forma válida.
 
-    Interfaz real: el pipeline ya la llama y consume su resultado. Hoy no-op.
-    TODO(Hito2.1): implementar el cuerpo (segunda pasada de LLM que compare el contenido
-    generado con lo que dice el documento).
+Devuelve una observación SOLO por cada gráfico que NO refleje el documento, con su section_id \
+y una descripción breve del problema. Si todos son coherentes, devuelve la lista vacía. No \
+inventes problemas donde no los hay.\
+"""
+
+semantic_agent = Agent(
+    output_type=SemanticCoherenceReport,
+    system_prompt=_SEMANTIC_PROMPT,
+)
+
+
+def _charts_summary(charts: list[Section]) -> str:
+    lines = []
+    for section in charts:
+        content = section.content
+        assert isinstance(content, ChartContent)
+        series = [(s.name, s.values) for s in content.data.series]
+        lines.append(
+            f"[section_id={section.id}] tipo={content.chart_type} "
+            f"categorías={content.data.categories} series={series}"
+        )
+    return "\n".join(lines)
+
+
+async def verify_semantic_coherence(
+    presentation: Presentation, extraction: ExtractionResult, model: Model
+) -> SemanticCoherenceReport:
+    """Fase 3 (nivel LLM) — coherencia semántica de los gráficos contra la fuente.
+
+    Segunda pasada de LLM (Punto 3). Enfocada en gráficos para el Hito 5a. Es una llamada
+    adicional al modelo; queda trazada en Logfire (instrumentación global de PydanticAI).
+    Si no hay gráficos, no llama al modelo. TODO(Hito5x): extender a otros tipos de contenido.
     """
-    return SemanticCoherenceReport(observations=[])
+    charts = [s for s in presentation.sections if isinstance(s.content, ChartContent)]
+    if not charts:
+        return SemanticCoherenceReport(observations=[])
+
+    prompt = (
+        "Gráficos generados:\n"
+        + _charts_summary(charts)
+        + "\n\n¿Cada gráfico refleja fielmente el documento fuente?"
+    )
+    if extraction.source_kind == "text":
+        assert extraction.text is not None
+        user_input: str | list = f"{prompt}\n\n--- DOCUMENTO ---\n{extraction.text}"
+    else:
+        assert extraction.binary is not None and extraction.media_type is not None
+        user_input = [
+            prompt,
+            BinaryContent(data=extraction.binary, media_type=extraction.media_type),
+        ]
+
+    result = await semantic_agent.run(user_input, model=model)
+    return result.output
