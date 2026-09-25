@@ -9,17 +9,26 @@ import type { TransformResponse } from "@/lib/types";
 
 type Status = "idle" | "loading" | "error" | "done";
 
+/** Documento original enviado — se conserva para la atribución interactiva del Hito 5. */
+interface OriginalSource {
+  text: string | null;
+  file: File | null;
+}
+
 export default function Page() {
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<TransformResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  // TODO(Hito5): usar `original` para mostrar el documento navegable y resaltar fragmentos.
+  const [, setOriginal] = useState<OriginalSource | null>(null);
 
-  async function handleTransform(text: string) {
+  async function handleTransform(text: string | null, file: File | null) {
     setStatus("loading");
     setError(null);
+    setOriginal({ text, file }); // conservar el documento original, no descartarlo
     try {
-      const data = await postTransform(text);
+      const data = await postTransform(text, file);
       setResult(data);
       setActiveSectionId(data.presentation.sections[0]?.id ?? null);
       setStatus("done");
