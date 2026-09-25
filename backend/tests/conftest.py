@@ -63,3 +63,19 @@ def mock_presentation_ungrounded() -> dict:
     data = copy.deepcopy(_MOCK_PRESENTATION)
     data["sections"][1]["source"]["quote"] = "Este fragmento no está en el documento."
     return data
+
+
+# --- Binario: bytes mínimos VÁLIDOS por magic bytes (para validación y pipeline) ---
+PDF_BYTES = b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"
+PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
+NOT_A_FILE = b"esto no es un archivo con magic bytes reconocible"
+
+
+@pytest.fixture
+def pdf_bytes() -> bytes:
+    return PDF_BYTES
+
+
+@pytest.fixture
+def png_bytes() -> bytes:
+    return PNG_BYTES
