@@ -1,36 +1,51 @@
-"""Test del pipeline completo con el LLM mockeado (corre en CI sin API real)."""
+"""Tests del pipeline con el LLM mockeado (corren en CI sin API real)."""
 
 import asyncio
 
+from pydantic_ai import BinaryContent
 from pydantic_ai.models.test import TestModel
 
 from multimodal_presenter.pipeline import transform
+from multimodal_presenter.pipeline.extraction import prepare_input
+from multimodal_presenter.pipeline.structuring import build_model_input
 from multimodal_presenter.schemas import Presentation
 
 
-def test_pipeline_produces_valid_contract(input_text: str, mock_presentation: dict) -> None:
-    # TestModel devuelve la presentación mock como salida estructurada del agente.
+def test_text_pipeline_produces_valid_contract(input_text: str, mock_presentation: dict) -> None:
     model = TestModel(custom_output_args=mock_presentation)
+    result = asyncio.run(transform(model, text=input_text))
 
-    result = asyncio.run(transform(input_text, model=model))
-
-    # Criterio de aceptación: el flujo produce un objeto válido del contrato del Hito 1.
     assert isinstance(result.presentation, Presentation)
-    assert result.grounding.total_sections == 2
-    assert result.grounding.grounded_sections == 2
-    # Fase 3 enriqueció los offsets de fuente.
+    assert result.grounding.source_kind == "text"
+    assert result.grounding.verified_sections == 2
     first = result.presentation.sections[0]
     assert input_text[first.source.char_start : first.source.char_end] == first.source.quote
-    # La interfaz semántica ya se llama y retorna "sin observaciones" (no-op del Hito 2).
     assert result.semantic.ok is True
 
 
-def test_pipeline_flags_ungrounded_but_still_returns(
-    input_text: str, mock_presentation_ungrounded: dict
-) -> None:
-    model = TestModel(custom_output_args=mock_presentation_ungrounded)
-
-    result = asyncio.run(transform(input_text, model=model))
+def test_pdf_pipeline_produces_valid_contract(pdf_bytes: bytes, mock_presentation: dict) -> None:
+    model = TestModel(custom_output_args=mock_presentation)
+    result = asyncio.run(
+        transform(model, binary=pdf_bytes, media_type="application/pdf", filename="d.pdf")
+    )
 
     assert isinstance(result.presentation, Presentation)
-    assert result.grounding.ungrounded_sections == 1  # warning, no error
+    assert result.grounding.source_kind == "pdf"
+    # Fuente binaria → grounding pendiente de verificación (no fallo).
+    assert result.grounding.unverified_sections == len(result.presentation.sections)
+
+
+def test_binary_reaches_model_well_formed(pdf_bytes: bytes) -> None:
+    """El binario debe llegar como BinaryContent con los bytes y media_type correctos."""
+    extraction = prepare_input(
+        text="explícame esto", binary=pdf_bytes, media_type="application/pdf"
+    )
+    model_input = build_model_input(extraction)
+
+    assert isinstance(model_input, list)
+    binaries = [p for p in model_input if isinstance(p, BinaryContent)]
+    assert len(binaries) == 1
+    assert binaries[0].data == pdf_bytes
+    assert binaries[0].media_type == "application/pdf"
+    # La instrucción del usuario viaja junto al binario.
+    assert any(isinstance(p, str) and "explícame esto" in p for p in model_input)

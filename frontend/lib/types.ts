@@ -78,18 +78,24 @@ export interface Presentation {
   sections: Section[];
 }
 
+export type GroundingStatus = "verified" | "unverified" | "not_found";
+export type SourceKind = "text" | "pdf" | "image";
+
 export interface SectionGrounding {
   section_id: string;
-  grounded: boolean;
+  status: GroundingStatus;
   char_start: number | null;
   char_end: number | null;
+  page: number | null;
 }
 
 export interface GroundingReport {
+  source_kind: SourceKind;
   sections: SectionGrounding[];
   total_sections: number;
-  grounded_sections: number;
-  ungrounded_sections: number;
+  verified_sections: number;
+  unverified_sections: number; // PDF/imagen: pendiente de verificación (Hito 5)
+  not_found_sections: number; // texto: cita no encontrada = warnings reales
 }
 
 /** Envelope de respuesta de POST /transform. */

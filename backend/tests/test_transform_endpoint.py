@@ -1,4 +1,4 @@
-"""Test del endpoint POST /transform con el modelo mockeado por dependency override."""
+"""Tests del endpoint POST /transform (multipart) con el modelo mockeado."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,7 +10,7 @@ from multimodal_presenter.schemas.transform import TransformResponse
 
 
 @pytest.fixture
-def client_with_mock_model(mock_presentation: dict):
+def client(mock_presentation: dict):
     app.dependency_overrides[get_model] = lambda: TestModel(custom_output_args=mock_presentation)
     try:
         yield TestClient(app)
@@ -18,20 +18,41 @@ def client_with_mock_model(mock_presentation: dict):
         app.dependency_overrides.clear()
 
 
-def test_transform_endpoint_returns_typed_envelope(client_with_mock_model, input_text: str) -> None:
-    response = client_with_mock_model.post("/transform", json={"text": input_text})
-
+def test_text_only(client, input_text: str) -> None:
+    response = client.post("/transform", data={"text": input_text})
     assert response.status_code == 200
     body = response.json()
-    # Envelope tipado {presentation, grounding}, no un contrato pelado.
-    assert "presentation" in body
-    assert "grounding" in body
-    assert body["grounding"]["grounded_sections"] == 2
+    assert "presentation" in body and "grounding" in body
+    assert body["grounding"]["source_kind"] == "text"
     assert response.headers["X-Grounding-Warnings"] == "0"
-    # Valida contra el contrato de respuesta.
     TransformResponse.model_validate(body)
 
 
-def test_transform_endpoint_rejects_empty_text(client_with_mock_model) -> None:
-    response = client_with_mock_model.post("/transform", json={"text": ""})
-    assert response.status_code == 422  # min_length=1 del contrato
+def test_file_only(client, pdf_bytes: bytes) -> None:
+    response = client.post("/transform", files={"file": ("doc.pdf", pdf_bytes, "application/pdf")})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["grounding"]["source_kind"] == "pdf"
+    TransformResponse.model_validate(body)
+
+
+def test_text_and_file_combined(client, pdf_bytes: bytes) -> None:
+    response = client.post(
+        "/transform",
+        data={"text": "explícame esto sin asumir conocimiento"},
+        files={"file": ("doc.pdf", pdf_bytes, "application/pdf")},
+    )
+    assert response.status_code == 200
+    assert response.json()["grounding"]["source_kind"] == "pdf"
+
+
+def test_neither_text_nor_file_is_400(client) -> None:
+    response = client.post("/transform", data={})
+    assert response.status_code == 400
+
+
+def test_disallowed_file_type_is_415(client) -> None:
+    response = client.post(
+        "/transform", files={"file": ("x.pdf", b"no soy un pdf real", "application/pdf")}
+    )
+    assert response.status_code == 415

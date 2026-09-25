@@ -3,9 +3,11 @@ import type { GroundingReport } from "@/lib/types";
 /**
  * Indicador discreto del estado de grounding (atribución de fuentes).
  *
- * En este hito solo informa; el uso pleno (resaltado interactivo sobre el documento)
- * es Hito 5. Si hay secciones sin anclar, lo señala de forma no intrusiva.
- * TODO(Hito5): atribución interactiva — clic en una afirmación → fragmento resaltado.
+ * Distingue el tipo de fuente honestamente:
+ * - Texto: "N/total ancladas"; ámbar si hay citas no encontradas (warning real).
+ * - PDF/imagen: la verificación de contenido no aplica aún (sin aplanar el binario) →
+ *   se muestra neutro, no como fallo. TODO(Hito5): verificación por página/región +
+ *   resaltado interactivo sobre el documento.
  */
 interface GroundingIndicatorProps {
   grounding: GroundingReport | null;
@@ -14,14 +16,25 @@ interface GroundingIndicatorProps {
 export function GroundingIndicator({ grounding }: GroundingIndicatorProps) {
   if (!grounding || grounding.total_sections === 0) return null;
 
-  const hasWarnings = grounding.ungrounded_sections > 0;
+  if (grounding.source_kind !== "text") {
+    return (
+      <div
+        className="flex items-center gap-1.5 text-xs text-muted"
+        title="Documento no-texto: atribución por página; verificación de contenido pendiente (Hito 5)"
+      >
+        <span className="inline-block h-2 w-2 rounded-full bg-muted" aria-hidden />
+        <span>{grounding.total_sections} secciones · anclaje pendiente</span>
+      </div>
+    );
+  }
 
+  const hasWarnings = grounding.not_found_sections > 0;
   return (
     <div
       className="flex items-center gap-1.5 text-xs"
       title={
         hasWarnings
-          ? `${grounding.ungrounded_sections} sección(es) sin anclar a fuente verificada`
+          ? `${grounding.not_found_sections} cita(s) no encontrada(s) en el documento`
           : "Todas las secciones están ancladas a su fuente"
       }
     >
@@ -32,7 +45,7 @@ export function GroundingIndicator({ grounding }: GroundingIndicatorProps) {
         aria-hidden
       />
       <span className={hasWarnings ? "text-warning" : "text-muted"}>
-        {grounding.grounded_sections}/{grounding.total_sections} ancladas
+        {grounding.verified_sections}/{grounding.total_sections} ancladas
       </span>
     </div>
   );
