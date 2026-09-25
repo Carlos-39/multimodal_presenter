@@ -1,15 +1,18 @@
 import type { TransformResponse } from "./types";
 
 /**
- * Llama a POST /api/transform (proxy a /transform del backend) y devuelve el envelope
- * completo {presentation, grounding}. Lanza Error con un mensaje legible si falla.
+ * Llama a POST /api/transform (multipart) con texto y/o archivo, y devuelve el envelope
+ * {presentation, grounding}. Debe enviarse al menos uno de los dos.
  */
-export async function postTransform(text: string): Promise<TransformResponse> {
-  const res = await fetch("/api/transform", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
-  });
+export async function postTransform(
+  text: string | null,
+  file: File | null,
+): Promise<TransformResponse> {
+  const form = new FormData();
+  if (text && text.trim().length > 0) form.append("text", text.trim());
+  if (file) form.append("file", file);
+
+  const res = await fetch("/api/transform", { method: "POST", body: form });
 
   if (!res.ok) {
     let detail = `Error ${res.status}`;
@@ -22,7 +25,7 @@ export async function postTransform(text: string): Promise<TransformResponse> {
             : JSON.stringify(body.detail);
       }
     } catch {
-      // respuesta sin cuerpo JSON; se queda con el mensaje por código de estado.
+      // sin cuerpo JSON; se queda con el mensaje por código de estado.
     }
     throw new Error(detail);
   }

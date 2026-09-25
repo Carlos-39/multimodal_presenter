@@ -1,17 +1,17 @@
-"""Modelos INTERNOS del pipeline (no forman parte del contrato backend↔frontend).
-
-El contrato público (Presentation, y el envelope de respuesta TransformResponse) vive en
-`schemas/`. Aquí van las estructuras de trabajo entre fases.
-"""
+"""Modelos INTERNOS del pipeline (no forman parte del contrato backend↔frontend)."""
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..schemas import Presentation
-from ..schemas.transform import GroundingReport, SemanticCoherenceReport
+from ..schemas.transform import (
+    GroundingReport,
+    SemanticCoherenceReport,
+    SourceKind,
+)
 
 
 class Segment(BaseModel):
-    """Un fragmento del documento (párrafo) con sus offsets en el texto original."""
+    """Un fragmento del documento de texto con sus offsets en el texto original."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -22,17 +22,31 @@ class Segment(BaseModel):
 
 
 class ExtractionResult(BaseModel):
-    """Salida de la Fase 1 (extracción determinista). Insumo para la Fase 2."""
+    """Salida de la Fase 1. Representa la fuente ya validada y preparada para el modelo.
+
+    - Fuente de texto: `text` tiene el documento y `segments` sus párrafos con offsets.
+    - Fuente binaria (PDF/imagen): `binary` + `media_type` tienen el documento; `instruction`
+      guarda la indicación opcional que el usuario escribió junto al archivo.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
+    source_kind: SourceKind
     document_id: str
-    text: str  # texto original SIN alterar (los offsets de grounding dependen de esto)
-    segments: list[Segment]
-    # Señales de forma de los datos — presentes pero sin decidir nada aún.
-    # TODO(Hito5): detección real de forma que alimente el filtro de isomorfismo de gráficos.
-    has_numbers: bool
-    paragraph_count: int
+
+    # Fuente de texto
+    text: str | None = None
+    segments: list[Segment] = Field(default_factory=list)
+    has_numbers: bool = False
+    paragraph_count: int = 0
+
+    # Fuente binaria
+    binary: bytes | None = None
+    media_type: str | None = None
+    filename: str | None = None
+
+    # Instrucción/contexto opcional que acompaña a un archivo (texto + archivo combinados).
+    instruction: str | None = None
 
 
 class PipelineResult(BaseModel):
