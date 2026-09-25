@@ -98,8 +98,26 @@ export interface GroundingReport {
   not_found_sections: number; // texto: cita no encontrada = warnings reales
 }
 
+/** Nota determinista sobre un gráfico tras la regla de isomorfismo (Hito 5a). */
+export interface ChartNote {
+  section_id: string;
+  kind: "corrected" | "degraded";
+  detail: string;
+}
+
+export interface SemanticObservation {
+  section_id: string;
+  issue: string;
+}
+
+export interface SemanticCoherenceReport {
+  observations: SemanticObservation[];
+}
+
 /** Envelope de respuesta de POST /transform. */
 export interface TransformResponse {
   presentation: Presentation;
   grounding: GroundingReport;
+  semantic: SemanticCoherenceReport;
+  chart_notes: ChartNote[];
 }

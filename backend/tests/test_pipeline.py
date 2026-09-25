@@ -49,3 +49,37 @@ def test_binary_reaches_model_well_formed(pdf_bytes: bytes) -> None:
     assert binaries[0].media_type == "application/pdf"
     # La instrucción del usuario viaja junto al binario.
     assert any(isinstance(p, str) and "explícame esto" in p for p in model_input)
+
+
+_PRES_WITH_CHART = {
+    "title": "Con gráfico",
+    "sections": [
+        {
+            "id": "t1",
+            "role": "core",
+            "source": {"document_id": "x", "quote": "resumen"},
+            "content": {"content_type": "text", "text": "un resumen"},
+        },
+        {
+            "id": "c1",
+            "role": "satellite",
+            "source": {"document_id": "x", "quote": "datos"},
+            "content": {
+                "content_type": "chart",
+                "chart_type": "bar",
+                "data": {"categories": ["A", "B"], "series": [{"name": "v", "values": [1, 2]}]},
+            },
+        },
+    ],
+}
+
+
+def test_pipeline_with_chart_runs_isomorphism_and_semantic(input_text: str) -> None:
+    model = TestModel(custom_output_args=_PRES_WITH_CHART)
+    semantic_model = TestModel(custom_output_args={"observations": []})
+    result = asyncio.run(transform(model, text=input_text, semantic_model=semantic_model))
+
+    assert isinstance(result.presentation, Presentation)
+    # bar categórico es isomorfo → se conserva, sin notas.
+    assert result.chart_notes == []
+    assert result.semantic.ok is True

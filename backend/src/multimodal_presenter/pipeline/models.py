@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ..schemas import Presentation
 from ..schemas.transform import (
+    ChartNote,
     GroundingReport,
     SemanticCoherenceReport,
     SourceKind,
@@ -57,3 +58,4 @@ class PipelineResult(BaseModel):
     presentation: Presentation
     grounding: GroundingReport
     semantic: SemanticCoherenceReport
+    chart_notes: list[ChartNote] = Field(default_factory=list)
