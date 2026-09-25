@@ -10,6 +10,8 @@ dependencies = [
     "pydantic-settings>=2.5",
     "logfire[fastapi]>=3.0",
     "pydantic-ai-slim[google]>=2.46.0",
+    "filetype>=1.2.0",
+    "python-multipart>=0.0.32",
 ]
 
 [dependency-groups]

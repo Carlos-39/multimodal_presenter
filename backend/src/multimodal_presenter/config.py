@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     # sufijo -preview. OJO: requiere billing habilitado (cuota 0 en el tier gratuito).
     gemini_model: str = "gemini-3.1-pro-preview"
 
+    # Entrada multimodal (Hito 4): tope de tamaño de archivo subido, en MB.
+    max_upload_mb: int = 20
+
     # Observabilidad (Logfire)
     logfire_token: str | None = None
     logfire_service_name: str = "multimodal-presenter-backend"
