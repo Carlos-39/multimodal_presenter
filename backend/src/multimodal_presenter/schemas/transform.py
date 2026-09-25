@@ -70,8 +70,22 @@ class SemanticCoherenceReport(_Strict):
         return not self.observations
 
 
+class ChartNote(_Strict):
+    """Nota determinista sobre un gráfico tras la regla de isomorfismo (Hito 5a).
+
+    - `corrected`: el tipo se corrigió a uno admisible según la forma de los datos.
+    - `degraded`: no había gráfico válido; la sección se muestra como tabla.
+    """
+
+    section_id: str
+    kind: Literal["corrected", "degraded"]
+    detail: str
+
+
 class TransformResponse(_Strict):
     """Envelope de respuesta del endpoint /transform."""
 
     presentation: Presentation
     grounding: GroundingReport
+    semantic: SemanticCoherenceReport
+    chart_notes: list[ChartNote] = Field(default_factory=list)

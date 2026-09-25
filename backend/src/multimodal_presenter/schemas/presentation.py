@@ -47,9 +47,13 @@ class SectionRole(StrEnum):
 class ChartType(StrEnum):
     """Conjunto cerrado de tipos de gráfico admitidos (Punto 3, isomorfismo).
 
-    Es deliberadamente un enum y no texto libre: en el Hito 5 una regla determinista
-    filtrará cuáles de estos son admisibles según la forma real de los datos, y el LLM
-    elegirá solo dentro de lo válido. Aquí solo se garantiza que el conjunto es cerrado.
+    El conjunto es cerrado (no texto libre). Qué tipo es *estructuralmente válido* según la
+    forma real de los datos lo decide la regla determinista de `pipeline/isomorphism.py`
+    (Hito 5a), que corrige el tipo si el LLM elige fuera de lo admisible.
+
+    Nota sobre SCATTER: requiere pares numéricos (x, y) que la forma actual de `ChartData`
+    (categorías + series) no modela, así que la regla de isomorfismo nunca lo admite hoy.
+    TODO(Hito5x): soportar scatter exige evolucionar `ChartData` a puntos (x, y); fuera de 5a.
     """
 
     LINE = "line"
@@ -131,9 +135,9 @@ class ChartSeries(_Strict):
 class ChartData(_Strict):
     categories: list[str] = Field(min_length=1)
     series: list[ChartSeries] = Field(min_length=1)
-    # TODO(Hito5): regla determinista de isomorfismo — validar que la forma de los datos
-    # (nº de series, alineación values↔categories, orden temporal) sea coherente con el
-    # chart_type elegido, y filtrar qué chart_types son admisibles antes de que el LLM elija.
+    # La regla de isomorfismo (Hito 5a) deriva la forma de estos datos (alineación,
+    # nº de series, orden temporal) en `pipeline/isomorphism.py` y corrige/degrada el
+    # gráfico si el tipo elegido no es admisible.
 
 
 class ChartContent(_Strict):

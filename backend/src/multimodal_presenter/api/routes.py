@@ -54,4 +54,9 @@ async def transform_endpoint(
     )
 
     response.headers["X-Grounding-Warnings"] = str(result.grounding.not_found_sections)
-    return TransformResponse(presentation=result.presentation, grounding=result.grounding)
+    return TransformResponse(
+        presentation=result.presentation,
+        grounding=result.grounding,
+        semantic=result.semantic,
+        chart_notes=result.chart_notes,
+    )
