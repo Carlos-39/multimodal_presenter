@@ -103,7 +103,7 @@ export function TransformInput({ status, onSubmit }: TransformInputProps) {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-opacity disabled:opacity-40"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover disabled:opacity-40 disabled:hover:bg-accent"
         >
           {loading ? "Transformando…" : "Transformar"}
         </button>

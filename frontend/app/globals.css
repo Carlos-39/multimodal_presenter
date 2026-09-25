@@ -1,21 +1,106 @@
 @import "tailwindcss";
 
 /*
- * Paleta neutra y contenida (anti "look de IA"): grises fríos + un acento sobrio.
- * TODO(Hito5): identidad visual formal — tipografía definitiva, paleta de marca,
- * tokens de diseño y densidad. Aquí solo se busca algo neutro y competente.
+ * IDENTIDAD VISUAL (Hito 5a) — tokens de diseño en un solo lugar.
+ *
+ * Dirección: herramienta de trabajo, no "demo de IA". Neutros fríos (slate) como base,
+ * un único acento "tinta" (azul-pizarra profundo, no el azul SaaS ni morado), semánticos
+ * desaturados, y NÚMEROS en monoespaciada (Geist Mono) en tablas/ejes. La jerarquía la
+ * hace la tipografía y el espaciado, no el color.
+ *
+ * Paleta categórica de gráficos: paleta por defecto validada de la guía `dataviz`
+ * (CVD-safe, verificada con su script). Confinada a las marcas de datos; el resto del UI
+ * es neutro.
  */
+
 :root {
-  --background: #fafafa;
+  /* Neutros / chrome */
+  --background: #f7f8fa;
   --surface: #ffffff;
-  --foreground: #18181b;
-  --muted: #71717a;
-  --border: #e4e4e7;
-  --accent: #334155;
+  --foreground: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+
+  /* Acento "tinta" */
+  --accent: #24344d;
+  --accent-hover: #1a2637;
   --accent-foreground: #ffffff;
+
+  /* Semánticos desaturados */
+  --verified: #15803d;
   --warning: #92600a;
+
+  /* Forma */
+  --radius: 0.5rem;
+
+  /* Gráficos — chrome */
+  --chart-ink: var(--foreground);
+  --chart-muted: #64748b;
+  --chart-grid: #eef1f5;
+  /* Gráficos — paleta categórica validada (light) */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-7: #4a3aa7;
+  --chart-8: #e34948;
 }
 
+/* Tema oscuro — mismos tokens, re-escalados para superficie oscura. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #0b1120;
+    --surface: #111a2b;
+    --foreground: #e6edf5;
+    --muted: #94a3b8;
+    --border: #22304a;
+
+    --accent: #3b5170;
+    --accent-hover: #47618a;
+    --accent-foreground: #ffffff;
+
+    --verified: #22c55e;
+    --warning: #d1a054;
+
+    --chart-muted: #94a3b8;
+    --chart-grid: #1e293b;
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
+    --chart-3: #199e70;
+    --chart-4: #c98500;
+    --chart-5: #d55181;
+    --chart-6: #008300;
+    --chart-7: #9085e9;
+    --chart-8: #e66767;
+  }
+}
+
+:root[data-theme="dark"] {
+  --background: #0b1120;
+  --surface: #111a2b;
+  --foreground: #e6edf5;
+  --muted: #94a3b8;
+  --border: #22304a;
+  --accent: #3b5170;
+  --accent-hover: #47618a;
+  --accent-foreground: #ffffff;
+  --verified: #22c55e;
+  --warning: #d1a054;
+  --chart-muted: #94a3b8;
+  --chart-grid: #1e293b;
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #008300;
+  --chart-7: #9085e9;
+  --chart-8: #e66767;
+}
+
+/* Exponer tokens neutros como utilidades de Tailwind (bg-surface, text-foreground, …). */
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
@@ -23,8 +108,11 @@
   --color-muted: var(--muted);
   --color-border: var(--border);
   --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
   --color-accent-foreground: var(--accent-foreground);
+  --color-verified: var(--verified);
   --color-warning: var(--warning);
+  --radius-md: var(--radius);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -33,4 +121,10 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Números en monoespaciada tabular — señal de "herramienta de datos". */
+.tabular {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
 }
