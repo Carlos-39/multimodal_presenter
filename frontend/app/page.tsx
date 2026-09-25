@@ -63,7 +63,12 @@ export default function Page() {
       </div>
 
       {status === "done" && presentation ? (
-        <ContentArea presentation={presentation} activeSectionId={activeSectionId} />
+        <ContentArea
+          presentation={presentation}
+          activeSectionId={activeSectionId}
+          chartNotes={result?.chart_notes ?? []}
+          observations={result?.semantic.observations ?? []}
+        />
       ) : null}
     </AppShell>
   );
