@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, Upl
 from pydantic_ai.models import Model
 
 from ..config import Settings, get_settings
-from ..model_provider import build_google_model
+from ..model_provider import build_model
 from ..pipeline import transform
 from ..pipeline.uploads import read_and_validate_upload
 from ..schemas.transform import TransformResponse
@@ -18,8 +18,8 @@ router = APIRouter(tags=["pipeline"])
 
 
 def get_model(settings: Settings = Depends(get_settings)) -> Model:
-    """Provee el modelo Gemini. Sobreescribible en tests vía dependency_overrides."""
-    return build_google_model(settings)
+    """Provee el modelo (Anthropic + fallback OpenRouter). Sobreescribible en tests."""
+    return build_model(settings)
 
 
 @router.post("/transform", response_model=TransformResponse)

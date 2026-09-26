@@ -9,7 +9,7 @@ qué página citar). Lo determinista (tipos cerrados, validación de archivo, of
 va en código.
 """
 
-from pydantic_ai import Agent, BinaryContent
+from pydantic_ai import Agent, BinaryContent, ToolOutput
 from pydantic_ai.models import Model
 
 from ..schemas import Presentation
@@ -62,7 +62,7 @@ def build_model_input(extraction: ExtractionResult) -> str | list[str | BinaryCo
 
 
 structuring_agent = Agent(
-    output_type=Presentation,
+    output_type=ToolOutput(Presentation),
     system_prompt=SYSTEM_PROMPT,
 )
 
