@@ -10,7 +10,7 @@ Nivel barato (determinista): grounding de fuentes, adaptado al tipo de fuente.
 Nivel LLM (coherencia semántica): interfaz real ya cableada, hoy no-op. TODO(Hito2.1).
 """
 
-from pydantic_ai import Agent, BinaryContent
+from pydantic_ai import Agent, BinaryContent, ToolOutput
 from pydantic_ai.models import Model
 
 from ..schemas import Presentation
@@ -94,7 +94,7 @@ inventes problemas donde no los hay.\
 """
 
 semantic_agent = Agent(
-    output_type=SemanticCoherenceReport,
+    output_type=ToolOutput(SemanticCoherenceReport),
     system_prompt=_SEMANTIC_PROMPT,
 )
 

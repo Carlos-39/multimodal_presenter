@@ -9,7 +9,7 @@ dependencies = [
     "pydantic>=2.9",
     "pydantic-settings>=2.5",
     "logfire[fastapi]>=3.0",
-    "pydantic-ai-slim[google]>=2.46.0",
+    "pydantic-ai-slim[anthropic,openai]>=2.46.0",
     "filetype>=1.2.0",
     "python-multipart>=0.0.32",
 ]
