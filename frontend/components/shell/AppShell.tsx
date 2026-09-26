@@ -1,5 +1,6 @@
 "use client";
 
+import type { DetailLevel } from "@/lib/detail";
 import type { GroundingReport, Section } from "@/lib/types";
 import { GroundingIndicator } from "@/components/GroundingIndicator";
 import { SectionNav } from "./SectionNav";
@@ -20,6 +21,8 @@ interface AppShellProps {
   grounding: GroundingReport | null;
   activeSectionId: string | null;
   onSelectSection: (id: string) => void;
+  detailLevel: DetailLevel;
+  onDetailLevelChange: (level: DetailLevel) => void;
   children: React.ReactNode;
 }
 
@@ -28,6 +31,8 @@ export function AppShell({
   grounding,
   activeSectionId,
   onSelectSection,
+  detailLevel,
+  onDetailLevelChange,
   children,
 }: AppShellProps) {
   return (
@@ -41,7 +46,7 @@ export function AppShell({
           <span className="text-xs text-muted">prototipo</span>
         </div>
         <div className="flex items-center gap-4">
-          <DetailLevelControl />
+          <DetailLevelControl level={detailLevel} onChange={onDetailLevelChange} />
           <GroundingIndicator grounding={grounding} />
         </div>
       </header>
