@@ -51,6 +51,7 @@ async def transform_endpoint(
         binary=binary,
         media_type=media_type,
         filename=filename,
+        semantic_enabled=settings.semantic_verification_enabled,
     )
 
     response.headers["X-Grounding-Warnings"] = str(result.grounding.not_found_sections)

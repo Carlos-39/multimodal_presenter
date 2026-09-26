@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     openrouter_api_key: str | None = None
     openrouter_gemini_model: str = "google/gemini-3-pro-preview"
 
+    # Verificación semántica de gráficos (Fase 3, 2ª llamada al LLM). Ponla en false durante
+    # el desarrollo para NO gastar esa llamada extra en documentos con gráficos.
+    semantic_verification_enabled: bool = True
+
     # Entrada multimodal (Hito 4): tope de tamaño de archivo subido, en MB.
     max_upload_mb: int = 20
 

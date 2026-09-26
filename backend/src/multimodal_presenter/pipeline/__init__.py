@@ -7,6 +7,7 @@ Acepta texto, binario (PDF/imagen), o ambos. Cada fase queda trazada en Logfire.
 import logfire
 from pydantic_ai.models import Model
 
+from ..schemas.transform import SemanticCoherenceReport
 from .extraction import prepare_input
 from .isomorphism import enforce_isomorphism
 from .models import PipelineResult
@@ -24,11 +25,13 @@ async def transform(
     media_type: str | None = None,
     filename: str | None = None,
     semantic_model: Model | None = None,
+    semantic_enabled: bool = True,
 ) -> PipelineResult:
     """Ejecuta el pipeline completo: fuente → presentación validada + reportes.
 
     `semantic_model` (verificación semántica, Fase 3 nivel LLM) usa `model` por defecto; se
-    separa para poder inyectar un mock distinto en tests.
+    separa para poder inyectar un mock distinto en tests. `semantic_enabled=False` salta esa
+    llamada extra (control de costo en desarrollo).
     """
     semantic_model = semantic_model or model
     with logfire.span("pipeline.transform"):
@@ -52,8 +55,13 @@ async def transform(
                 )
 
             # Coherencia semántica (nivel LLM, enfocada en gráficos) — llamada adicional.
-            with logfire.span("fase3.semantica"):
-                semantic = await verify_semantic_coherence(presentation, extraction, semantic_model)
+            if semantic_enabled:
+                with logfire.span("fase3.semantica"):
+                    semantic = await verify_semantic_coherence(
+                        presentation, extraction, semantic_model
+                    )
+            else:
+                semantic = SemanticCoherenceReport()
 
         return PipelineResult(
             presentation=presentation,
