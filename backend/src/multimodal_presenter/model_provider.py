@@ -9,6 +9,7 @@ Las claves se validan AQUÍ (en runtime), no al importar la app, para que el CI 
 el LLM inyectando un modelo de prueba— no necesite claves reales.
 """
 
+import truststore
 from pydantic_ai.models import Model
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.models.fallback import FallbackModel
@@ -17,6 +18,12 @@ from pydantic_ai.providers.anthropic import AnthropicProvider
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 
 from .config import Settings
+
+# TLS saliente usando el almacén de certificados del SISTEMA (no el bundle de certifi).
+# En Windows con inspección TLS (antivirus/proxy que inyecta su CA raíz), certifi no la
+# tiene y las llamadas a las APIs fallan con CERTIFICATE_VERIFY_FAILED; el almacén del
+# sistema sí la incluye. Debe inyectarse antes de crear los clientes HTTP de los modelos.
+truststore.inject_into_ssl()
 
 
 def build_model(settings: Settings) -> Model:
