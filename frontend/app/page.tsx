@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { ContentArea } from "@/components/content/ContentArea";
 import { TransformInput } from "@/components/TransformInput";
 import { postTransform } from "@/lib/api";
+import { DEFAULT_DETAIL_LEVEL, visibleSections, type DetailLevel } from "@/lib/detail";
 import type { TransformResponse } from "@/lib/types";
 
 type Status = "idle" | "loading" | "error" | "done";
 
-/** Documento original enviado — se conserva para la atribución interactiva del Hito 5. */
+/** Documento original enviado — se conserva para la atribución interactiva del Hito 5c. */
 interface OriginalSource {
   text: string | null;
   file: File | null;
@@ -20,7 +21,8 @@ export default function Page() {
   const [result, setResult] = useState<TransformResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
-  // TODO(Hito5): usar `original` para mostrar el documento navegable y resaltar fragmentos.
+  const [detailLevel, setDetailLevel] = useState<DetailLevel>(DEFAULT_DETAIL_LEVEL);
+  // TODO(Hito5c): usar `original` para mostrar el documento navegable y resaltar fragmentos.
   const [, setOriginal] = useState<OriginalSource | null>(null);
 
   async function handleTransform(text: string | null, file: File | null) {
@@ -41,12 +43,31 @@ export default function Page() {
   const presentation = result?.presentation ?? null;
   const grounding = result?.grounding ?? null;
 
+  const visible = useMemo(
+    () => (presentation ? visibleSections(presentation.sections, detailLevel) : []),
+    [presentation, detailLevel],
+  );
+
+  // Activo efectivo: si el activo no está visible (p. ej. un satélite tras volver a resumen),
+  // cae al primer visible — sin mutar estado en un efecto.
+  const effectiveActiveId = visible.some((s) => s.id === activeSectionId)
+    ? activeSectionId
+    : (visible[0]?.id ?? null);
+
+  function handleDetailLevelChange(level: DetailLevel) {
+    // TODO(Hito8): punto ÚNICO de interacción del control — instrumentar aquí el tiempo en
+    // resumen vs. detallado (telemetría comportamental). No enterrar la señal en otra lógica.
+    setDetailLevel(level);
+  }
+
   return (
     <AppShell
-      sections={presentation?.sections ?? []}
+      sections={visible}
       grounding={grounding}
-      activeSectionId={activeSectionId}
+      activeSectionId={effectiveActiveId}
       onSelectSection={setActiveSectionId}
+      detailLevel={detailLevel}
+      onDetailLevelChange={handleDetailLevelChange}
     >
       <div className="mx-auto max-w-3xl space-y-4 p-6">
         <TransformInput status={status} onSubmit={handleTransform} />
@@ -64,8 +85,10 @@ export default function Page() {
 
       {status === "done" && presentation ? (
         <ContentArea
-          presentation={presentation}
-          activeSectionId={activeSectionId}
+          title={presentation.title}
+          sections={visible}
+          level={detailLevel}
+          activeSectionId={effectiveActiveId}
           chartNotes={result?.chart_notes ?? []}
           observations={result?.semantic.observations ?? []}
         />
