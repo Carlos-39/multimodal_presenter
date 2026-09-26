@@ -114,10 +114,27 @@ export interface SemanticCoherenceReport {
   observations: SemanticObservation[];
 }
 
-/** Envelope de respuesta de POST /transform. */
+/** Envelope de respuesta de POST /transform (no-streaming). */
 export interface TransformResponse {
   presentation: Presentation;
   grounding: GroundingReport;
   semantic: SemanticCoherenceReport;
   chart_notes: ChartNote[];
 }
+
+/** Eventos SSE de POST /transform/stream (Hito 5d). */
+export type StreamEvent =
+  | { type: "start"; title: string }
+  | {
+      type: "section";
+      section: Section;
+      grounding: SectionGrounding;
+      chart_note: ChartNote | null;
+    }
+  | {
+      type: "done";
+      grounding: GroundingReport;
+      semantic: SemanticCoherenceReport;
+      chart_notes: ChartNote[];
+    }
+  | { type: "error"; message: string };
