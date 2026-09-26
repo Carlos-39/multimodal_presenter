@@ -65,7 +65,7 @@ export function AppShell({
         </aside>
 
         {/* Zona dinámica: lo ÚNICO que varía entre presentaciones */}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-hidden">{children}</main>
 
         {/* Rail derecho fijo: estructura del chat */}
         <aside className="hidden w-72 shrink-0 border-l border-border bg-surface lg:block">
