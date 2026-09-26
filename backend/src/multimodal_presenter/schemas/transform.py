@@ -16,7 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .presentation import Presentation
+from .presentation import Presentation, Section
 
 
 class _Strict(BaseModel):
@@ -83,9 +83,37 @@ class ChartNote(_Strict):
 
 
 class TransformResponse(_Strict):
-    """Envelope de respuesta del endpoint /transform."""
+    """Envelope de respuesta del endpoint /transform (no-streaming)."""
 
     presentation: Presentation
     grounding: GroundingReport
     semantic: SemanticCoherenceReport
     chart_notes: list[ChartNote] = Field(default_factory=list)
+
+
+# --- Eventos SSE del endpoint /transform/stream (Hito 5d) ---
+# Cada `Section` streameada es indistinguible en forma de una del contrato no-streaming.
+
+
+class StreamStart(_Strict):
+    type: Literal["start"] = "start"
+    title: str
+
+
+class StreamSection(_Strict):
+    type: Literal["section"] = "section"
+    section: Section
+    grounding: SectionGrounding  # entrada por sección (para 5c en vivo)
+    chart_note: ChartNote | None = None
+
+
+class StreamDone(_Strict):
+    type: Literal["done"] = "done"
+    grounding: GroundingReport  # agregado holístico
+    semantic: SemanticCoherenceReport
+    chart_notes: list[ChartNote] = Field(default_factory=list)
+
+
+class StreamError(_Strict):
+    type: Literal["error"] = "error"
+    message: str
