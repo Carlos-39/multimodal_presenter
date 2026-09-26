@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     """Ajustes tipados, poblados desde variables de entorno o `.env`.
 
     pydantic-settings hace el match de nombres sin distinguir mayúsculas, así que
-    `GEMINI_API_KEY` en el entorno mapea a `gemini_api_key` aquí.
+    `ANTHROPIC_API_KEY` en el entorno mapea a `anthropic_api_key` aquí.
     """
 
     model_config = SettingsConfigDict(
@@ -27,14 +27,19 @@ class Settings(BaseSettings):
     app_name: str = "Multimodal Presenter API"
     environment: str = "development"
 
-    # Modelo (Gemini vía PydanticAI).
-    # gemini_api_key es OBLIGATORIA para ejecutar el pipeline: se valida en runtime al
-    # construir el modelo (model_provider.build_google_model), no al importar la app, para
-    # que el CI (que mockea el LLM) no requiera clave real. Nunca se hardcodea.
-    gemini_api_key: str | None = None
-    # Gemini 3.1 Pro (PROYECTO.md §4, no una variante flash). El id real de la API lleva
-    # sufijo -preview. OJO: requiere billing habilitado (cuota 0 en el tier gratuito).
-    gemini_model: str = "gemini-3.1-pro-preview"
+    # Modelo (PydanticAI). Primario: Anthropic Claude. Fallback: Gemini vía OpenRouter.
+    # Las claves se validan en runtime al construir el modelo (model_provider.build_model),
+    # no al importar la app, para que el CI (que mockea el LLM) no requiera claves reales.
+    # Nunca se hardcodean.
+    #
+    # Primario — Anthropic (OBLIGATORIO para ejecutar el pipeline):
+    anthropic_api_key: str | None = None
+    anthropic_model: str = "claude-sonnet-5"
+    #
+    # Fallback — Gemini vía OpenRouter (recomendado; si falta, solo se usa el primario).
+    # El id es el de OpenRouter (gateway OpenAI-compatible), configurable sin tocar código.
+    openrouter_api_key: str | None = None
+    openrouter_gemini_model: str = "google/gemini-3-pro-preview"
 
     # Entrada multimodal (Hito 4): tope de tamaño de archivo subido, en MB.
     max_upload_mb: int = 20
