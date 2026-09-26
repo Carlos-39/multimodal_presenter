@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { ContentArea } from "@/components/content/ContentArea";
+import { SourcePanel } from "@/components/content/SourcePanel";
 import { TransformInput } from "@/components/TransformInput";
 import { postTransform } from "@/lib/api";
 import { DEFAULT_DETAIL_LEVEL, visibleSections, type DetailLevel } from "@/lib/detail";
@@ -10,7 +11,7 @@ import type { TransformResponse } from "@/lib/types";
 
 type Status = "idle" | "loading" | "error" | "done";
 
-/** Documento original enviado — se conserva para la atribución interactiva del Hito 5c. */
+/** Documento original enviado — se conserva para mostrarlo y resaltar fragmentos (Hito 5c). */
 interface OriginalSource {
   text: string | null;
   file: File | null;
@@ -22,12 +23,13 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [detailLevel, setDetailLevel] = useState<DetailLevel>(DEFAULT_DETAIL_LEVEL);
-  // TODO(Hito5c): usar `original` para mostrar el documento navegable y resaltar fragmentos.
-  const [, setOriginal] = useState<OriginalSource | null>(null);
+  const [original, setOriginal] = useState<OriginalSource | null>(null);
+  const [activeSourceSectionId, setActiveSourceSectionId] = useState<string | null>(null);
 
   async function handleTransform(text: string | null, file: File | null) {
     setStatus("loading");
     setError(null);
+    setActiveSourceSectionId(null); // cerrar el panel de la fuente anterior
     setOriginal({ text, file }); // conservar el documento original, no descartarlo
     try {
       const data = await postTransform(text, file);
@@ -48,8 +50,6 @@ export default function Page() {
     [presentation, detailLevel],
   );
 
-  // Activo efectivo: si el activo no está visible (p. ej. un satélite tras volver a resumen),
-  // cae al primer visible — sin mutar estado en un efecto.
   const effectiveActiveId = visible.some((s) => s.id === activeSectionId)
     ? activeSectionId
     : (visible[0]?.id ?? null);
@@ -60,6 +60,11 @@ export default function Page() {
     setDetailLevel(level);
   }
 
+  // Fuente activa: solo sobre una sección visible (si se oculta al cambiar de modo, el panel cierra).
+  const activeSourceSection = visible.find((s) => s.id === activeSourceSectionId) ?? null;
+  const activeSourceStatus =
+    grounding?.sections.find((g) => g.section_id === activeSourceSectionId)?.status ?? "unverified";
+
   return (
     <AppShell
       sections={visible}
@@ -69,30 +74,48 @@ export default function Page() {
       detailLevel={detailLevel}
       onDetailLevelChange={handleDetailLevelChange}
     >
-      <div className="mx-auto max-w-3xl space-y-4 p-6">
-        <TransformInput status={status} onSubmit={handleTransform} />
+      {/* Split simple contenido | fuente. TODO(Hito5e): el layout compositivo debe manejar
+          la convivencia de columnas (nav + contenido + fuente + chat) sin apretar el contenido. */}
+      <div className="flex h-full">
+        <div className="min-w-0 flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-3xl space-y-4 p-6">
+            <TransformInput status={status} onSubmit={handleTransform} />
 
-        {status === "loading" ? (
-          <p className="text-sm text-muted">Generando la presentación…</p>
-        ) : null}
+            {status === "loading" ? (
+              <p className="text-sm text-muted">Generando la presentación…</p>
+            ) : null}
 
-        {status === "error" ? (
-          <div className="rounded-md border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
-            No se pudo transformar: {error}
+            {status === "error" ? (
+              <div className="rounded-md border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
+                No se pudo transformar: {error}
+              </div>
+            ) : null}
           </div>
+
+          {status === "done" && presentation ? (
+            <ContentArea
+              title={presentation.title}
+              sections={visible}
+              level={detailLevel}
+              activeSectionId={effectiveActiveId}
+              chartNotes={result?.chart_notes ?? []}
+              observations={result?.semantic.observations ?? []}
+              onOpenSource={setActiveSourceSectionId}
+              activeSourceSectionId={activeSourceSectionId}
+            />
+          ) : null}
+        </div>
+
+        {activeSourceSection && grounding && original ? (
+          <SourcePanel
+            original={original}
+            sourceKind={grounding.source_kind}
+            section={activeSourceSection}
+            status={activeSourceStatus}
+            onClose={() => setActiveSourceSectionId(null)}
+          />
         ) : null}
       </div>
-
-      {status === "done" && presentation ? (
-        <ContentArea
-          title={presentation.title}
-          sections={visible}
-          level={detailLevel}
-          activeSectionId={effectiveActiveId}
-          chartNotes={result?.chart_notes ?? []}
-          observations={result?.semantic.observations ?? []}
-        />
-      ) : null}
     </AppShell>
   );
 }
