@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-type Status = "idle" | "loading" | "error" | "done";
+type Status = "idle" | "loading" | "streaming" | "error" | "done";
 
 const ACCEPT = "application/pdf,image/png,image/jpeg,image/webp";
 
@@ -22,7 +22,7 @@ export function TransformInput({ status, onSubmit }: TransformInputProps) {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const loading = status === "loading";
+  const loading = status === "loading" || status === "streaming";
   const canSubmit = !loading && (text.trim().length > 0 || file !== null);
 
   function handleSubmit(e: React.FormEvent) {

@@ -9,6 +9,7 @@ import pytest
 # para la telemetría del Hito 8). Debe ejecutarse antes de importar la app; conftest se
 # carga antes que cualquier módulo de test. La app real (uvicorn) sí lee el token del .env.
 os.environ["LOGFIRE_TOKEN"] = ""
+os.environ["PYDANTIC_AI_NO_BANNER"] = "1"  # sin el banner de PydanticAI en la salida de tests
 
 # Texto de entrada de referencia. Los `quote` del mock son substrings EXACTOS de este texto.
 INPUT_TEXT = (
