@@ -45,8 +45,10 @@ async def _collect(gen):
 
 
 # --- transform_stream: secuencia de eventos ---
-def test_transform_stream_event_sequence(input_text: str, mock_presentation: dict) -> None:
-    model = TestModel(custom_output_args=mock_presentation)
+def test_transform_stream_event_sequence(
+    input_text: str, mock_presentation: dict, structuring_model
+) -> None:
+    model = structuring_model(mock_presentation)
     events = asyncio.run(_collect(transform_stream(model, text=input_text)))
 
     types = [e.type for e in events]
@@ -64,8 +66,10 @@ def test_transform_stream_event_sequence(input_text: str, mock_presentation: dic
 
 
 # --- Endpoint SSE ---
-def test_stream_endpoint_emits_sse(input_text: str, mock_presentation: dict) -> None:
-    app.dependency_overrides[get_model] = lambda: TestModel(custom_output_args=mock_presentation)
+def test_stream_endpoint_emits_sse(
+    input_text: str, mock_presentation: dict, structuring_model
+) -> None:
+    app.dependency_overrides[get_model] = lambda: structuring_model(mock_presentation)
     try:
         client = TestClient(app)
         response = client.post("/transform/stream", data={"text": input_text})
@@ -79,7 +83,8 @@ def test_stream_endpoint_emits_sse(input_text: str, mock_presentation: dict) -> 
 
 
 def test_stream_endpoint_rejects_empty() -> None:
-    app.dependency_overrides[get_model] = lambda: TestModel(custom_output_args={})
+    # El modelo no llega a invocarse (la validación 400 va antes del stream); mock inerte.
+    app.dependency_overrides[get_model] = lambda: TestModel(custom_output_text="{}")
     try:
         client = TestClient(app)
         response = client.post("/transform/stream", data={})

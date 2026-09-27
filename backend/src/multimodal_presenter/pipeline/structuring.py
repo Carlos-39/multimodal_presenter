@@ -1,15 +1,24 @@
-"""Fase 2 — Estructuración con LLM (PydanticAI + Gemini 3.1 Pro).
+"""Fase 2 — Estructuración con LLM (PydanticAI + Anthropic claude-sonnet-5).
 
-El modelo emite un objeto validado contra el contrato (`output_type=Presentation`), con
-reintentos automáticos. El documento entra como texto o como BINARIO multimodal nativo
-(PDF/imagen vía `BinaryContent`) — nunca como texto extraído de un binario.
+El modelo emite un objeto validado contra el contrato (`Presentation`), con reintentos
+automáticos. El documento entra como texto o como BINARIO multimodal nativo (PDF/imagen vía
+`BinaryContent`) — nunca como texto extraído de un binario.
+
+Modo de salida: `PromptedOutput` (el modelo escribe el JSON como su respuesta de texto y
+PydanticAI lo parsea). Se eligió sobre `ToolOutput` porque el streaming (Hito 5d) necesita
+parciales incrementales: con `ToolOutput` la salida viaja como los argumentos de una tool
+call que PydanticAI solo resuelve al completarse, así que `stream_output()` no emite nada
+hasta el final (todas las secciones de golpe). Con `PromptedOutput` el JSON se transmite como
+texto token a token y `stream_output()` expone `Presentation` parciales → secciones una por
+una. El mismo agente sirve a `/transform` (no-streaming) y `/transform/stream` para que ambos
+caminos se comporten igual. Verificado empíricamente en el Hito 5d.
 
 Principio rector: el LLM decide lo interpretativo (redacción, núcleo/satélite, content_type,
 qué página citar). Lo determinista (tipos cerrados, validación de archivo, offsets de texto)
 va en código.
 """
 
-from pydantic_ai import Agent, BinaryContent, ToolOutput
+from pydantic_ai import Agent, BinaryContent, PromptedOutput
 from pydantic_ai.models import Model
 
 from ..schemas import Presentation
@@ -62,7 +71,7 @@ def build_model_input(extraction: ExtractionResult) -> str | list[str | BinaryCo
 
 
 structuring_agent = Agent(
-    output_type=ToolOutput(Presentation),
+    output_type=PromptedOutput(Presentation),
     system_prompt=SYSTEM_PROMPT,
 )
 

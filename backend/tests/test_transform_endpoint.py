@@ -2,7 +2,6 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from pydantic_ai.models.test import TestModel
 
 from multimodal_presenter.api.routes import get_model
 from multimodal_presenter.main import app
@@ -10,8 +9,8 @@ from multimodal_presenter.schemas.transform import TransformResponse
 
 
 @pytest.fixture
-def client(mock_presentation: dict):
-    app.dependency_overrides[get_model] = lambda: TestModel(custom_output_args=mock_presentation)
+def client(mock_presentation: dict, structuring_model):
+    app.dependency_overrides[get_model] = lambda: structuring_model(mock_presentation)
     try:
         yield TestClient(app)
     finally:

@@ -1,9 +1,11 @@
 """Fixtures compartidas de los tests del pipeline (Hito 2)."""
 
 import copy
+import json
 import os
 
 import pytest
+from pydantic_ai.models.test import TestModel
 
 # Evita que los tests envíen trazas a Logfire real (no contaminar el dashboard que se usará
 # para la telemetría del Hito 8). Debe ejecutarse antes de importar la app; conftest se
@@ -56,6 +58,21 @@ def input_text() -> str:
 def mock_presentation() -> dict:
     """Copia fresca del mock (quotes anclables)."""
     return copy.deepcopy(_MOCK_PRESENTATION)
+
+
+@pytest.fixture
+def structuring_model():
+    """Fábrica de TestModel para mockear el agente de ESTRUCTURACIÓN (Fase 2).
+
+    El agente usa `PromptedOutput` (salida por TEXTO: el modelo escribe el JSON como su
+    respuesta), así que el mock debe entregar el JSON vía `custom_output_text`. `custom_output_args`
+    solo aplica a salida por tool (`ToolOutput`), que sí usa el agente semántico.
+    """
+
+    def _make(presentation: dict) -> TestModel:
+        return TestModel(custom_output_text=json.dumps(presentation))
+
+    return _make
 
 
 @pytest.fixture

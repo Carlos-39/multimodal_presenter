@@ -11,8 +11,10 @@ from multimodal_presenter.pipeline.structuring import build_model_input
 from multimodal_presenter.schemas import Presentation
 
 
-def test_text_pipeline_produces_valid_contract(input_text: str, mock_presentation: dict) -> None:
-    model = TestModel(custom_output_args=mock_presentation)
+def test_text_pipeline_produces_valid_contract(
+    input_text: str, mock_presentation: dict, structuring_model
+) -> None:
+    model = structuring_model(mock_presentation)
     result = asyncio.run(transform(model, text=input_text))
 
     assert isinstance(result.presentation, Presentation)
@@ -23,8 +25,10 @@ def test_text_pipeline_produces_valid_contract(input_text: str, mock_presentatio
     assert result.semantic.ok is True
 
 
-def test_pdf_pipeline_produces_valid_contract(pdf_bytes: bytes, mock_presentation: dict) -> None:
-    model = TestModel(custom_output_args=mock_presentation)
+def test_pdf_pipeline_produces_valid_contract(
+    pdf_bytes: bytes, mock_presentation: dict, structuring_model
+) -> None:
+    model = structuring_model(mock_presentation)
     result = asyncio.run(
         transform(model, binary=pdf_bytes, media_type="application/pdf", filename="d.pdf")
     )
@@ -74,8 +78,10 @@ _PRES_WITH_CHART = {
 }
 
 
-def test_pipeline_with_chart_runs_isomorphism_and_semantic(input_text: str) -> None:
-    model = TestModel(custom_output_args=_PRES_WITH_CHART)
+def test_pipeline_with_chart_runs_isomorphism_and_semantic(
+    input_text: str, structuring_model
+) -> None:
+    model = structuring_model(_PRES_WITH_CHART)
     semantic_model = TestModel(custom_output_args={"observations": []})
     result = asyncio.run(transform(model, text=input_text, semantic_model=semantic_model))
 

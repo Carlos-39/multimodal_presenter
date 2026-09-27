@@ -128,3 +128,31 @@ body {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * Entrada suave de cada sección al montarse durante el streaming (Hito 5d): fade-in + leve
+ * desplazamiento hacia arriba, para que el "aparecer una por una" se sienta fluido y no como
+ * un parpadeo instantáneo. La animación CSS corre una sola vez, al insertarse el nodo en el
+ * DOM; las secciones ya montadas no se re-animan al llegar las siguientes (key = section.id).
+ * Se desactiva por completo si el usuario prefiere menos movimiento.
+ */
+@keyframes section-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section-enter {
+  animation: section-enter 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-enter {
+    animation: none;
+  }
+}
