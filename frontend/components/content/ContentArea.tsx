@@ -55,7 +55,7 @@ export function ContentArea({
           <section
             key={section.id}
             id={`section-${section.id}`}
-            className={`scroll-mt-4 rounded-md border bg-surface p-5 ${
+            className={`section-enter scroll-mt-4 rounded-md border bg-surface p-5 ${
               active ? "border-accent" : "border-border"
             } ${isSatellite ? "border-l-2 border-l-muted" : ""}`}
           >
