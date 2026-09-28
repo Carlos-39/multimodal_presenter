@@ -48,7 +48,7 @@ Cada capa existe porque una decisión de diseño la requiere. No es arquitectura
 ## 4. Stack tecnológico
 
 - **Backend:** Python + FastAPI + PydanticAI (orquestación con tipado estricto — el LLM debe emitir JSON validado contra esquemas Pydantic, con reintentos automáticos si no valida).
-- **Modelo:** Google Gemini 3.1 Pro (multimodal nativo, razonamiento profundo vía `thinking_level`). NO gemini-2.5-flash (ese fue un atajo del PoC anterior). Ventana de contexto real: ~1M tokens de entrada, 65.536 de salida.
+- **Modelo:** Anthropic **claude-sonnet-5** como primario (multimodal nativo; salida estructurada por `PromptedOutput`, elegido en el Hito 5d para permitir el streaming incremental), con **Gemini vía OpenRouter** como fallback opcional (`FallbackModel` de PydanticAI). El pipeline es agnóstico al modelo (se inyecta). Nota histórica: el diagnóstico inicial contempló Gemini 3.1 Pro y el PoC anterior usaba gemini-2.5-flash como atajo; el motor se migró a Anthropic durante el Hito 5. Ya no se usa una clave de Gemini directa.
 - **Frontend:** Next.js + Tailwind, con Generative UI.
 - **Observabilidad:** Pydantic Logfire (del mismo equipo que PydanticAI, integración nativa, capa gratuita generosa). Conectar desde el Hito 0.
 - **Herramientas candidatas** (a confirmar en sus hitos, del inventario ya investigado): anydoc de Firecrawl y/o Docling para parseo; CopilotKit/AG-UI para transporte (AG-UI ya está adoptado oficialmente por PydanticAI); pgvector + Qdrant y LightRAG para el subsistema RAG posterior.
@@ -89,7 +89,7 @@ Referencia rápida. El detalle completo con justificación está en `/docs/Fase2
 
 - **Hito 0** — Andamiaje del repo (estructura, secretos, CI mínimo, Logfire conectado).
 - **Hito 1** — Contrato de datos tipado (schema Pydantic, hueco content_type↔content cerrado).
-- **Hito 2** — Pipeline de transformación extremo a extremo, versión mínima (documento entra → JSON válido sale, con Gemini real).
+- **Hito 2** — Pipeline de transformación extremo a extremo, versión mínima (documento entra → JSON válido sale, con el LLM real).
 - **Hito 3** — Frontend base con Stable Core Pattern (renderiza el JSON, streaming conectado).
 - **Hito 4** — Multimodal real (subida de archivos, PDF binario nativo, imagen).
 - **Hito 5** — Decisiones cognitivas (núcleo/satélite, modos de detalle, layout compositivo, atribución de fuentes, telemetría).

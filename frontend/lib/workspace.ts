@@ -15,6 +15,11 @@
  *
  * Es determinista y depende SOLO de (paneles abiertos, ancho); no de cuántas secciones llegaron
  * por streaming — por eso el streaming no dispara recálculo de columnas.
+ *
+ * NOTA sobre la Escala 1 (composición INTERNA de una sección con varios content_type): es **spec
+ * documentada, no cableada**. El contrato define `Section.content` como UN solo bloque, así que
+ * una sección no combina tipos hoy; las reglas internas (chart > table > timeline > text) se
+ * activarían solo si el contrato admitiera secciones multi-contenido. Ver Registro (Hito 5e/5f).
  */
 
 export type PanelId = "source" | "chat";

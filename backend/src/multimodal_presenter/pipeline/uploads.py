@@ -8,7 +8,8 @@ ni por el content-type del cliente), y error limpio ante archivos corruptos/vac√
 import filetype
 from fastapi import HTTPException, UploadFile
 
-# Tipos que Gemini soporta de forma multimodal nativa (allowlist).
+# Tipos que el modelo procesa de forma multimodal nativa (allowlist; PDF e im√°genes que
+# Anthropic claude-sonnet-5 admite como BinaryContent).
 ALLOWED_MIME: dict[str, str] = {
     "application/pdf": "pdf",
     "image/png": "image",

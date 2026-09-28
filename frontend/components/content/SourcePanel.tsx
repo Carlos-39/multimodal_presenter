@@ -107,13 +107,23 @@ function TextSource({
 function PdfSource({ url, page }: { url: string | null; page: number | null }) {
   if (!url) return <PanelMessage>No hay documento disponible.</PanelMessage>;
   const src = page ? `${url}#page=${page}` : url;
+  // El <iframe>#page=N depende del visor nativo del navegador y NO funciona en la mayoría de
+  // móviles ni en navegadores sin visor embebido. El enlace es la salida siempre utilizable.
   return (
-    <>
-      {page ? (
-        <p className="px-4 pt-3 text-xs text-muted">Referencia: página {page}.</p>
-      ) : null}
-      <iframe src={src} title="Documento fuente (PDF)" className="h-full w-full border-0" />
-    </>
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2 text-xs">
+        <span className="text-muted">{page ? `Referencia: página ${page}.` : "Documento PDF"}</span>
+        <a
+          href={src}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 text-muted underline underline-offset-2 hover:text-foreground"
+        >
+          Abrir PDF en pestaña nueva
+        </a>
+      </div>
+      <iframe src={src} title="Documento fuente (PDF)" className="min-h-0 flex-1 border-0" />
+    </div>
   );
 }
 
