@@ -6,15 +6,16 @@ import { GroundingIndicator } from "@/components/GroundingIndicator";
 import { SectionNav } from "./SectionNav";
 import { DetailLevelControl } from "./DetailLevelControl";
 import { AudioControls } from "./AudioControls";
-import { ChatPanel } from "./ChatPanel";
 
 /**
  * Núcleo estructural fijo (Stable Core Pattern, Punto 8).
  *
- * El marco —header, rail de navegación/controles y rail de chat— NO cambia según el
- * contenido generado. Lo único dinámico es `children` (el slot de contenido). Los
- * controles que aún no tienen función (detalle, audio, chat) existen ya como
- * placeholders para que los Hitos 5/6 solo los "llenen" sin mover la estructura.
+ * El marco —header y rail de navegación/controles— NO cambia según el contenido generado.
+ * Lo dinámico es `children` (contenido + columnas opcionales, que gestiona `Workspace`).
+ *
+ * Cambio consciente en el Hito 5e: el chat dejó de ser un rail SIEMPRE presente (como en el
+ * Hito 3) y pasó a ser una COLUMNA OPCIONAL de la Escala 2 (`Workspace`), gobernada desde este
+ * header por un toggle. El nav sí sigue fijo: nunca compite por espacio.
  */
 interface AppShellProps {
   sections: Section[];
@@ -23,6 +24,8 @@ interface AppShellProps {
   onSelectSection: (id: string) => void;
   detailLevel: DetailLevel;
   onDetailLevelChange: (level: DetailLevel) => void;
+  chatOpen: boolean;
+  onToggleChat: () => void;
   children: React.ReactNode;
 }
 
@@ -33,6 +36,8 @@ export function AppShell({
   onSelectSection,
   detailLevel,
   onDetailLevelChange,
+  chatOpen,
+  onToggleChat,
   children,
 }: AppShellProps) {
   return (
@@ -48,6 +53,18 @@ export function AppShell({
         <div className="flex items-center gap-4">
           <DetailLevelControl level={detailLevel} onChange={onDetailLevelChange} />
           <GroundingIndicator grounding={grounding} />
+          <button
+            type="button"
+            onClick={onToggleChat}
+            aria-pressed={chatOpen}
+            className={`rounded-md border px-2.5 py-1 text-xs transition-colors ${
+              chatOpen
+                ? "border-accent bg-accent text-accent-foreground"
+                : "border-border text-muted hover:text-foreground"
+            }`}
+          >
+            Chat
+          </button>
         </div>
       </header>
 
@@ -64,13 +81,8 @@ export function AppShell({
           </div>
         </aside>
 
-        {/* Zona dinámica: lo ÚNICO que varía entre presentaciones */}
+        {/* Zona dinámica: contenido + columnas opcionales (Workspace, Escala 2 del Hito 5e) */}
         <main className="flex-1 overflow-hidden">{children}</main>
-
-        {/* Rail derecho fijo: estructura del chat */}
-        <aside className="hidden w-72 shrink-0 border-l border-border bg-surface lg:block">
-          <ChatPanel />
-        </aside>
       </div>
     </div>
   );
