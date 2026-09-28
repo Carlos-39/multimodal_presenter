@@ -4,8 +4,8 @@ import type { StreamEvent } from "./types";
  * Parsea un buffer de texto SSE acumulado en eventos + el resto incompleto. Puro y testeable.
  * Los eventos se separan por línea en blanco; cada uno lleva una línea `data: {json}`.
  */
-export function parseSSE(buffer: string): { events: StreamEvent[]; rest: string } {
-  const events: StreamEvent[] = [];
+export function parseSSE<T = StreamEvent>(buffer: string): { events: T[]; rest: string } {
+  const events: T[] = [];
   const parts = buffer.split("\n\n");
   const rest = parts.pop() ?? ""; // el último tramo puede estar incompleto
   for (const part of parts) {
@@ -14,7 +14,7 @@ export function parseSSE(buffer: string): { events: StreamEvent[]; rest: string 
     const json = line.slice(5).trim();
     if (!json) continue;
     try {
-      events.push(JSON.parse(json) as StreamEvent);
+      events.push(JSON.parse(json) as T);
     } catch {
       // evento mal formado: se ignora en lugar de romper el stream.
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { Workspace } from "@/components/shell/Workspace";
 import { ChatPanel } from "@/components/shell/ChatPanel";
@@ -9,23 +9,28 @@ import { SourcePanel } from "@/components/content/SourcePanel";
 import { TransformInput } from "@/components/TransformInput";
 import { postTransform } from "@/lib/api";
 import { streamTransform } from "@/lib/stream";
+import { useChat, type OriginalSource } from "@/hooks/useChat";
 import { DEFAULT_DETAIL_LEVEL, visibleSections, type DetailLevel } from "@/lib/detail";
 import type { PanelId } from "@/lib/workspace";
 import type {
   ChartNote,
   GroundingReport,
+  GroundingStatus,
   Section,
   SectionGrounding,
   SemanticCoherenceReport,
   SourceKind,
+  SourceReference,
   TransformResponse,
 } from "@/lib/types";
 
 type Status = "idle" | "streaming" | "error" | "done";
 
-interface OriginalSource {
-  text: string | null;
-  file: File | null;
+/** Fuente activa en el panel: puede venir de una sección (5c) o de una respuesta del chat (6). */
+interface ActiveSource {
+  source: SourceReference;
+  status: GroundingStatus;
+  key: string; // reancla el resaltado al cambiar (id de sección, o único para el chat)
 }
 
 /** Construye un GroundingReport agregado a partir de las entradas por sección (durante streaming). */
@@ -56,7 +61,10 @@ export default function Page() {
 
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [detailLevel, setDetailLevel] = useState<DetailLevel>(DEFAULT_DETAIL_LEVEL);
-  const [activeSourceSectionId, setActiveSourceSectionId] = useState<string | null>(null);
+  const [activeSource, setActiveSource] = useState<ActiveSource | null>(null);
+
+  // Chat (Hito 6): historial de sesión + streaming + sugerencias, aislado en un hook.
+  const chat = useChat(original);
 
   // Escala 2 (Hito 5e): paneles opcionales abiertos, el más reciente al final (recencia).
   const [openOrder, setOpenOrder] = useState<PanelId[]>([]);
@@ -66,22 +74,31 @@ export default function Page() {
   }, []);
   const closePanel = useCallback((id: PanelId) => {
     setOpenOrder((prev) => prev.filter((p) => p !== id));
-    if (id === "source") setActiveSourceSectionId(null);
+    if (id === "source") setActiveSource(null);
   }, []);
   const toggleChat = useCallback(() => {
     setOpenOrder((prev) =>
       prev.includes("chat") ? prev.filter((p) => p !== "chat") : [...prev, "chat"],
     );
   }, []);
-  const openSource = useCallback(
-    (sectionId: string) => {
-      setActiveSourceSectionId(sectionId);
+  // Abrir la fuente desde una sección (5c) o desde una respuesta del chat (6): mismo panel.
+  const openSectionSource = useCallback(
+    (section: Section, gstatus: GroundingStatus) => {
+      setActiveSource({ source: section.source, status: gstatus, key: section.id });
+      openPanel("source");
+    },
+    [openPanel],
+  );
+  const openChatSource = useCallback(
+    (source: SourceReference, gstatus: GroundingStatus) => {
+      setActiveSource({ source, status: gstatus, key: `chat-${source.quote}` });
       openPanel("source");
     },
     [openPanel],
   );
 
   function resetForRun(text: string | null, file: File | null) {
+    chat.reset(); // nuevo documento → nuevo chat (historial de sesión limpio)
     setError(null);
     setTitle("");
     setSections([]);
@@ -90,7 +107,7 @@ export default function Page() {
     setSemantic(null);
     setChartNotes([]);
     setActiveSectionId(null);
-    setActiveSourceSectionId(null);
+    setActiveSource(null);
     setOpenOrder((prev) => prev.filter((p) => p !== "source")); // cierra la fuente; conserva el chat
     setOriginal({ text, file });
     setSourceKind(file ? (file.type === "application/pdf" ? "pdf" : "image") : "text");
@@ -159,13 +176,31 @@ export default function Page() {
   const displayGrounding = aggGrounding ?? (sections.length > 0 ? synthGrounding(sourceKind, entries) : null);
   const observations = semantic?.observations ?? [];
 
-  const activeSourceSection = visible.find((s) => s.id === activeSourceSectionId) ?? null;
-  const activeSourceStatus =
-    entries.find((g) => g.section_id === activeSourceSectionId)?.status ?? "unverified";
-  const sourceOpen = activeSourceSection !== null && original !== null;
+  const sourceOpen = activeSource !== null && original !== null;
 
-  // Orden efectivo para el Workspace: la fuente solo cuenta si hay una sección activa que mostrar.
+  // Orden efectivo para el Workspace: la fuente solo cuenta si hay algo que mostrar.
   const effectiveOrder = openOrder.filter((p) => p !== "source" || sourceOpen);
+
+  // Abrir la fuente de una sección: resuelve su estado de grounding y reusa el panel.
+  const handleOpenSectionSource = useCallback(
+    (section: Section) => {
+      const gstatus = entries.find((g) => g.section_id === section.id)?.status ?? "unverified";
+      openSectionSource(section, gstatus);
+    },
+    [entries, openSectionSource],
+  );
+
+  const activeSection = useMemo(
+    () => visible.find((s) => s.id === effectiveActiveId) ?? null,
+    [visible, effectiveActiveId],
+  );
+
+  // Prefetch de preguntas sugeridas al profundizar (modo detallado) en la sección activa: se
+  // piden en segundo plano y se cachean → cuando el usuario mira el chat, ya están (instantáneas).
+  const prefetchSuggestions = chat.prefetchSuggestions;
+  useEffect(() => {
+    if (detailLevel === "detailed" && activeSection) prefetchSuggestions(activeSection);
+  }, [detailLevel, activeSection, prefetchSuggestions]);
 
   function handleDetailLevelChange(level: DetailLevel) {
     // TODO(Hito8): punto ÚNICO de interacción — instrumentar tiempo en resumen vs. detallado.
@@ -195,13 +230,23 @@ export default function Page() {
             <SourcePanel
               original={original!}
               sourceKind={sourceKind}
-              section={activeSourceSection!}
-              status={activeSourceStatus}
+              source={activeSource!.source}
+              status={activeSource!.status}
+              sourceKey={activeSource!.key}
               onClose={() => closePanel("source")}
             />
           ) : null
         }
-        chat={<ChatPanel />}
+        chat={
+          <ChatPanel
+            messages={chat.messages}
+            status={chat.status}
+            onSend={chat.send}
+            suggestions={effectiveActiveId ? (chat.suggestions[effectiveActiveId] ?? []) : []}
+            onOpenSource={openChatSource}
+            disabled={original === null}
+          />
+        }
       >
         <div className="mx-auto max-w-3xl space-y-4 p-6">
           <TransformInput status={status} onSubmit={handleTransform} />
@@ -227,8 +272,8 @@ export default function Page() {
             activeSectionId={effectiveActiveId}
             chartNotes={chartNotes}
             observations={observations}
-            onOpenSource={openSource}
-            activeSourceSectionId={activeSourceSectionId}
+            onOpenSource={handleOpenSectionSource}
+            activeSourceKey={activeSource?.key ?? null}
           />
         ) : null}
       </Workspace>
