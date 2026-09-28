@@ -15,35 +15,55 @@ cada afirmación presentada puede rastrearse a su origen en el documento fuente.
 
 ## Estado actual
 
-Construcción **por hitos** (ver `PROYECTO.md` §7). Lo que existe hoy:
+Construcción **por hitos** (ver `PROYECTO.md` §7 y `docs/Registro_de_Hitos.md`). Estado:
 
-- **Hito 0 — Andamiaje del repo** ✅ estructura, manejo de secretos, Logfire y CI.
-- **Hito 1 — Contrato de datos tipado** 🚧 en curso.
+- **Hitos 0–5 ✅ completos:** andamiaje del repo (0), contrato de datos tipado (1), pipeline
+  de 3 fases con LLM real (2), frontend con Stable Core Pattern (3), entrada multimodal binaria
+  (4), e identidad visual + isomorfismo de gráficos + modos resumen/detallado + atribución
+  interactiva + streaming + layout compositivo (5a–5e).
+- **Verificado con el modelo real (Hito 5f):** el PDF multimodal nativo recupera datos de
+  gráficos **rasterizados** que un extractor de texto pierde; el juez de coherencia semántica
+  marca cifras alteradas y afirmaciones no respaldadas; los fallos surfacean un error visible
+  (nunca una presentación que parezca terminada). El **fallback** (Gemini vía OpenRouter) está
+  implementado pero **no** ejercitado de punta a punta; las afirmaciones sobre él son de diseño.
 
-El resto de hitos (pipeline, frontend, multimodal, etc.) aún no está implementado.
+Pendiente: chat anclado a fuentes (Hito 6), audio, y la evaluación cuantitativa (Hito 8).
 
 ## Estructura del repositorio
 
 ```
 multimodal_presenter/
 ├── PROYECTO.md            # Contexto maestro del sistema
-├── docs/                  # Documentos de diseño y decisiones (Fase 1 y 2)
+├── docs/                  # Diseño, decisiones y Registro_de_Hitos.md (trazabilidad)
 ├── backend/               # API Python (FastAPI + PydanticAI) — gestionada con uv
 │   ├── src/multimodal_presenter/
 │   │   ├── main.py        #   app FastAPI + health check
 │   │   ├── config.py      #   settings tipadas (lee .env)
-│   │   ├── observability.py  # integración con Logfire
-│   │   └── schemas/       #   contrato de datos tipado (Hito 1)
-│   └── tests/
-└── frontend/              # Next.js + Tailwind (reservado — Hito 3)
+│   │   ├── model_provider.py  # Anthropic primario + fallback OpenRouter (FallbackModel)
+│   │   ├── schemas/       #   contrato de datos tipado (Hito 1)
+│   │   ├── pipeline/      #   Fase 1 extracción · Fase 2 estructuración · Fase 3 validación + streaming
+│   │   └── api/routes.py  #   POST /transform y /transform/stream (SSE)
+│   ├── scripts/           #   arnés de métricas con modelo real (Hito 5f, fuera de producción)
+│   └── tests/             #   unitarios + integración (modelo real, -m integration)
+└── frontend/              # Next.js 16 + Tailwind v4 (App Router)
+    ├── app/               #   página, layout, API route del SSE
+    ├── components/        #   AppShell + Workspace (columnas) + render por tipo
+    └── lib/               #   contrato TS + detail (5b) + highlight (5c) + workspace (5e)
 ```
+
+> **Composición interna de una sección (Escala 1 del layout, Hito 5e):** es **spec documentada,
+> no cableada**. El contrato define `Section.content` como **un solo** bloque, así que una
+> sección no combina varios tipos hoy; las reglas de composición interna se activarían solo si
+> el contrato admitiera secciones multi-contenido. Ver `frontend/lib/workspace.ts`.
 
 ## Stack
 
-- **Backend:** Python 3.12 · FastAPI · PydanticAI (Hito 2+) · gestionado con [uv](https://docs.astral.sh/uv/)
-- **Modelo:** Google Gemini (multimodal nativo) — se conecta en el Hito 2
+- **Backend:** Python 3.12 · FastAPI · PydanticAI · gestionado con [uv](https://docs.astral.sh/uv/)
+- **Modelo:** Anthropic **claude-sonnet-5** (primario, multimodal nativo, salida estructurada por
+  `PromptedOutput`) + **Gemini vía OpenRouter** como fallback opcional (`FallbackModel`). El
+  pipeline es agnóstico al modelo (se inyecta); no se usa una clave de Gemini directa.
 - **Observabilidad:** [Pydantic Logfire](https://logfire.pydantic.dev/)
-- **Frontend:** Next.js + Tailwind (Hito 3)
+- **Frontend:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Recharts
 
 ## Cómo levantarlo (backend)
 
@@ -52,9 +72,12 @@ Requiere [uv](https://docs.astral.sh/uv/) instalado. Desde `backend/`:
 ```bash
 cd backend
 uv sync                       # crea el entorno e instala dependencias (descarga Python 3.12)
-cp .env.example .env          # y rellena tus claves reales (opcional en Hito 0/1)
+cp .env.example .env          # rellena ANTHROPIC_API_KEY (obligatoria para el pipeline)
 uv run uvicorn multimodal_presenter.main:app --reload
 ```
+
+`ANTHROPIC_API_KEY` es obligatoria para transformar; `OPENROUTER_API_KEY` es opcional (activa el
+fallback). Sin claves, los tests siguen corriendo porque inyectan un modelo mock.
 
 La API queda en `http://127.0.0.1:8000`. Verifica el health check:
 
@@ -85,8 +108,15 @@ Desde `backend/`:
 ```bash
 uv run ruff check .           # linter
 uv run ruff format .          # formateo
-uv run pytest                 # tests
+uv run pytest                 # tests (unitarios; los de integración se saltan)
+uv run pytest -m integration  # tests con el modelo REAL (solo local, requiere clave)
 ```
+
+### Frontend
+
+Desde `frontend/` (requiere Node): `npm install`, luego `npm run dev` (queda en
+`http://localhost:3000` y hace proxy de `/api/*` al backend). `npm test` corre los tests con
+vitest; `npm run build` y `npm run lint` para verificar.
 
 ## Secretos
 
