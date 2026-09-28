@@ -2,18 +2,19 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { highlightSegments } from "@/lib/highlight";
-import type { GroundingStatus, Section, SourceKind } from "@/lib/types";
+import type { GroundingStatus, SourceKind, SourceReference } from "@/lib/types";
 
 /**
- * Panel de documento fuente (atribución interactiva, Punto 4 · Hito 5c).
+ * Panel de documento fuente (atribución interactiva, Punto 4 · Hito 5c). Lo comparten la
+ * transformación (fuente de una sección) y el chat (Hito 6): recibe un `SourceReference` + su
+ * estado de grounding, no una `Section` — así ambos usan el MISMO panel, no un esquema paralelo.
  *
  * Es una de las COLUMNAS OPCIONALES de la Escala 2 (Hito 5e): `Workspace` decide su ancho y su
- * emplazamiento (columna u overlay), así que este componente llena el espacio que le den
- * (`w-full h-full`) y no fija su propio ancho ni su borde.
+ * emplazamiento (columna u overlay), así que llena el espacio que le den (`w-full h-full`).
  * Ramifica según el tipo de fuente:
  * - texto: resaltado exacto del rango [char_start, char_end) (o estado neutro si `not_found`).
  * - PDF: documento navegable (iframe nativo), navega a `source.page`. Fidelidad de PÁGINA,
- *   no de región (decisión consciente de alcance). TODO(Hito5x): resaltado de región en PDF/imagen.
+ *   no de región. TODO(Hito5x): resaltado de región en PDF/imagen.
  * - imagen: imagen completa, sin navegación.
  */
 interface OriginalSource {
@@ -24,12 +25,20 @@ interface OriginalSource {
 interface SourcePanelProps {
   original: OriginalSource;
   sourceKind: SourceKind;
-  section: Section;
+  source: SourceReference;
   status: GroundingStatus;
+  sourceKey: string; // reancla el resaltado al cambiar de fuente (sección o chat)
   onClose: () => void;
 }
 
-export function SourcePanel({ original, sourceKind, section, status, onClose }: SourcePanelProps) {
+export function SourcePanel({
+  original,
+  sourceKind,
+  source,
+  status,
+  sourceKey,
+  onClose,
+}: SourcePanelProps) {
   const fileUrl = useMemo(
     () => (original.file ? URL.createObjectURL(original.file) : null),
     [original.file],
@@ -57,9 +66,14 @@ export function SourcePanel({ original, sourceKind, section, status, onClose }: 
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {sourceKind === "text" ? (
-          <TextSource text={original.text ?? ""} section={section} status={status} />
+          <TextSource
+            text={original.text ?? ""}
+            source={source}
+            status={status}
+            sourceKey={sourceKey}
+          />
         ) : sourceKind === "pdf" ? (
-          <PdfSource url={fileUrl} page={section.source.page} />
+          <PdfSource url={fileUrl} page={source.page} />
         ) : (
           <ImageSource url={fileUrl} />
         )}
@@ -70,19 +84,21 @@ export function SourcePanel({ original, sourceKind, section, status, onClose }: 
 
 function TextSource({
   text,
-  section,
+  source,
   status,
+  sourceKey,
 }: {
   text: string;
-  section: Section;
+  source: SourceReference;
   status: GroundingStatus;
+  sourceKey: string;
 }) {
   const markRef = useRef<HTMLElement>(null);
-  const segments = highlightSegments(text, section.source.char_start, section.source.char_end);
+  const segments = highlightSegments(text, source.char_start, source.char_end);
 
   useEffect(() => {
     markRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [section.id]);
+  }, [sourceKey]);
 
   return (
     <div className="p-4">

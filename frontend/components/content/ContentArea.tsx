@@ -17,8 +17,8 @@ interface ContentAreaProps {
   activeSectionId: string | null;
   chartNotes?: ChartNote[];
   observations?: SemanticObservation[];
-  onOpenSource?: (sectionId: string) => void;
-  activeSourceSectionId?: string | null;
+  onOpenSource?: (section: Section) => void;
+  activeSourceKey?: string | null;
 }
 
 export function ContentArea({
@@ -29,7 +29,7 @@ export function ContentArea({
   chartNotes = [],
   observations = [],
   onOpenSource,
-  activeSourceSectionId = null,
+  activeSourceKey = null,
 }: ContentAreaProps) {
   // Re-ancla la vista a la sección activa al navegar o al cambiar de nivel (no perder el lugar).
   useEffect(() => {
@@ -89,9 +89,9 @@ export function ContentArea({
             <footer className="mt-4 border-t border-border pt-2">
               <button
                 type="button"
-                onClick={() => onOpenSource?.(section.id)}
+                onClick={() => onOpenSource?.(section)}
                 className={`text-left text-xs hover:text-foreground ${
-                  section.id === activeSourceSectionId ? "text-foreground" : "text-muted"
+                  section.id === activeSourceKey ? "text-foreground" : "text-muted"
                 }`}
               >
                 Fuente: “{section.source.quote}” · ver en el documento
