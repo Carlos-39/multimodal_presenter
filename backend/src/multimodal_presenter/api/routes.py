@@ -1,22 +1,33 @@
-"""Endpoints de transformación.
+"""Endpoints de transformación y chat.
 
 - `POST /transform` — multipart (texto y/o archivo), respuesta única con el envelope.
-- `POST /transform/stream` — igual entrada, pero emite las secciones por SSE a medida que
-  el LLM las termina (Hito 5d). `/transform` queda como fallback de compatibilidad.
+- `POST /transform/stream` — igual entrada, pero emite las secciones por SSE (Hito 5d).
+- `POST /chat/stream` — chat anclado a fuentes por SSE (Hito 6): relee el documento (cacheado)
+  y responde con texto en vivo + un ancla verificada al final.
+- `POST /chat/suggestions` — preguntas sugeridas específicas a una sección (Hito 6).
 """
+
+import json
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
 from fastapi.responses import StreamingResponse
+from pydantic import ValidationError
 from pydantic_ai.models import Model
 
 from ..config import Settings, get_settings
 from ..model_provider import build_model
 from ..pipeline import transform
+from ..pipeline.chat import chat_stream, generate_suggestions
+from ..pipeline.extraction import prepare_input
 from ..pipeline.streaming import transform_stream
 from ..pipeline.uploads import read_and_validate_upload
+from ..schemas.chat import ChatStreamError, ChatTurn, SuggestionsResponse
+from ..schemas.presentation import Section
 from ..schemas.transform import StreamError, TransformResponse
 
 router = APIRouter(tags=["pipeline"])
+
+MAX_CHAT_HISTORY = 12  # se acotan los turnos que viajan al modelo (prompt bounded)
 
 
 def get_model(settings: Settings = Depends(get_settings)) -> Model:
@@ -104,3 +115,70 @@ async def transform_stream_endpoint(
             yield f"data: {err.model_dump_json()}\n\n"
 
     return StreamingResponse(event_source(), media_type="text/event-stream")
+
+
+def _parse_history(raw: str) -> list[ChatTurn]:
+    """Parsea el historial (JSON del frontend) y acota a los últimos turnos."""
+    try:
+        data = json.loads(raw or "[]")
+        turns = [ChatTurn.model_validate(item) for item in data]
+    except (json.JSONDecodeError, ValidationError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail="Historial de chat inválido.") from exc
+    return turns[-MAX_CHAT_HISTORY:]
+
+
+@router.post("/chat/stream")
+async def chat_stream_endpoint(
+    text: str | None = Form(default=None),
+    file: UploadFile | None = File(default=None),
+    question: str = Form(),
+    history: str = Form(default="[]"),
+    model: Model = Depends(get_model),
+    settings: Settings = Depends(get_settings),
+) -> StreamingResponse:
+    """Chat anclado a fuentes (SSE). Relee el documento (cacheado) y responde ese turno.
+
+    El texto se emite en vivo; el ancla verificada y los componentes interactivos van en el
+    evento final `done`. Un fallo se emite como `error` (nunca una respuesta a medias 'lista').
+    """
+    text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    question_value = question.strip()
+    if not question_value:
+        raise HTTPException(status_code=400, detail="La pregunta no puede estar vacía.")
+    turns = _parse_history(history)
+    extraction = prepare_input(
+        text=text_value, binary=binary, media_type=media_type, filename=filename
+    )
+
+    async def event_source():
+        try:
+            async for event in chat_stream(
+                model, extraction=extraction, history=turns, question=question_value
+            ):
+                yield f"data: {event.model_dump_json()}\n\n"
+        except Exception:
+            err = ChatStreamError(message="La generación se interrumpió.")
+            yield f"data: {err.model_dump_json()}\n\n"
+
+    return StreamingResponse(event_source(), media_type="text/event-stream")
+
+
+@router.post("/chat/suggestions", response_model=SuggestionsResponse)
+async def chat_suggestions_endpoint(
+    section: str = Form(),
+    text: str | None = Form(default=None),
+    file: UploadFile | None = File(default=None),
+    model: Model = Depends(get_model),
+    settings: Settings = Depends(get_settings),
+) -> SuggestionsResponse:
+    """Preguntas sugeridas específicas a una sección (Punto 9). Relee el documento (cacheado)."""
+    text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    try:
+        section_obj = Section.model_validate_json(section)
+    except ValidationError as exc:
+        raise HTTPException(status_code=400, detail="Sección inválida.") from exc
+    extraction = prepare_input(
+        text=text_value, binary=binary, media_type=media_type, filename=filename
+    )
+    questions = await generate_suggestions(model, extraction=extraction, section=section_obj)
+    return SuggestionsResponse(questions=questions)
