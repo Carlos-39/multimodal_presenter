@@ -138,3 +138,24 @@ export type StreamEvent =
       chart_notes: ChartNote[];
     }
   | { type: "error"; message: string };
+
+// ── Chat anclado a fuentes (Hito 6) ──
+
+/** Un turno del historial (vive en el estado del frontend; no se persiste). */
+export interface ChatTurn {
+  role: "user" | "assistant";
+  text: string;
+}
+
+/** Respuesta del chat: contenido renderizable (misma union del contrato) + anclaje verificado. */
+export interface ChatResponse {
+  content: SectionContent;
+  source: SourceReference | null; // null = no se pudo anclar
+  grounding: GroundingStatus;
+}
+
+/** Eventos SSE de POST /chat/stream. Texto en vivo; el ancla llega en `done`. */
+export type ChatStreamEvent =
+  | { type: "text"; text: string }
+  | { type: "done"; response: ChatResponse }
+  | { type: "error"; message: string };
