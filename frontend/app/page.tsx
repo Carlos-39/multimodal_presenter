@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
+import { Workspace } from "@/components/shell/Workspace";
+import { ChatPanel } from "@/components/shell/ChatPanel";
 import { ContentArea } from "@/components/content/ContentArea";
 import { SourcePanel } from "@/components/content/SourcePanel";
 import { TransformInput } from "@/components/TransformInput";
 import { postTransform } from "@/lib/api";
 import { streamTransform } from "@/lib/stream";
 import { DEFAULT_DETAIL_LEVEL, visibleSections, type DetailLevel } from "@/lib/detail";
+import type { PanelId } from "@/lib/workspace";
 import type {
   ChartNote,
   GroundingReport,
@@ -55,6 +58,29 @@ export default function Page() {
   const [detailLevel, setDetailLevel] = useState<DetailLevel>(DEFAULT_DETAIL_LEVEL);
   const [activeSourceSectionId, setActiveSourceSectionId] = useState<string | null>(null);
 
+  // Escala 2 (Hito 5e): paneles opcionales abiertos, el más reciente al final (recencia).
+  const [openOrder, setOpenOrder] = useState<PanelId[]>([]);
+
+  const openPanel = useCallback((id: PanelId) => {
+    setOpenOrder((prev) => [...prev.filter((p) => p !== id), id]);
+  }, []);
+  const closePanel = useCallback((id: PanelId) => {
+    setOpenOrder((prev) => prev.filter((p) => p !== id));
+    if (id === "source") setActiveSourceSectionId(null);
+  }, []);
+  const toggleChat = useCallback(() => {
+    setOpenOrder((prev) =>
+      prev.includes("chat") ? prev.filter((p) => p !== "chat") : [...prev, "chat"],
+    );
+  }, []);
+  const openSource = useCallback(
+    (sectionId: string) => {
+      setActiveSourceSectionId(sectionId);
+      openPanel("source");
+    },
+    [openPanel],
+  );
+
   function resetForRun(text: string | null, file: File | null) {
     setError(null);
     setTitle("");
@@ -65,6 +91,7 @@ export default function Page() {
     setChartNotes([]);
     setActiveSectionId(null);
     setActiveSourceSectionId(null);
+    setOpenOrder((prev) => prev.filter((p) => p !== "source")); // cierra la fuente; conserva el chat
     setOriginal({ text, file });
     setSourceKind(file ? (file.type === "application/pdf" ? "pdf" : "image") : "text");
   }
@@ -135,6 +162,10 @@ export default function Page() {
   const activeSourceSection = visible.find((s) => s.id === activeSourceSectionId) ?? null;
   const activeSourceStatus =
     entries.find((g) => g.section_id === activeSourceSectionId)?.status ?? "unverified";
+  const sourceOpen = activeSourceSection !== null && original !== null;
+
+  // Orden efectivo para el Workspace: la fuente solo cuenta si hay una sección activa que mostrar.
+  const effectiveOrder = openOrder.filter((p) => p !== "source" || sourceOpen);
 
   function handleDetailLevelChange(level: DetailLevel) {
     // TODO(Hito8): punto ÚNICO de interacción — instrumentar tiempo en resumen vs. detallado.
@@ -151,52 +182,56 @@ export default function Page() {
       onSelectSection={setActiveSectionId}
       detailLevel={detailLevel}
       onDetailLevelChange={handleDetailLevelChange}
+      chatOpen={openOrder.includes("chat")}
+      onToggleChat={toggleChat}
     >
-      {/* Split simple contenido | fuente. TODO(Hito5e): el layout compositivo debe manejar
-          la convivencia de columnas (nav + contenido + fuente + chat) sin apretar el contenido. */}
-      <div className="flex h-full">
-        <div className="min-w-0 flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-3xl space-y-4 p-6">
-            <TransformInput status={status} onSubmit={handleTransform} />
-
-            {status === "streaming" ? (
-              <p className="text-sm text-muted">
-                Generando… {sections.length}{" "}
-                {sections.length === 1 ? "sección" : "secciones"}
-              </p>
-            ) : null}
-
-            {status === "error" ? (
-              <div className="rounded-md border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
-                {error}
-              </div>
-            ) : null}
-          </div>
-
-          {hasContent ? (
-            <ContentArea
-              title={presentation.title}
-              sections={visible}
-              level={detailLevel}
-              activeSectionId={effectiveActiveId}
-              chartNotes={chartNotes}
-              observations={observations}
-              onOpenSource={setActiveSourceSectionId}
-              activeSourceSectionId={activeSourceSectionId}
+      {/* Escala 2 (Hito 5e): Workspace arbitra contenido + columnas opcionales (fuente, chat).
+          El contenido es el slot fijo; las columnas solo cambian al abrir/cerrar un panel. */}
+      <Workspace
+        openOrder={effectiveOrder}
+        onClosePanel={closePanel}
+        source={
+          sourceOpen ? (
+            <SourcePanel
+              original={original!}
+              sourceKind={sourceKind}
+              section={activeSourceSection!}
+              status={activeSourceStatus}
+              onClose={() => closePanel("source")}
             />
+          ) : null
+        }
+        chat={<ChatPanel />}
+      >
+        <div className="mx-auto max-w-3xl space-y-4 p-6">
+          <TransformInput status={status} onSubmit={handleTransform} />
+
+          {status === "streaming" ? (
+            <p className="text-sm text-muted">
+              Generando… {sections.length} {sections.length === 1 ? "sección" : "secciones"}
+            </p>
+          ) : null}
+
+          {status === "error" ? (
+            <div className="rounded-md border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
+              {error}
+            </div>
           ) : null}
         </div>
 
-        {activeSourceSection && original ? (
-          <SourcePanel
-            original={original}
-            sourceKind={sourceKind}
-            section={activeSourceSection}
-            status={activeSourceStatus}
-            onClose={() => setActiveSourceSectionId(null)}
+        {hasContent ? (
+          <ContentArea
+            title={presentation.title}
+            sections={visible}
+            level={detailLevel}
+            activeSectionId={effectiveActiveId}
+            chartNotes={chartNotes}
+            observations={observations}
+            onOpenSource={openSource}
+            activeSourceSectionId={activeSourceSectionId}
           />
         ) : null}
-      </div>
+      </Workspace>
     </AppShell>
   );
 }

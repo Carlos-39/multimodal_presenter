@@ -7,11 +7,13 @@ import type { GroundingStatus, Section, SourceKind } from "@/lib/types";
 /**
  * Panel de documento fuente (atribución interactiva, Punto 4 · Hito 5c).
  *
- * Vive en la zona dinámica (split dentro de `main`), sin tocar el núcleo fijo.
+ * Es una de las COLUMNAS OPCIONALES de la Escala 2 (Hito 5e): `Workspace` decide su ancho y su
+ * emplazamiento (columna u overlay), así que este componente llena el espacio que le den
+ * (`w-full h-full`) y no fija su propio ancho ni su borde.
  * Ramifica según el tipo de fuente:
  * - texto: resaltado exacto del rango [char_start, char_end) (o estado neutro si `not_found`).
  * - PDF: documento navegable (iframe nativo), navega a `source.page`. Fidelidad de PÁGINA,
- *   no de región (decisión consciente de alcance). TODO(Hito5e): revisar con layout compositivo.
+ *   no de región (decisión consciente de alcance). TODO(Hito5x): resaltado de región en PDF/imagen.
  * - imagen: imagen completa, sin navegación.
  */
 interface OriginalSource {
@@ -39,7 +41,7 @@ export function SourcePanel({ original, sourceKind, section, status, onClose }: 
   }, [fileUrl]);
 
   return (
-    <aside className="flex h-full w-[26rem] shrink-0 flex-col border-l border-border bg-surface">
+    <aside className="flex h-full w-full flex-col bg-surface">
       <header className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
           Documento fuente
