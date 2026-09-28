@@ -33,6 +33,14 @@ env/
 htmlcov/
 coverage.xml
 
+# Fixtures locales NO commiteables (PDFs reales aportados para pruebas de humo, Hito 5f).
+# Se ignora todo el contenido salvo el README con instrucciones; los fixtures SINTÉTICOS
+# generados por código viven fuera de local/ y sí se commitean.
+backend/tests/fixtures/local/*
+!backend/tests/fixtures/local/README.md
+# Salidas del arnés de métricas (Hito 5f A4): reportes con datos, no código.
+backend/scripts/outputs/
+
 # ─────────────────────────────────────────────────────────────
 # Node / Next.js (frontend)
 # ─────────────────────────────────────────────────────────────
