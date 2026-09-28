@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
 
 from multimodal_presenter.config import get_settings
 from multimodal_presenter.model_provider import build_model
@@ -31,6 +31,13 @@ from multimodal_presenter.schemas.presentation import (
     Section,
     SourceReference,
 )
+
+# La consola de Windows (cp1252) no codifica algunos caracteres del contenido real (p. ej. del
+# IPCC en español); sin esto, un print del reporte crashea. errors="replace" lo hace robusto.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+except (AttributeError, ValueError):
+    pass
 
 sys.path.insert(0, str(Path(__file__).parent))
 from synthetic_pdf import (  # noqa: E402
@@ -112,10 +119,29 @@ def test_a1_pdf_native_reads_rasterized_chart() -> None:
 # ─────────────────────────────────────────────────────────────
 # A1 (humo) — PDFs reales aportados (si existen): reporta, NO aserta cifras
 # ─────────────────────────────────────────────────────────────
+# Los PDFs reales pueden ser largos (y Anthropic limita a 100 páginas). Se recorta a las
+# primeras N páginas: acota el costo de tokens y respeta el acuerdo de "usar pocas páginas".
+SMOKE_MAX_PAGES = 8
+
+
 def _local_pdfs() -> list[Path]:
     if not LOCAL_FIXTURES.exists():
         return []
     return sorted(p for p in LOCAL_FIXTURES.glob("*.pdf"))
+
+
+def _excerpt_first_pages(data: bytes, max_pages: int) -> tuple[bytes, int, int]:
+    """Recorta a las primeras `max_pages`. Devuelve (bytes, páginas_enviadas, páginas_totales)."""
+    reader = PdfReader(io.BytesIO(data))
+    total = len(reader.pages)
+    if total <= max_pages:
+        return data, total, total
+    writer = PdfWriter()
+    for i in range(max_pages):
+        writer.add_page(reader.pages[i])
+    buffer = io.BytesIO()
+    writer.write(buffer)
+    return buffer.getvalue(), max_pages, total
 
 
 @pytest.mark.integration
@@ -123,7 +149,7 @@ def _local_pdfs() -> list[Path]:
 @pytest.mark.parametrize("pdf_path", _local_pdfs(), ids=lambda p: p.name)
 def test_a1_real_pdf_smoke(pdf_path: Path) -> None:
     """Humo con PDFs reales aportados: reporta secciones/tipos/página; sin asertar cifras."""
-    data = pdf_path.read_bytes()
+    data, sent, total = _excerpt_first_pages(pdf_path.read_bytes(), SMOKE_MAX_PAGES)
     result = asyncio.run(
         transform(
             model=build_model(get_settings()),
@@ -133,8 +159,9 @@ def test_a1_real_pdf_smoke(pdf_path: Path) -> None:
         )
     )
     types = [s.content.content_type for s in result.presentation.sections]
-    print(f"\n=== A1 humo · {pdf_path.name} ({len(data) // 1024} KB) ===")
+    print(f"\n=== A1 humo · {pdf_path.name} ({sent}/{total} pág, {len(data) // 1024} KB) ===")
     print(f"secciones={len(result.presentation.sections)} tipos={types}")
+    print(f"títulos={[s.title for s in result.presentation.sections]}")
     print(f"grounding pages={[e.page for e in result.grounding.sections]}")
     print(result.presentation.model_dump_json(indent=2))
     assert isinstance(result.presentation, Presentation)
