@@ -14,9 +14,10 @@ from pydantic_ai import Agent, BinaryContent, ToolOutput
 from pydantic_ai.models import Model
 
 from ..schemas import Presentation
-from ..schemas.presentation import ChartContent, Section
+from ..schemas.presentation import ChartContent, Section, SourceReference
 from ..schemas.transform import (
     GroundingReport,
+    GroundingStatus,
     SectionGrounding,
     SemanticCoherenceReport,
 )
@@ -52,6 +53,34 @@ def ground_section(
     new_source = section.source.model_copy(update={"document_id": extraction.document_id})
     entry = SectionGrounding(section_id=section.id, status="unverified", page=section.source.page)
     return section.model_copy(update={"source": new_source}), entry
+
+
+def ground_quote(
+    quote: str | None, page: int | None, extraction: ExtractionResult
+) -> tuple[SourceReference | None, GroundingStatus]:
+    """Ancla una CITA suelta (respuesta de chat, Hito 6) con la misma regla determinista.
+
+    - Sin cita → `(None, "not_found")`: el modelo no pudo anclar; no se inventa una fuente.
+    - Texto: si la cita existe → `verified` con offsets; si no → `not_found` (fabricación).
+    - Binario (PDF/imagen): `unverified`, conservando la página (Caso B del 5c).
+    """
+    if not quote:
+        return None, "not_found"
+    if extraction.source_kind == "text":
+        assert extraction.text is not None
+        idx = extraction.text.find(quote)
+        if idx != -1:
+            source = SourceReference(
+                document_id=extraction.document_id,
+                quote=quote,
+                char_start=idx,
+                char_end=idx + len(quote),
+            )
+            return source, "verified"
+        return SourceReference(document_id=extraction.document_id, quote=quote), "not_found"
+
+    source = SourceReference(document_id=extraction.document_id, quote=quote, page=page)
+    return source, "unverified"
 
 
 def build_grounding_report(source_kind: str, entries: list[SectionGrounding]) -> GroundingReport:
