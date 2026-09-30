@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+from collections import Counter
 from copy import deepcopy as _deepcopy
 
 import numpy as np
@@ -100,27 +101,27 @@ class GraphRAGIndex:
         await self._rag.ainsert(transcription)
 
     def _pages_from_context(self, context: str, k: int) -> list[int]:
-        pages = [int(m) for m in _PAGE_RE.findall(context or "")]
-        if not pages:  # fallback: solapamiento con la transcripción por página
-            ctx = (context or "").lower()
-            scored = []
-            for page, text in self._per_page.items():
-                snippet = (text or "")[:200].lower()
-                if snippet and snippet[:60] in ctx:
-                    scored.append(page)
-            pages = scored
-        # dedup preservando orden, cap al presupuesto
-        seen: list[int] = []
-        for p in pages:
-            if p not in seen:
-                seen.append(p)
-        return sorted(seen[:k])
+        # Los marcadores viven en la sección de chunks del contexto; se eligen las páginas MÁS
+        # citadas (frecuencia), no por orden de aparición. El presupuesto de ≤k páginas se aplica
+        # aquí, sobre las páginas nativas que irán al generador (no truncando el contexto).
+        counts = Counter(int(m) for m in _PAGE_RE.findall(context or ""))
+        if counts:
+            return sorted(p for p, _ in counts.most_common(k))
+        # fallback: solapamiento léxico con la transcripción por página
+        ctx = (context or "").lower()
+        scored = [
+            page
+            for page, text in self._per_page.items()
+            if (text or "")[:60].lower() and (text or "")[:60].lower() in ctx
+        ]
+        return sorted(scored[:k])
 
     async def retrieve(self, question: str, mode: str, k: int) -> list[int]:
+        # NO se limita max_total_tokens: se necesita la sección de chunks (con marcadores de
+        # página) para mapear a páginas nativas. El presupuesto de ≤k páginas se impone en
+        # _pages_from_context; el generador solo recibe esas k páginas nativas.
         context = await self._rag.aquery(
             question,
-            param=QueryParam(
-                mode=mode, only_need_context=True, max_total_tokens=8000, enable_rerank=False
-            ),
+            param=QueryParam(mode=mode, only_need_context=True, enable_rerank=False),
         )
         return self._pages_from_context(str(context), k)
