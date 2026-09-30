@@ -11,6 +11,7 @@ import io
 import json
 import os
 import sys
+import tempfile
 import time
 from dataclasses import asdict, dataclass, field
 from importlib.metadata import version
@@ -33,6 +34,11 @@ except (AttributeError, ValueError):
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(__file__).resolve().parent / "data"
 RUNS_DIR = DATA_DIR / "runs"
+
+# Los índices de LightRAG (muchos archivos .tmp→rename en ráfaga) NO pueden vivir en OneDrive:
+# su sincronización bloquea los archivos y rompe el rename atómico (WinError 5). Se ubican fuera
+# de OneDrive, en LOCALAPPDATA (o el temp del sistema).
+INDICES_DIR = Path(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir()) / "mmpresenter_exp"
 
 # Modelos (IDs congelados).
 SONNET = "claude-sonnet-5"

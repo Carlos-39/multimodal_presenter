@@ -119,6 +119,8 @@ class GraphRAGIndex:
     async def retrieve(self, question: str, mode: str, k: int) -> list[int]:
         context = await self._rag.aquery(
             question,
-            param=QueryParam(mode=mode, only_need_context=True, max_total_tokens=8000),
+            param=QueryParam(
+                mode=mode, only_need_context=True, max_total_tokens=8000, enable_rerank=False
+            ),
         )
         return self._pages_from_context(str(context), k)

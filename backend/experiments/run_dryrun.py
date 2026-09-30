@@ -15,6 +15,7 @@ from pathlib import Path
 from .common import (
     DATA_DIR,
     HAIKU,
+    INDICES_DIR,
     RUNS_DIR,
     RunRecord,
     Usage,
@@ -59,7 +60,7 @@ async def main() -> None:
     t0 = time.monotonic()
 
     # Transcripción cacheada en disco para no re-pagar Haiku en re-runs.
-    trans_cache = DATA_DIR / "indices" / f"transcription_{DOC_ID}.json"
+    trans_cache = INDICES_DIR / f"transcription_{DOC_ID}.json"
     if trans_cache.exists():
         cached = json.loads(trans_cache.read_text(encoding="utf-8"))
         transcription = cached["transcription"]
@@ -74,7 +75,7 @@ async def main() -> None:
             encoding="utf-8",
         )
 
-    graph = GraphRAGIndex(working_dir=str(DATA_DIR / "indices" / "graph" / DOC_ID))
+    graph = GraphRAGIndex(working_dir=str(INDICES_DIR / "graph" / DOC_ID))
     await graph.build(transcription, per_page)
 
     # Voyage multimodal (condición 2): el tier gratis SIN tarjeta limita a 3 RPM / 10K TPM, lo que
