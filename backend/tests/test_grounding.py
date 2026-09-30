@@ -1,7 +1,9 @@
 """Tests de la Fase 3 (grounding determinista) con los tres estados."""
 
+import copy
+
 from multimodal_presenter.pipeline.extraction import prepare_input
-from multimodal_presenter.pipeline.validation import verify_grounding
+from multimodal_presenter.pipeline.validation import ground_quote, verify_grounding
 from multimodal_presenter.schemas import Presentation
 
 
@@ -33,6 +35,42 @@ def test_text_grounding_not_found_is_flagged(
     assert report.verified_sections == 1
     assert report.not_found_sections == 1  # warning real
     assert any(s.status == "not_found" for s in report.sections)
+
+
+def test_matching_robusto_ancla_pese_a_puntuacion_tipografica(
+    input_text: str, mock_presentation: dict
+) -> None:
+    """Hito 8: una cita con comillas/guiones/espacios tipográficos SÍ ancla (no `not_found` falso).
+
+    El documento tiene comillas rectas y espacios normales; el modelo "cita" con variantes
+    tipográficas. El matching robusto debe anclarlo como `verified`, y el offset debe seguir
+    siendo válido sobre el texto ORIGINAL (canonicalización 1:1, preserva índices).
+    """
+    data = copy.deepcopy(mock_presentation)
+    # Reemplaza espacios por espacios duros y mete comillas tipográficas: misma longitud.
+    original = "La empresa creció de forma sostenida durante la última década."
+    typographic = original.replace(" ", " ")
+    data["sections"][0]["source"]["quote"] = typographic
+
+    extraction = prepare_input(text=input_text)
+    presentation = Presentation.model_validate(data)
+    _enriched, report = verify_grounding(presentation, extraction)
+
+    assert report.not_found_sections == 0
+    assert report.verified_sections == 2
+    entry = next(s for s in report.sections if s.section_id == "s1")
+    assert entry.status == "verified"
+    # El rango apunta al fragmento real del documento original (con comillas/espacios reales).
+    assert input_text[entry.char_start : entry.char_end] == original
+
+
+def test_matching_robusto_no_inventa_anclaje(input_text: str) -> None:
+    """Una cita que de verdad NO está sigue siendo `not_found` (la canonicalización no fabrica)."""
+    source, status = ground_quote(
+        "Esta frase jamás aparece en el texto.", None, prepare_input(text=input_text)
+    )
+    assert status == "not_found"
+    assert source is not None and source.char_start is None  # no se inventan offsets
 
 
 def test_binary_grounding_is_unverified(pdf_bytes: bytes, mock_presentation: dict) -> None:

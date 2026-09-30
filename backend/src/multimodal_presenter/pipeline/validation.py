@@ -23,6 +23,37 @@ from ..schemas.transform import (
 )
 from .models import ExtractionResult
 
+# Matching robusto (Hito 8): un modelo fiel a veces cita con comillas tipográficas, espacios duros
+# o guiones distintos a los del documento, y un `find` exacto lo marcaría `not_found` FALSO. Se
+# canonicaliza la puntuación antes de comparar. El mapa es estrictamente 1 carácter → 1 carácter
+# (misma longitud), así que el índice hallado sobre el texto canónico sigue siendo válido sobre el
+# texto ORIGINAL → el resaltado del 5c se mantiene exacto. NO se toca la semántica (no minúsculas,
+# no colapso de espacios): solo se unifican variantes tipográficas de un mismo signo.
+_CANON_MAP = str.maketrans(
+    {
+        "“": '"',  # “
+        "”": '"',  # ”
+        "‘": "'",  # ‘
+        "’": "'",  # ’
+        " ": " ",  # espacio duro
+        " ": " ",  # espacio fino duro
+        " ": " ",  # espacio fino
+        " ": " ",  # espacio de figura
+        "​": " ",  # espacio de ancho cero
+        "–": "-",  # – (en dash)
+        "—": "-",  # — (em dash)
+        "−": "-",  # − (signo menos)
+    }
+)
+
+
+def _find_quote(text: str, quote: str) -> int:
+    """Índice de `quote` en `text`: exacto primero; si falla, sobre la forma canónica (1:1)."""
+    idx = text.find(quote)
+    if idx != -1:
+        return idx
+    return text.translate(_CANON_MAP).find(quote.translate(_CANON_MAP))
+
 
 def ground_section(
     section: Section, extraction: ExtractionResult
@@ -33,7 +64,7 @@ def ground_section(
     """
     if extraction.source_kind == "text":
         assert extraction.text is not None
-        idx = extraction.text.find(section.source.quote)
+        idx = _find_quote(extraction.text, section.source.quote)
         if idx != -1:
             start, end = idx, idx + len(section.source.quote)
             new_source = section.source.model_copy(
@@ -68,7 +99,7 @@ def ground_quote(
         return None, "not_found"
     if extraction.source_kind == "text":
         assert extraction.text is not None
-        idx = extraction.text.find(quote)
+        idx = _find_quote(extraction.text, quote)
         if idx != -1:
             source = SourceReference(
                 document_id=extraction.document_id,

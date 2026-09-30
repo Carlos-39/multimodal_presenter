@@ -45,11 +45,15 @@ class GroundingReport(_Strict):
     total_sections: int = Field(ge=0)
     verified_sections: int = Field(ge=0)
     unverified_sections: int = Field(ge=0)  # PDF/imagen: pendiente de verificación (Hito 5)
-    not_found_sections: int = Field(ge=0)  # texto: cita no encontrada = warnings reales
+    not_found_sections: int = Field(ge=0)  # texto: cita no anclable al documento
 
-    # TODO(Hito8): las secciones `not_found` no pueden quedarse en warning para la
-    # evaluación con usuarios (contradice "verificable y trazable"). Endurecer antes.
-    # TODO(Hito5): verificación por página/región para PDF/imagen (hoy `unverified`).
+    # Hito 8: el grounding se endureció. (1) Matching robusto (canonicalización de puntuación)
+    # reduce los `not_found` falsos → más contenido trazable. (2) El `not_found` verdadero ya NO
+    # es un warning blando: el frontend lo pone en AVISO visible y le quita el botón de fuente
+    # (no se finge una cita que no ancla), coherente con el chat. No se descarta la sección
+    # (dejaría el contenido incompleto): se avisa con honestidad.
+    # TODO(Hito5): verificación por página/región para PDF/imagen (hoy `unverified`); el
+    # aplanamiento/render por página que viene en paralelo hará trazable más contenido binario.
 
 
 class SemanticObservation(_Strict):

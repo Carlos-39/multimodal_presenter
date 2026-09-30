@@ -224,6 +224,13 @@ export default function Page() {
     [visible, effectiveActiveId],
   );
 
+  // Estado de anclaje por sección (Hito 8): alimenta el trato honesto del `not_found` en el
+  // contenido (aviso en vez de fingir una fuente). Se puebla en streaming y en no-streaming.
+  const groundingBySection = useMemo(
+    () => Object.fromEntries(entries.map((e) => [e.section_id, e.status])),
+    [entries],
+  );
+
   // Prefetch de preguntas sugeridas al profundizar (modo detallado) en la sección activa: se
   // piden en segundo plano y se cachean → cuando el usuario mira el chat, ya están (instantáneas).
   const prefetchSuggestions = chat.prefetchSuggestions;
@@ -341,6 +348,7 @@ export default function Page() {
             observations={observations}
             onOpenSource={handleOpenSectionSource}
             activeSourceKey={activeSource?.key ?? null}
+            groundingBySection={groundingBySection}
           />
         ) : null}
       </Workspace>
