@@ -41,6 +41,10 @@ backend/tests/fixtures/local/*
 # Salidas del arnés de métricas (Hito 5f A4): reportes con datos, no código.
 backend/scripts/outputs/
 
+# Experimento del Hito 7 (RAG vs GraphRAG): documentos, índices, corridas y datasets con
+# datos reales NO se commitean; solo el código del experimento sí.
+backend/experiments/data/
+
 # ─────────────────────────────────────────────────────────────
 # Node / Next.js (frontend)
 # ─────────────────────────────────────────────────────────────
