@@ -86,8 +86,7 @@ class GraphRAGIndex:
     def embed_tokens(self) -> int:
         return self._embed_meta["tokens"]
 
-    async def build(self, transcription: str, per_page: dict[int, str]) -> None:
-        self._per_page = per_page
+    async def _init_storages(self) -> None:
         try:
             await self._rag.initialize_storages()
         except Exception:  # noqa: BLE001
@@ -98,7 +97,16 @@ class GraphRAGIndex:
             from lightrag.kg.shared_storage import initialize_pipeline_status
 
             await initialize_pipeline_status()
-        await self._rag.ainsert(transcription)
+
+    async def build(self, transcription: str, per_page: dict[int, str]) -> None:
+        self._per_page = per_page
+        await self._init_storages()
+        await self._rag.ainsert(transcription)  # dedup por hash: no re-extrae si ya está
+
+    async def load(self, per_page: dict[int, str]) -> None:
+        """Carga un grafo ya construido (sin re-insertar) para la fase de consultas."""
+        self._per_page = per_page
+        await self._init_storages()
 
     def _pages_from_context(self, context: str, k: int) -> list[int]:
         # Los marcadores viven en la sección de chunks del contexto; se eligen las páginas MÁS

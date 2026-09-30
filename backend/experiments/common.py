@@ -185,3 +185,32 @@ def subset_pdf(pdf_bytes: bytes, pages_1based: list[int]) -> bytes:
     buffer = io.BytesIO()
     writer.write(buffer)
     return buffer.getvalue()
+
+
+def compress_pdf(pdf_bytes: bytes, max_mb: float = 30.0) -> bytes:
+    """Reduce un PDF a <max_mb re-renderizando páginas a JPEG (para el baseline: Anthropic
+    limita a 32MB/PDF). Si ya cabe, lo devuelve tal cual. Las páginas siguen siendo NATIVAS
+    (imágenes que Claude lee con visión); no se aplana a texto."""
+    import pypdfium2 as pdfium
+    from PIL import Image
+
+    if len(pdf_bytes) / 1024 / 1024 < max_mb:
+        return pdf_bytes
+    doc = pdfium.PdfDocument(pdf_bytes)
+    try:
+        n = len(doc)
+        for scale, quality in [(1.5, 75), (1.2, 70), (1.0, 65)]:
+            images = []
+            for i in range(n):
+                pil = doc[i].render(scale=scale).to_pil().convert("RGB")
+                buf = io.BytesIO()
+                pil.save(buf, format="JPEG", quality=quality)
+                buf.seek(0)
+                images.append(Image.open(buf))
+            out = io.BytesIO()
+            images[0].save(out, format="PDF", save_all=True, append_images=images[1:])
+            if len(out.getvalue()) / 1024 / 1024 < max_mb:
+                return out.getvalue()
+        return out.getvalue()  # el mejor esfuerzo aunque supere (raro)
+    finally:
+        doc.close()

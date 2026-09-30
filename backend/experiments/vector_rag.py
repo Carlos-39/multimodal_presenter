@@ -51,9 +51,20 @@ class VoyagePageIndex:
             self.index_tokens += getattr(result, "total_tokens", 0) or 0
         self._page_vectors = np.array(vectors, dtype=np.float32)
 
+    def save(self, path) -> None:
+        import numpy as _np
+
+        if self._page_vectors is not None:
+            _np.save(str(path), self._page_vectors)
+
+    def load(self, path) -> None:
+        import numpy as _np
+
+        self._page_vectors = _np.load(str(path))
+
     async def retrieve(self, question: str, k: int) -> list[int]:
         if self._page_vectors is None:
-            raise RuntimeError("Índice vacío: llama a index() primero.")
+            raise RuntimeError("Índice vacío: llama a index() o load() primero.")
         result = await asyncio.to_thread(
             self._client.multimodal_embed,
             inputs=[[question]],
