@@ -52,6 +52,12 @@ class Settings(BaseSettings):
     logfire_token: str | None = None
     logfire_service_name: str = "multimodal-presenter-backend"
 
+    # Telemetría de comportamiento (Hito 8). Se anexa a JSONL para análisis posterior.
+    # `telemetry_dir` vacío → carpeta por defecto fuera de OneDrive (LOCALAPPDATA en Windows).
+    # Apágala con TELEMETRY_ENABLED=false (sigue registrando en Logfire si hay token).
+    telemetry_enabled: bool = True
+    telemetry_dir: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

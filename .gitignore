@@ -45,6 +45,12 @@ backend/scripts/outputs/
 # datos reales NO se commitean; solo el código del experimento sí.
 backend/experiments/data/
 
+# Telemetría de comportamiento (Hito 8): JSONL/CSV con datos de sesiones de personas reales.
+# NO se commitea (por defecto vive fuera del repo; esto cubre el caso de apuntar TELEMETRY_DIR
+# dentro del repo). Solo el código de la instrumentación se versiona.
+backend/telemetry/
+*.jsonl
+
 # ─────────────────────────────────────────────────────────────
 # Node / Next.js (frontend)
 # ─────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { Workspace } from "@/components/shell/Workspace";
 import { ChatPanel } from "@/components/shell/ChatPanel";
@@ -11,6 +11,7 @@ import { postTransform } from "@/lib/api";
 import { streamTransform } from "@/lib/stream";
 import { useChat, type OriginalSource } from "@/hooks/useChat";
 import { DEFAULT_DETAIL_LEVEL, visibleSections, type DetailLevel } from "@/lib/detail";
+import { initTelemetry, track, flush } from "@/lib/telemetry";
 import type { PanelId } from "@/lib/workspace";
 import type {
   ChartNote,
@@ -66,6 +67,12 @@ export default function Page() {
   // Chat (Hito 6): historial de sesión + streaming + sugerencias, aislado en un hook.
   const chat = useChat(original);
 
+  // Telemetría (Hito 8): relojes de interacción. Los refs se mutan SOLO en manejadores de evento
+  // (nunca en render/efecto), coherente con la regla de hooks del proyecto.
+  const modeEnteredAtRef = useRef<number | null>(null); // cuándo entró al modo actual (se fija al montar)
+  const detailLevelRef = useRef<DetailLevel>(DEFAULT_DETAIL_LEVEL); // espejo para el cierre de sesión
+  const sourceOpenedAtRef = useRef<number | null>(null); // cuándo se abrió el panel de fuente
+
   // Escala 2 (Hito 5e): paneles opcionales abiertos, el más reciente al final (recencia).
   const [openOrder, setOpenOrder] = useState<PanelId[]>([]);
 
@@ -74,7 +81,14 @@ export default function Page() {
   }, []);
   const closePanel = useCallback((id: PanelId) => {
     setOpenOrder((prev) => prev.filter((p) => p !== id));
-    if (id === "source") setActiveSource(null);
+    if (id === "source") {
+      setActiveSource(null);
+      // Tiempo inspeccionando la fuente (señal de "verificación", Punto 4).
+      if (sourceOpenedAtRef.current != null) {
+        track("source_close", { ms_open: Date.now() - sourceOpenedAtRef.current });
+        sourceOpenedAtRef.current = null;
+      }
+    }
   }, []);
   const toggleChat = useCallback(() => {
     setOpenOrder((prev) =>
@@ -82,9 +96,17 @@ export default function Page() {
     );
   }, []);
   // Abrir la fuente desde una sección (5c) o desde una respuesta del chat (6): mismo panel.
+  // Cada apertura es una señal de "verificación de fuente" (Punto 4). Se registra el estado de
+  // grounding para poder ver DESPUÉS si el participante revisa justo las marcadas (not_found).
   const openSectionSource = useCallback(
-    (section: Section, gstatus: GroundingStatus) => {
+    (section: Section, gstatus: GroundingStatus, ordinal: number | null) => {
       setActiveSource({ source: section.source, status: gstatus, key: section.id });
+      sourceOpenedAtRef.current = Date.now();
+      track("source_open", {
+        origin: "section",
+        grounding_status: gstatus,
+        section_ordinal: ordinal,
+      });
       openPanel("source");
     },
     [openPanel],
@@ -92,6 +114,8 @@ export default function Page() {
   const openChatSource = useCallback(
     (source: SourceReference, gstatus: GroundingStatus) => {
       setActiveSource({ source, status: gstatus, key: `chat-${source.quote}` });
+      sourceOpenedAtRef.current = Date.now();
+      track("source_open", { origin: "chat", grounding_status: gstatus });
       openPanel("source");
     },
     [openPanel],
@@ -125,6 +149,10 @@ export default function Page() {
   }
 
   async function handleTransform(text: string | null, file: File | null) {
+    // Marca el inicio de la interacción con un documento (segmenta la sesión). Solo el TIPO de
+    // fuente, nunca el contenido ni el nombre del archivo (privacidad, Hito 8).
+    const sk: SourceKind = file ? (file.type === "application/pdf" ? "pdf" : "image") : "text";
+    track("transform_submit", { source_kind: sk });
     resetForRun(text, file);
     setStatus("streaming");
     let received = 0;
@@ -185,9 +213,10 @@ export default function Page() {
   const handleOpenSectionSource = useCallback(
     (section: Section) => {
       const gstatus = entries.find((g) => g.section_id === section.id)?.status ?? "unverified";
-      openSectionSource(section, gstatus);
+      const idx = visible.findIndex((s) => s.id === section.id); // ordinal, no el id (privacidad)
+      openSectionSource(section, gstatus, idx >= 0 ? idx + 1 : null);
     },
-    [entries, openSectionSource],
+    [entries, visible, openSectionSource],
   );
 
   const activeSection = useMemo(
@@ -202,8 +231,45 @@ export default function Page() {
     if (detailLevel === "detailed" && activeSection) prefetchSuggestions(activeSection);
   }, [detailLevel, activeSection, prefetchSuggestions]);
 
+  // Telemetría (Hito 8): arranca la sesión al montar y la cierra al ocultarse la pestaña,
+  // reportando el último tramo de modo abierto (que ningún cambio llegó a cerrar).
+  useEffect(() => {
+    initTelemetry();
+    modeEnteredAtRef.current = Date.now(); // línea base del primer modo (resumen, al montar)
+    const onHide = () => {
+      const enteredAt = modeEnteredAtRef.current ?? Date.now();
+      track("session_end", {
+        final_mode: detailLevelRef.current,
+        ms_in_final_mode: Date.now() - enteredAt,
+      });
+      flush();
+    };
+    window.addEventListener("pagehide", onHide);
+    return () => window.removeEventListener("pagehide", onHide);
+  }, []);
+
+  // Ordinal (1-based) de una sección en la lista visible. Se reporta la POSICIÓN, no el id
+  // (que lo genera el modelo y podría describir el contenido) — privacidad, Hito 8.
+  function ordinalOf(id: string | null): number | null {
+    if (!id) return null;
+    const i = visible.findIndex((s) => s.id === id);
+    return i >= 0 ? i + 1 : null;
+  }
+
   function handleDetailLevelChange(level: DetailLevel) {
-    // TODO(Hito8): punto ÚNICO de interacción — instrumentar tiempo en resumen vs. detallado.
+    // Punto ÚNICO de interacción (Punto 11): instrumenta el tiempo REAL en cada modo. El cliente
+    // lleva el reloj de "cuándo entré a este modo" y reporta cuánto duró el modo que deja.
+    if (level === detailLevel) return; // clic redundante: no cuenta como cambio
+    const now = Date.now();
+    const enteredAt = modeEnteredAtRef.current ?? now;
+    track("detail_mode_change", {
+      from: detailLevel,
+      to: level,
+      ms_in_from: now - enteredAt,
+      section_ordinal: ordinalOf(effectiveActiveId),
+    });
+    modeEnteredAtRef.current = now;
+    detailLevelRef.current = level;
     setDetailLevel(level);
   }
 
@@ -245,6 +311,7 @@ export default function Page() {
             suggestions={effectiveActiveId ? (chat.suggestions[effectiveActiveId] ?? []) : []}
             onOpenSource={openChatSource}
             disabled={original === null}
+            activeSectionOrdinal={ordinalOf(effectiveActiveId)}
           />
         }
       >

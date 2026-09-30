@@ -23,7 +23,9 @@ from ..pipeline.streaming import transform_stream
 from ..pipeline.uploads import read_and_validate_upload
 from ..schemas.chat import ChatStreamError, ChatTurn, SuggestionsResponse
 from ..schemas.presentation import Section
+from ..schemas.telemetry import TelemetryBatch
 from ..schemas.transform import StreamError, TransformResponse
+from ..telemetry import record_ux_event, resolve_telemetry_dir
 
 router = APIRouter(tags=["pipeline"])
 
@@ -182,3 +184,21 @@ async def chat_suggestions_endpoint(
     )
     questions = await generate_suggestions(model, extraction=extraction, section=section_obj)
     return SuggestionsResponse(questions=questions)
+
+
+@router.post("/telemetry", status_code=204)
+async def telemetry_endpoint(
+    batch: TelemetryBatch,
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    """Ingesta de telemetría de comportamiento (Hito 8, capa observacional).
+
+    Recibe un lote de eventos por JSON (el frontend agrupa y usa `sendBeacon`). El schema es
+    aparte del contrato de datos y corta strings largos: nunca entra contenido del documento ni
+    texto de preguntas. Cada evento va a Logfire (ux=true) y al JSONL del día. Responde 204: es
+    telemetría, el frontend no espera cuerpo y no debe bloquearse por ella.
+    """
+    jsonl_dir = resolve_telemetry_dir(settings)
+    for event in batch.events:
+        record_ux_event(event, jsonl_dir=jsonl_dir)
+    return Response(status_code=204)

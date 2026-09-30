@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ContentRenderer } from "@/components/content/ContentRenderer";
 import type { ChatMessage } from "@/hooks/useChat";
+import { track } from "@/lib/telemetry";
 import type { GroundingStatus, SourceReference } from "@/lib/types";
 
 /**
@@ -23,6 +24,7 @@ interface ChatPanelProps {
   suggestions: string[];
   onOpenSource: (source: SourceReference, status: GroundingStatus) => void;
   disabled: boolean; // sin documento aún
+  activeSectionOrdinal: number | null; // telemetría (Hito 8): sección activa al preguntar
 }
 
 export function ChatPanel({
@@ -32,6 +34,7 @@ export function ChatPanel({
   suggestions,
   onOpenSource,
   disabled,
+  activeSectionOrdinal,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
@@ -44,9 +47,24 @@ export function ChatPanel({
   const streaming = status === "streaming";
   const canSend = !disabled && !streaming && input.trim().length > 0;
 
-  function submit(question: string) {
+  // Telemetría (Hito 8): este es el ÚNICO punto que distingue una pregunta SUGERIDA de una
+  // ESCRITA (el backend/`useChat` ya no pueden diferenciarlas). Solo metadatos: origen, posición
+  // de la sugerencia y LONGITUD de la pregunta — nunca su texto (privacidad).
+  function submit(question: string, origin: "suggested" | "typed", suggestionIndex?: number) {
     const q = question.trim();
     if (!q || disabled || streaming) return;
+    if (origin === "suggested") {
+      track("suggested_question_click", {
+        section_ordinal: activeSectionOrdinal,
+        suggestion_index: suggestionIndex ?? -1,
+        question_len: q.length,
+      });
+    } else {
+      track("typed_question_submit", {
+        section_ordinal: activeSectionOrdinal,
+        question_len: q.length,
+      });
+    }
     onSend(q);
     setInput("");
   }
@@ -73,11 +91,11 @@ export function ChatPanel({
         <div className="border-t border-border px-4 py-2">
           <p className="mb-1.5 text-xs text-muted">Preguntas sugeridas</p>
           <div className="flex flex-wrap gap-1.5">
-            {suggestions.map((question) => (
+            {suggestions.map((question, index) => (
               <button
                 key={question}
                 type="button"
-                onClick={() => submit(question)}
+                onClick={() => submit(question, "suggested", index)}
                 disabled={disabled || streaming}
                 className="rounded-full border border-border px-2.5 py-1 text-left text-xs text-foreground transition-colors hover:border-accent hover:text-accent disabled:opacity-40"
               >
@@ -91,7 +109,7 @@ export function ChatPanel({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          submit(input);
+          submit(input, "typed");
         }}
         className="border-t border-border p-3"
       >
@@ -102,7 +120,7 @@ export function ChatPanel({
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                submit(input);
+                submit(input, "typed");
               }
             }}
             rows={1}
