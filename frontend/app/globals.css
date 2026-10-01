@@ -249,3 +249,89 @@ body {
     linear-gradient(to bottom, var(--hint-shadow), transparent) center top / 100% 10px no-repeat scroll,
     linear-gradient(to top, var(--hint-shadow), transparent) center bottom / 100% 10px no-repeat scroll;
 }
+
+/*
+ * Lienzo de la presentación generada. El marco (`slide-frame`) mide el espacio disponible y el
+ * lienzo (`slide-stage`) toma el 16:9 más grande que quepa en él. Todo lo de adentro se mide en
+ * unidades del ancho del lienzo (cqw), así una diapositiva se compone igual en la app que
+ * proyectada a pantalla completa. Los `clamp` ponen piso (legible en angosto) y techo.
+ */
+.slide-frame {
+  container: slide-frame / size;
+}
+
+.slide-stage {
+  container: slide-stage / inline-size;
+  width: min(100cqw, calc(100cqh * 16 / 9));
+  aspect-ratio: 16 / 9;
+}
+
+/* En un marco angosto (móvil, columnas abiertas) un 16:9 sería demasiado bajo para leer:
+   el lienzo ocupa todo el alto disponible. */
+@container slide-frame (max-width: 640px) {
+  .slide-stage {
+    width: 100cqw;
+    height: 100cqh;
+    aspect-ratio: auto;
+  }
+}
+
+.slide-pad {
+  padding: clamp(1.25rem, 4.5cqw, 4.5rem);
+}
+
+.slide-title {
+  font-size: clamp(1.25rem, 3.3cqw, 3rem);
+  line-height: 1.15;
+  letter-spacing: -0.012em;
+}
+
+.slide-statement {
+  margin-top: 0.7em;
+  max-width: 30em;
+  font-size: clamp(1.0625rem, 2.4cqw, 2.25rem);
+  line-height: 1.4;
+}
+
+.slide-body {
+  margin-top: 0.9em;
+  max-width: 36em;
+  font-size: clamp(1rem, 1.9cqw, 1.75rem);
+  line-height: 1.5;
+}
+
+.slide-bullets {
+  display: grid;
+  gap: 0.55em;
+  margin-top: 1em;
+  max-width: 34em;
+  font-size: clamp(1rem, 2cqw, 1.875rem);
+  line-height: 1.4;
+}
+
+.slide-footer {
+  margin-top: clamp(0.75rem, 2.5cqw, 2rem);
+  padding-top: clamp(0.5rem, 1.2cqw, 1rem);
+}
+
+/* Slide con ilustración: apilada en angosto; texto e imagen lado a lado cuando hay ancho. */
+.slide-media {
+  display: grid;
+  align-content: center;
+  gap: clamp(1rem, 3cqw, 3rem);
+}
+
+.slide-figure {
+  max-height: 16rem;
+}
+
+@container slide-stage (min-width: 640px) {
+  .slide-media {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+    align-items: center;
+  }
+
+  .slide-figure {
+    max-height: 30cqw;
+  }
+}

@@ -20,6 +20,7 @@ interface SectionCardProps {
   activeSourceKey?: string | null;
   active?: boolean; // resalte de la sección activa (vista de scroll)
   anchorId?: boolean; // poner id=section-<id> para el scroll-into-view (solo scroll)
+  slide?: boolean; // vista de slides: proporción de diapositiva como mínimo (crece si hace falta)
 }
 
 export function SectionCard({
@@ -32,6 +33,7 @@ export function SectionCard({
   activeSourceKey = null,
   active = false,
   anchorId = false,
+  slide = false,
 }: SectionCardProps) {
   const degraded = chartNotes.find((n) => n.section_id === section.id && n.kind === "degraded");
   const observation = observations.find((o) => o.section_id === section.id);
@@ -46,7 +48,11 @@ export function SectionCard({
       // título más liviano → se lee como profundidad adicional, no como otra pieza principal.
       className={`section-enter scroll-mt-4 rounded-lg border p-6 ${
         active ? "border-accent" : "border-border"
-      } ${isSatellite ? "bg-transparent [--table-bg:var(--background)]" : "bg-surface"}`}
+      } ${isSatellite ? "bg-transparent [--table-bg:var(--background)]" : "bg-surface"} ${
+        // `aspect-video` da el 16:9 como alto MÍNIMO: una caja con proporción crece si su
+        // contenido es más alto, así que nada se recorta.
+        slide ? "flex aspect-video flex-col" : ""
+      }`}
     >
       <header className="mb-3 flex items-baseline justify-between gap-3">
         <h2
@@ -76,6 +82,9 @@ export function SectionCard({
       {section.illustration ? (
         <GeneratedFigure illustration={section.illustration} className="mt-4" />
       ) : null}
+
+      {/* En diapositiva, la cita va al pie del lienzo aunque el contenido sea corto. */}
+      {slide ? <div className="flex-1" aria-hidden /> : null}
 
       <footer className="mt-5 border-t border-border pt-3">
         {anchored ? (
