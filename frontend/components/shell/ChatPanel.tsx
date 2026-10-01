@@ -237,9 +237,9 @@ function Message({
         <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
           {clarification.question}
         </p>
-        {clarification.options.length > 0 ? (
+        {(clarification.options ?? []).length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {clarification.options.map((option) => (
+            {(clarification.options ?? []).map((option) => (
               <button
                 key={option}
                 type="button"
