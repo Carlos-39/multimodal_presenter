@@ -151,6 +151,7 @@ class GeneratedSlide(_Strict):
     """
 
     title: str = Field(min_length=1)
+    body: str | None = None  # frase/idea central (no todo tiene que ser viñetas)
     bullets: list[str] = Field(default_factory=list)
     source: SourceReference | None = None
     grounding: GroundingStatus = "not_found"

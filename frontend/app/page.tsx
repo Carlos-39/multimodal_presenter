@@ -108,23 +108,30 @@ export default function Page() {
     setDeckOpen(false); // vistas mutuamente excluyentes
   }, []);
 
-  // "Presentación": genera el deck on-demand (si no está) y abre su vista. Falla visible.
+  // "Presentación": genera el deck on-demand. Mejor UX: NO se abre la vista hasta que el deck está
+  // COMPLETO (generarlo tarda); mientras tanto el usuario se queda en su contenido y el botón
+  // muestra "Generando…". Solo al terminar se cambia a la vista. Falla visible (Reintentar).
   const toggleDeck = useCallback(() => {
     if (deckOpen) {
       setDeckOpen(false);
       return;
     }
-    setDeckOpen(true);
-    setSlidesOpen(false); // vistas mutuamente excluyentes
-    if (!deck && deckStatus !== "loading" && original) {
-      setDeckStatus("loading");
-      fetchDeck(original.text, original.file)
-        .then((d) => {
-          setDeck(d);
-          setDeckStatus("ready");
-        })
-        .catch(() => setDeckStatus("error"));
+    if (deck) {
+      // ya generado → abrir de una
+      setSlidesOpen(false);
+      setDeckOpen(true);
+      return;
     }
+    if (deckStatus === "loading" || !original) return;
+    setDeckStatus("loading");
+    fetchDeck(original.text, original.file)
+      .then((d) => {
+        setDeck(d);
+        setDeckStatus("ready");
+        setSlidesOpen(false);
+        setDeckOpen(true); // recién ahora se muestra, ya completo
+      })
+      .catch(() => setDeckStatus("error"));
   }, [deckOpen, deck, deckStatus, original]);
 
   const openPanel = useCallback((id: PanelId) => {
@@ -394,6 +401,7 @@ export default function Page() {
       deckOpen={deckOpen}
       deckAvailable={hasContent && original !== null}
       deckLoading={deckStatus === "loading"}
+      deckError={deckStatus === "error"}
       onToggleDeck={toggleDeck}
       narrationStatus={narration.status}
       narrationAvailable={narration.available}
@@ -430,23 +438,10 @@ export default function Page() {
           />
         }
       >
-        {deckOpen ? (
-          // Presentación GENERADA (guion propio desde la fuente): pieza nueva, bajo demanda.
-          <div className="h-full">
-            {deckStatus === "loading" ? (
-              <div className="mx-auto max-w-3xl px-6 py-10 text-sm text-muted">
-                Generando la presentación… (lee el documento y arma las diapositivas)
-              </div>
-            ) : deckStatus === "error" || !deck ? (
-              <div className="mx-auto max-w-3xl px-6 py-10">
-                <p className="rounded-md border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
-                  No se pudo generar la presentación. Intenta de nuevo.
-                </p>
-              </div>
-            ) : (
-              <DeckView deck={deck} onOpenSource={openChatSource} />
-            )}
-          </div>
+        {deckOpen && deck ? (
+          // Presentación GENERADA (guion propio desde la fuente). Solo se muestra cuando está
+          // COMPLETA (la generación ocurre antes, con el botón en "Generando…").
+          <DeckView deck={deck} onOpenSource={openChatSource} />
         ) : slidesOpen && hasContent ? (
           // Modo slides (Hito 5h Parte 2): re-vista del MISMO contenido ya generado; el núcleo
           // fijo y las columnas (fuente/chat) siguen disponibles.

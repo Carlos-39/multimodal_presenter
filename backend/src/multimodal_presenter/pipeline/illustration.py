@@ -34,9 +34,13 @@ from ..schemas.presentation import (
 truststore.inject_into_ssl()  # SSL del sistema (Windows)
 
 _SAFETY_CAP = 4  # techo por documento: la rúbrica suele dar 1-2; esto acota el peor caso de costo
+# El estilo busca imágenes que EXPLIQUEN, no íconos vagos: detalladas, con etiquetas de texto y
+# relaciones visibles, de modo que se entienda qué representan sin leer el texto de la slide.
 _IMAGE_STYLE = (
-    " Estilo: diagrama didáctico esquemático y limpio, fondo claro, formas simples y claras, "
-    "sin texto decorativo ni marcas de agua."
+    " Estilo: diagrama educativo claro y DETALLADO que EXPLIQUE el concepto. Incluye ETIQUETAS de "
+    "texto cortas y correctas (en español) sobre los elementos clave, y flechas que muestren el "
+    "flujo o las relaciones. Composición ordenada, fondo claro, alta legibilidad. NO un ícono "
+    "abstracto ni meramente decorativo: al verlo debe quedar claro qué representa y por qué."
 )
 
 
@@ -54,8 +58,10 @@ _CLASSIFY_SYSTEM = (
     "genuinamente de una ilustración de apoyo: contenido que describe un PROCESO físico/natural, "
     "un MECANISMO o estructura ESPACIAL, o una SECUENCIA visual. NO marques texto conceptual, "
     "definicional, narrativo, argumentativo, de datos/cifras ni resúmenes. Para cada sección "
-    "marcada, da un `image_prompt` breve en español que describa un DIAGRAMA DIDÁCTICO simple de "
-    "ese contenido. Devuelve SOLO las secciones que califican (puede ser ninguna)."
+    "marcada, da un `image_prompt` en español DETALLADO que describa un diagrama que EXPLIQUE el "
+    "concepto: nombra los elementos a dibujar, cómo se relacionan o fluyen, y qué etiquetas poner, "
+    "de modo que la imagen clarifique por sí sola (nunca un ícono vago). Devuelve SOLO las "
+    "secciones que califican (puede ser ninguna)."
 )
 
 classify_agent = Agent(output_type=PromptedOutput(_PlanList), system_prompt=_CLASSIFY_SYSTEM)
@@ -112,7 +118,7 @@ async def _generate_image(settings: Settings, image_prompt: str) -> str:
         model=settings.openai_image_model,
         prompt=image_prompt + _IMAGE_STYLE,
         size="1024x1024",
-        quality="medium",
+        quality=settings.openai_image_quality,
         n=1,
     )
     b64 = response.data[0].b64_json

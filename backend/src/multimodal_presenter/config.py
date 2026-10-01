@@ -55,8 +55,11 @@ class Settings(BaseSettings):
     openai_tts_voice: str = "nova"
     # Entrada por voz en el chat: transcripción audio→texto (misma clave OpenAI).
     openai_transcribe_model: str = "gpt-4o-mini-transcribe"
-    # Ilustraciones de apoyo generadas (Hito 5h Parte 1): generación de imagen (calidad media).
+    # Ilustraciones de apoyo generadas (Hito 5h Parte 1): generación de imagen.
+    # Calidad "high": imágenes detalladas y legibles (etiquetas), prioridad del usuario sobre costo
+    # (~$0.167/imagen vs $0.042 en "medium"). Bajar a "medium"/"low" si se quiere abaratar.
     openai_image_model: str = "gpt-image-1"
+    openai_image_quality: str = "high"
 
     # Entrada multimodal (Hito 4): tope de tamaño de archivo subido, en MB.
     max_upload_mb: int = 20

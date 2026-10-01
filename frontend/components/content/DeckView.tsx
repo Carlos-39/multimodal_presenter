@@ -55,14 +55,21 @@ export function DeckView({ deck, onOpenSource }: DeckViewProps) {
             {slide.title}
           </h2>
 
-          <ul className="space-y-2">
-            {slide.bullets.map((b, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-foreground">
-                <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
-                <span>{b}</span>
-              </li>
-            ))}
-          </ul>
+          {/* No todo es viñetas: `body` es una frase/idea central; los bullets, enumeraciones. */}
+          {slide.body ? (
+            <p className="mb-3 text-base leading-relaxed text-foreground">{slide.body}</p>
+          ) : null}
+
+          {slide.bullets.length > 0 ? (
+            <ul className="space-y-2">
+              {slide.bullets.map((b, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-foreground">
+                  <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
 
           {slide.illustration ? (
             <figure className="mt-5 overflow-hidden rounded-md border border-dashed border-muted/60 bg-background">

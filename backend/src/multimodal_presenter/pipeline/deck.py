@@ -24,30 +24,36 @@ from .illustration import _generate_image
 from .models import ExtractionResult
 from .validation import ground_quote
 
-_IMAGE_CAP = 4  # techo de imágenes por deck (acota el costo)
+_IMAGE_CAP = 3  # techo de imágenes por deck: imágenes solo donde aporten de verdad (y acota costo)
 
 _DECK_SYSTEM = (
     "Genera una PRESENTACIÓN EN DIAPOSITIVAS a partir del documento que recibes. Es una síntesis "
     "nueva pensada para leerse como slides, no un resumen corrido. Reglas OBLIGATORIAS:\n"
-    "- Máximo 6 bullets por slide y ~6 palabras por bullet. El texto es apoyo, no un párrafo.\n"
     "- UNA idea central por slide. Si una parte tiene dos ideas separables, son DOS slides.\n"
-    "- Jerarquía: un título claro por slide; los bullets son soporte.\n"
-    "- Consistencia de redacción y estilo entre todas las slides.\n"
-    "- Prioriza legibilidad; nada de texto redundante ni frases largas.\n"
+    "- Jerarquía: un título claro por slide; un elemento dominante; el resto, soporte.\n"
+    "- NO todo en viñetas. Varía el formato según el contenido: usa `body` (una frase o idea "
+    "central corta) para conceptos o ideas clave; usa `bullets` SOLO para enumeraciones reales; "
+    "una slide puede apoyarse sobre todo en su imagen. No fuerces viñetas donde no encajan.\n"
+    "- Densidad: si usas viñetas, máximo ~6 y ~6 palabras cada una; si usas `body`, 1-2 frases "
+    "cortas. El texto es apoyo visual, nunca un párrafo largo.\n"
+    "- Consistencia de estilo entre slides; prioriza la legibilidad.\n"
     "Trazabilidad por slide: cuando el contenido venga claramente de una frase del documento, "
     "copia esa frase EXACTA en `source_quote` (sin parafrasear) y pon `synthesis` en false. Si "
     "la slide SIMPLIFICA algo complejo y ninguna frase exacta la respalda, deja `source_quote` "
     "en null y `synthesis` en true (simplificación honesta). Nunca inventes una cita. En PDF, "
     "indica la página en `source_page`.\n"
-    "Apoyo visual: si una slide describe un proceso físico, un mecanismo o estructura espacial, o "
-    "una secuencia visual que se entiende mejor con un diagrama, da un `image_prompt` breve que "
-    "describa un DIAGRAMA DIDÁCTICO simple; si no, deja `image_prompt` en null.\n"
+    "Apoyo visual (sé SELECTIVO: solo si un diagrama aclara de verdad, no por rellenar): si una "
+    "slide describe un proceso físico, un mecanismo o estructura espacial, o una secuencia visual, "
+    "da un `image_prompt` DETALLADO que describa un diagrama que EXPLIQUE el concepto (elementos, "
+    "relaciones, etiquetas), de modo que la imagen clarifique por sí sola; si no, `image_prompt` "
+    "en null.\n"
     "Responde en el idioma del documento."
 )
 
 
 class _SlidePlan(BaseModel):
     title: str = Field(min_length=1)
+    body: str | None = None
     bullets: list[str] = Field(default_factory=list)
     source_quote: str | None = None
     source_page: int | None = None
@@ -115,6 +121,7 @@ async def generate_deck(
         slides.append(
             GeneratedSlide(
                 title=plan.title,
+                body=plan.body,
                 bullets=plan.bullets[:6],
                 source=source,
                 grounding=grounding,

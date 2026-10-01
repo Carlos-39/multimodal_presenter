@@ -95,6 +95,7 @@ export interface Section {
  */
 export interface GeneratedSlide {
   title: string;
+  body: string | null;
   bullets: string[];
   source: SourceReference | null;
   grounding: GroundingStatus;
