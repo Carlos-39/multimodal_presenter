@@ -23,6 +23,7 @@ from ..pipeline.image_explanation import explain_image
 from ..pipeline.narration import narrate
 from ..pipeline.streaming import transform_stream
 from ..pipeline.summary import summarize
+from ..pipeline.transcribe import transcribe_audio
 from ..pipeline.uploads import read_and_validate_upload
 from ..schemas.chat import ChatStreamError, ChatTurn, SuggestionsResponse
 from ..schemas.presentation import Section
@@ -32,6 +33,7 @@ from ..schemas.transform import (
     NarrationRequest,
     StreamError,
     SummaryResponse,
+    TranscriptionResponse,
     TransformResponse,
 )
 from ..telemetry import record_ux_event, resolve_telemetry_dir
@@ -271,6 +273,30 @@ async def explain_image_endpoint(
         )
     explanation = await explain_image(model, extraction, page=page, context=context)
     return ImageExplanationResponse(explanation=explanation)
+
+
+@router.post("/transcribe", response_model=TranscriptionResponse)
+async def transcribe_endpoint(
+    file: UploadFile = File(),
+    settings: Settings = Depends(get_settings),
+) -> TranscriptionResponse:
+    """Transcribe una pregunta hablada a texto (entrada por voz del chat).
+
+    Solo audio→texto; el usuario revisa y envía manualmente (nunca se envía ni se interpreta como
+    comando). `503` si falta la clave de OpenAI, `502` si falla el proveedor — falla visible.
+    """
+    if not settings.openai_api_key:
+        raise HTTPException(status_code=503, detail="La transcripción de voz no está configurada.")
+    audio = await file.read()
+    if not audio:
+        raise HTTPException(status_code=400, detail="Audio vacío.")
+    if len(audio) > 25 * 1024 * 1024:  # límite de OpenAI; una pregunta hablada es muchísimo menor
+        raise HTTPException(status_code=413, detail="El audio es demasiado largo.")
+    try:
+        text = await transcribe_audio(settings, audio, file.filename or "audio.webm")
+    except Exception as exc:  # error del proveedor / red → visible, no silencio
+        raise HTTPException(status_code=502, detail="No se pudo transcribir el audio.") from exc
+    return TranscriptionResponse(text=text)
 
 
 @router.post("/telemetry", status_code=204)
