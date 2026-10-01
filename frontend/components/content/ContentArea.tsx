@@ -96,8 +96,8 @@ export function ContentArea({
                 <button
                   type="button"
                   onClick={() => onOpenSource?.(section)}
-                  className={`text-left text-xs hover:text-foreground ${
-                    section.id === activeSourceKey ? "text-foreground" : "text-muted"
+                  className={`text-left text-xs underline-offset-2 transition-colors hover:text-foreground hover:underline ${
+                    section.id === activeSourceKey ? "text-foreground underline" : "text-muted"
                   }`}
                 >
                   Fuente: “{section.source.quote}” · ver en el documento

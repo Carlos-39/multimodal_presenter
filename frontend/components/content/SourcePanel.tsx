@@ -50,7 +50,7 @@ export function SourcePanel({
   }, [fileUrl]);
 
   return (
-    <aside className="flex h-full w-full flex-col bg-surface">
+    <aside className="section-enter flex h-full w-full flex-col bg-surface">
       <header className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
           Documento fuente

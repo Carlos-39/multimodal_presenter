@@ -97,7 +97,7 @@ export function ChatPanel({
                 type="button"
                 onClick={() => submit(question, "suggested", index)}
                 disabled={disabled || streaming}
-                className="rounded-full border border-border px-2.5 py-1 text-left text-xs text-foreground transition-colors hover:border-accent hover:text-accent disabled:opacity-40"
+                className="rounded-full border border-border px-2.5 py-1 text-left text-xs text-foreground transition-[colors,transform] hover:border-accent hover:bg-accent/5 hover:text-accent active:scale-[0.97] disabled:opacity-40"
               >
                 {question}
               </button>
@@ -150,7 +150,7 @@ function Message({
 }) {
   if (message.role === "user") {
     return (
-      <div className="flex justify-end">
+      <div className="section-enter flex justify-end">
         <p className="max-w-[85%] rounded-lg bg-accent px-3 py-2 text-sm text-accent-foreground">
           {message.text}
         </p>
@@ -160,7 +160,7 @@ function Message({
 
   if (message.status === "error") {
     return (
-      <div className="rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-sm text-warning">
+      <div className="section-enter rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-sm text-warning">
         {message.text}
       </div>
     );
@@ -170,7 +170,7 @@ function Message({
   const isComponent = response && response.content.content_type !== "text";
 
   return (
-    <div className="rounded-lg border border-border bg-background px-3 py-2">
+    <div className="section-enter rounded-lg border border-border bg-background px-3 py-2">
       {isComponent ? (
         <ContentRenderer content={response.content} />
       ) : (
