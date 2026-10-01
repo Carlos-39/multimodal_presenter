@@ -123,6 +123,14 @@ async def _classify(model: Model, presentation: Presentation) -> list[_Plan]:
 
 _IDEOGRAM_URL = "https://api.ideogram.ai/v1/ideogram-v3/generate"
 
+# Ideogram v3 acepta `negative_prompt` (describir qué excluir). Refuerza la opción 2 (imágenes sin
+# texto): las palabras las dibujan mal y las etiquetas van en la slide. Se excluyen palabras/letras,
+# NO números (excluirlos sería demasiado y una cifra natural a veces ayuda). Solo aplica a Ideogram;
+# gpt-image-1 (fallback) no tiene este parámetro y depende de la instrucción del prompt.
+_IDEOGRAM_NEGATIVE = (
+    "texto, palabras, letras, etiquetas, leyendas, títulos, subtítulos, marcas de agua, logotipos"
+)
+
 
 async def _ideogram_image(settings: Settings, prompt: str) -> str:
     """Genera con Ideogram v3 (primario). Devuelve data URI. Lanza si falla."""
@@ -132,6 +140,7 @@ async def _ideogram_image(settings: Settings, prompt: str) -> str:
             headers={"Api-Key": settings.ideogram_api_key or ""},
             files={
                 "prompt": (None, prompt),
+                "negative_prompt": (None, _IDEOGRAM_NEGATIVE),
                 "rendering_speed": (None, settings.ideogram_rendering_speed),
                 "aspect_ratio": (None, "1x1"),
                 "magic_prompt": (None, "OFF"),
