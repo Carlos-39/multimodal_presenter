@@ -68,12 +68,24 @@ export type SectionContent =
   | TimelineContent
   | ChartContent;
 
+/**
+ * Ilustración de apoyo GENERADA (Hito 5h Parte 1). NO es contenido trazable: no tiene `source` ni
+ * estado de grounding. Siempre se muestra con su etiqueta permanente.
+ */
+export interface GeneratedIllustration {
+  kind: "generated_illustration";
+  image_url: string;
+  alt: string;
+  label: string;
+}
+
 export interface Section {
   id: string;
   title: string | null;
   role: SectionRole;
   source: SourceReference;
   content: SectionContent;
+  illustration?: GeneratedIllustration | null;
 }
 
 export interface Presentation {

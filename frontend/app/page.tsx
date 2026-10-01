@@ -10,6 +10,7 @@ import { SourcePanel } from "@/components/content/SourcePanel";
 import { SummaryBanner } from "@/components/content/SummaryBanner";
 import { TransformInput } from "@/components/TransformInput";
 import { postTransform } from "@/lib/api";
+import { fetchIllustrations } from "@/lib/illustrations";
 import { fetchSummary } from "@/lib/summary";
 import { streamTransform } from "@/lib/stream";
 import { useChat, type OriginalSource } from "@/hooks/useChat";
@@ -171,6 +172,28 @@ export default function Page() {
     setActiveSectionId(data.presentation.sections[0]?.id ?? null);
   }
 
+  // Ilustraciones de apoyo generadas (Hito 5h Parte 1): post-pase NO bloqueante, SOLO para fuentes
+  // de texto (condición 1: un texto no trae imágenes). El backend decide qué secciones califican y
+  // genera; aquí se fusiona el resultado. Extra no crítico: si falla, no se muestra ilustración.
+  async function fetchAndMergeIllustrations(
+    pres: { title: string; sections: Section[] },
+    isText: boolean,
+  ) {
+    if (!isText || pres.sections.length === 0) return;
+    try {
+      const items = await fetchIllustrations(pres);
+      if (items.length === 0) return;
+      setSections((prev) =>
+        prev.map((s) => {
+          const item = items.find((i) => i.section_id === s.id);
+          return item ? { ...s, illustration: item.illustration } : s;
+        }),
+      );
+    } catch {
+      // extra no crítico: sin ilustración, la presentación sigue intacta.
+    }
+  }
+
   async function handleTransform(text: string | null, file: File | null) {
     // Marca el inicio de la interacción con un documento (segmenta la sesión). Solo el TIPO de
     // fuente, nunca el contenido ni el nombre del archivo (privacidad, Hito 8).
@@ -190,12 +213,16 @@ export default function Page() {
       .catch(() => setSummaryStatus("error"));
 
     let received = 0;
+    let docTitle = "";
+    const collected: Section[] = []; // copia local de las secciones (para el post-pase de ilustraciones)
     try {
       await streamTransform(text, file, (event) => {
         if (event.type === "start") {
+          docTitle = event.title;
           setTitle(event.title);
         } else if (event.type === "section") {
           received += 1;
+          collected.push(event.section);
           setSections((prev) => [...prev, event.section]);
           setEntries((prev) => [...prev, event.grounding]);
           if (event.chart_note) setChartNotes((prev) => [...prev, event.chart_note!]);
@@ -211,6 +238,7 @@ export default function Page() {
         }
       });
       setStatus((prev) => (prev === "streaming" ? "done" : prev));
+      void fetchAndMergeIllustrations({ title: docTitle, sections: collected }, sk === "text");
     } catch {
       if (received === 0) {
         // El streaming no arrancó → fallback gracioso al endpoint no-streaming.
@@ -218,6 +246,7 @@ export default function Page() {
           const data = await postTransform(text, file);
           applyNonStreaming(data);
           setStatus("done");
+          void fetchAndMergeIllustrations(data.presentation, sk === "text");
         } catch (e2) {
           setError(e2 instanceof Error ? e2.message : "Error desconocido");
           setStatus("error");

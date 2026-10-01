@@ -155,6 +155,23 @@ SectionContent = Annotated[
 ]
 
 
+ILLUSTRATION_LABEL = "Ilustración de apoyo (generada, no proviene del documento)"
+
+
+class GeneratedIllustration(_Strict):
+    """Ilustración de apoyo GENERADA (Hito 5h Parte 1). NO es contenido trazable.
+
+    Es un campo APARTE de `Section` (no un `SectionContent` ni un `Section`), y DELIBERADAMENTE
+    carece de `SourceReference`: es estructuralmente imposible que tenga estado de grounding, para
+    que nunca se confunda con contenido verificado. Lleva una etiqueta obligatoria y permanente.
+    """
+
+    kind: Literal["generated_illustration"] = "generated_illustration"
+    image_url: str = Field(min_length=1, description="Imagen generada (data URI).")
+    alt: str = Field(min_length=1, description="Descripción accesible de la ilustración.")
+    label: str = ILLUSTRATION_LABEL  # etiqueta obligatoria, siempre visible
+
+
 class Section(_Strict):
     """Unidad de la presentación. Campos comunes + un bloque de contenido tipado.
 
@@ -167,6 +184,9 @@ class Section(_Strict):
     role: SectionRole  # obligatorio: fuerza la clasificación núcleo/satélite
     source: SourceReference  # obligatorio: cada sección debe ser trazable a su fuente
     content: SectionContent
+    # Apoyo visual generado (opcional, Hito 5h Parte 1). SIN fuente ni grounding: no es contenido
+    # trazable, es una ayuda didáctica declarada como tal. Default None → backward-compatible.
+    illustration: GeneratedIllustration | None = None
 
 
 class Presentation(_Strict):

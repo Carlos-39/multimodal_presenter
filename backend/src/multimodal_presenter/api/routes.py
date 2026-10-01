@@ -19,6 +19,7 @@ from ..model_provider import build_model, build_summary_model
 from ..pipeline import transform
 from ..pipeline.chat import chat_stream, generate_suggestions
 from ..pipeline.extraction import prepare_input
+from ..pipeline.illustration import illustrate
 from ..pipeline.image_explanation import explain_image
 from ..pipeline.narration import narrate
 from ..pipeline.streaming import transform_stream
@@ -29,6 +30,9 @@ from ..schemas.chat import ChatStreamError, ChatTurn, SuggestionsResponse
 from ..schemas.presentation import Section
 from ..schemas.telemetry import TelemetryBatch
 from ..schemas.transform import (
+    IllustrationItem,
+    IllustrationsRequest,
+    IllustrationsResponse,
     ImageExplanationResponse,
     NarrationRequest,
     StreamError,
@@ -297,6 +301,34 @@ async def transcribe_endpoint(
     except Exception as exc:  # error del proveedor / red → visible, no silencio
         raise HTTPException(status_code=502, detail="No se pudo transcribir el audio.") from exc
     return TranscriptionResponse(text=text)
+
+
+@router.post("/illustrations", response_model=IllustrationsResponse)
+async def illustrations_endpoint(
+    req: IllustrationsRequest,
+    model: Model = Depends(get_summary_model),
+    settings: Settings = Depends(get_settings),
+) -> IllustrationsResponse:
+    """Ilustraciones de apoyo generadas (Hito 5h Parte 1). On-demand tras la transformación.
+
+    El frontend solo lo llama para documentos de fuente TEXTO (condición 1: un texto no trae
+    imágenes). Clasifica los núcleos (Haiku) y genera imagen (gpt-image-1) solo para los que
+    califican, hasta un techo de seguridad. Cacheado por documento. `503` si falta la clave;
+    si falla la generación, `502` (falla visible; el frontend simplemente no muestra ilustración).
+    """
+    if not settings.openai_api_key:
+        raise HTTPException(
+            status_code=503, detail="Las ilustraciones generadas no están configuradas."
+        )
+    try:
+        pairs = await illustrate(model, settings, req.presentation)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502, detail="No se pudieron generar las ilustraciones."
+        ) from exc
+    return IllustrationsResponse(
+        illustrations=[IllustrationItem(section_id=sid, illustration=ill) for sid, ill in pairs]
+    )
 
 
 @router.post("/telemetry", status_code=204)
