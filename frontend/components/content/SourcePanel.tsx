@@ -64,7 +64,12 @@ export function SourcePanel({
         </button>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      {/* `key={sourceKey}` REMONTA el contenido al cambiar de fuente activa (otra sección o una
+          respuesta del chat). Es necesario para el PDF: su página se fija por el fragmento
+          `#page=N` del `src` del <iframe>, y los navegadores NO re-navegan un iframe cuando solo
+          cambia el hash — remontarlo lo fuerza a cargar en la página correcta. Robusto ante clics
+          rápidos (React reconcilia al último key) y uniforme para texto/PDF/imagen. */}
+      <div key={sourceKey} className="min-h-0 flex-1 overflow-y-auto">
         {sourceKind === "text" ? (
           <TextSource
             text={original.text ?? ""}
