@@ -181,11 +181,20 @@ export interface ChatTurn {
   text: string;
 }
 
-/** Respuesta del chat: contenido renderizable (misma union del contrato) + anclaje verificado. */
+/** Cognitive Forcing Function (opción D): pedido de aclaración ante ambigüedad real.
+ * Invitación de cortesía, nunca un obstáculo; `options` son interpretaciones clicables (opcional). */
+export interface ClarificationNeeded {
+  question: string;
+  options: string[];
+}
+
+/** Respuesta del chat: contenido renderizable (misma union del contrato) + anclaje verificado.
+ * Si `clarification` está presente, este turno pide aclaración y no es una respuesta anclada. */
 export interface ChatResponse {
   content: SectionContent;
   source: SourceReference | null; // null = no se pudo anclar
   grounding: GroundingStatus;
+  clarification?: ClarificationNeeded | null;
 }
 
 /** Eventos SSE de POST /chat/stream. Texto en vivo; el ancla llega en `done`. */

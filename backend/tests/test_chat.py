@@ -27,6 +27,18 @@ def _answer(text: str, *, quote: str | None = None, page: int | None = None) -> 
     )
 
 
+def _clarify(question: str, options: list[str]) -> str:
+    """JSON de un ChatAnswer que PIDE aclaración (opción D) en vez de responder."""
+    return json.dumps(
+        {
+            "content": {"content_type": "text", "text": question},
+            "source_quote": None,
+            "source_page": None,
+            "clarification": {"question": question, "options": options},
+        }
+    )
+
+
 async def _collect(gen):
     return [event async for event in gen]
 
@@ -79,6 +91,25 @@ def test_chat_stream_ungrounded_when_no_quote(input_text: str) -> None:
     done = events[-1]
     assert done.response.grounding == "not_found"
     assert done.response.source is None
+
+
+# ── Opción D: Cognitive Forcing Function (pedido de aclaración) ──
+def test_chat_stream_clarification_is_not_an_answer(input_text: str) -> None:
+    model = TestModel(
+        custom_output_text=_clarify("¿Te refieres a 2023 o a 2024?", ["2023", "2024"])
+    )
+    ext = prepare_input(text=input_text)
+    events = asyncio.run(
+        _collect(chat_stream(model, extraction=ext, history=[], question="¿y el otro?"))
+    )
+    done = events[-1]
+    assert done.type == "done"
+    # Un pedido de aclaración NO es una respuesta anclada: sin fuente, grounding not_found.
+    assert done.response.clarification is not None
+    assert done.response.clarification.question == "¿Te refieres a 2023 o a 2024?"
+    assert done.response.clarification.options == ["2023", "2024"]
+    assert done.response.source is None
+    assert done.response.grounding == "not_found"
 
 
 # ── Endpoint SSE ──

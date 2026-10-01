@@ -90,7 +90,15 @@ export function ChatPanel({
               : "Pregunta sobre el documento. Cada respuesta se ancla a su fuente."}
           </p>
         ) : (
-          messages.map((message) => <Message key={message.id} message={message} onOpenSource={onOpenSource} />)
+          messages.map((message) => (
+            <Message
+              key={message.id}
+              message={message}
+              onOpenSource={onOpenSource}
+              onAsk={(question) => submit(question, "typed")}
+              canAsk={!disabled && !streaming}
+            />
+          ))
         )}
       </div>
 
@@ -185,9 +193,13 @@ export function ChatPanel({
 function Message({
   message,
   onOpenSource,
+  onAsk,
+  canAsk,
 }: {
   message: ChatMessage;
   onOpenSource: (source: SourceReference, status: GroundingStatus) => void;
+  onAsk: (question: string) => void;
+  canAsk: boolean;
 }) {
   if (message.role === "user") {
     return (
@@ -208,6 +220,39 @@ function Message({
   }
 
   const response = message.response;
+  const clarification = message.status === "done" ? response?.clarification : null;
+
+  // Opción D: pedido de aclaración. Estado visual propio (acento), nunca bloquea el chat: las
+  // opciones son un atajo y el usuario siempre puede reescribir abajo.
+  if (clarification) {
+    return (
+      <div className="section-enter rounded-lg border border-accent/40 bg-accent/5 px-3 py-2">
+        <p className="flex items-center gap-1.5 text-xs font-medium text-accent">
+          <QuestionIcon />
+          Para responder mejor
+        </p>
+        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+          {clarification.question}
+        </p>
+        {clarification.options.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {clarification.options.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => onAsk(option)}
+                disabled={!canAsk}
+                className="rounded-full border border-accent/50 px-2.5 py-1 text-left text-xs text-accent transition-[colors,transform] hover:bg-accent hover:text-accent-foreground active:scale-[0.97] disabled:opacity-40"
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   const isComponent = response && response.content.content_type !== "text";
 
   return (
@@ -265,6 +310,14 @@ function SourceChip({
 
 function truncate(text: string, max = 60): string {
   return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+function QuestionIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+      <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm0 1.2a5.3 5.3 0 1 1 0 10.6 5.3 5.3 0 0 1 0-10.6Zm0 1.9a2 2 0 0 0-2 2 .6.6 0 1 0 1.2 0 .8.8 0 1 1 1.2.7c-.5.3-1 .8-1 1.6a.6.6 0 0 0 1.2 0c0-.2.2-.4.5-.6.6-.4 1.1-.9 1.1-1.7a2 2 0 0 0-2.2-2Zm0 6.3a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z" />
+    </svg>
+  );
 }
 
 function MicIcon() {

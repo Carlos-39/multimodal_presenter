@@ -29,12 +29,32 @@ class ChatTurn(_Strict):
     text: str
 
 
+class ClarificationNeeded(_Strict):
+    """Cognitive Forcing Function (opción D, Fase 2): pedido de aclaración ante ambigüedad real.
+
+    Es una INVITACIÓN de cortesía, nunca un obstáculo (coherente con el Punto 9: sin checkpoints
+    bloqueantes). Se pide a lo sumo una vez por ambigüedad; si está presente, la respuesta NO es
+    una respuesta anclada sino una pregunta breve con 1-2 interpretaciones clicables opcionales.
+    """
+
+    question: str = Field(
+        min_length=1, description="La aclaración breve, estilo cortesía (1 frase)."
+    )
+    options: list[str] = Field(
+        default_factory=list,
+        max_length=3,
+        description="1-2 interpretaciones concretas para clicar; opcional (el usuario puede "
+        "reescribir en vez de elegir).",
+    )
+
+
 class ChatAnswer(_Strict):
     """Salida CRUDA del LLM (vía PromptedOutput). El código la postprocesa a `ChatResponse`.
 
     El LLM aporta el `content` y una CITA verbatim (`source_quote`) que respalda la respuesta;
     NO calcula offsets (eso es determinista, en código). Si no puede responder/anclar desde el
-    documento, deja `source_quote` en null (estado honesto "no anclable").
+    documento, deja `source_quote` en null (estado honesto "no anclable"). Si la pregunta es
+    genuinamente ambigua, llena `clarification` en vez de adivinar (opción D).
     """
 
     content: SectionContent
@@ -46,14 +66,24 @@ class ChatAnswer(_Strict):
     source_page: int | None = Field(
         default=None, ge=1, description="Página del PDF fuente, si aplica."
     )
+    clarification: ClarificationNeeded | None = Field(
+        default=None,
+        description="Si la pregunta es genuinamente ambigua, el pedido de aclaración; null si "
+        "se puede responder (por defecto se responde).",
+    )
 
 
 class ChatResponse(_Strict):
-    """Respuesta pública del chat: contenido renderizable + anclaje verificado por código."""
+    """Respuesta pública del chat: contenido renderizable + anclaje verificado por código.
+
+    Si `clarification` está presente, este turno es un pedido de aclaración (opción D), no una
+    respuesta: el frontend lo muestra con estado visual propio y `source`/`grounding` no aplican.
+    """
 
     content: SectionContent
     source: SourceReference | None  # None = no se pudo anclar (no se inventa una fuente falsa)
     grounding: GroundingStatus  # verified | unverified (PDF) | not_found (no anclado)
+    clarification: ClarificationNeeded | None = None  # presente = pide aclaración, no responde
 
 
 class SuggestionsResponse(_Strict):
