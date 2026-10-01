@@ -16,7 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .presentation import GeneratedIllustration, Presentation, Section
+from .presentation import GeneratedIllustration, Presentation, Section, SourceReference
 
 
 class _Strict(BaseModel):
@@ -139,6 +139,31 @@ class IllustrationsResponse(_Strict):
     """Ilustraciones generadas para las secciones que calificaron (puede ser vacía)."""
 
     illustrations: list[IllustrationItem] = Field(default_factory=list)
+
+
+class GeneratedSlide(_Strict):
+    """Una diapositiva de la presentación GENERADA (síntesis propia desde la fuente).
+
+    Trazabilidad por slide (mix honesto): `source` + `grounding` si se ancló a una cita del
+    documento; `is_synthesis=True` si es una simplificación declarada (sin cita exacta); el raro
+    `not_found` si el modelo diera una cita inexistente. `illustration` (opcional) reusa el tipo
+    del 5h con su etiqueta obligatoria.
+    """
+
+    title: str = Field(min_length=1)
+    body: str | None = None  # frase/idea central (no todo tiene que ser viñetas)
+    bullets: list[str] = Field(default_factory=list)
+    source: SourceReference | None = None
+    grounding: GroundingStatus = "not_found"
+    is_synthesis: bool = False
+    illustration: GeneratedIllustration | None = None
+
+
+class GeneratedDeck(_Strict):
+    """Presentación en diapositivas generada (guion propio, desde la fuente). Artefacto on-demand,
+    separado del contrato de `Presentation`."""
+
+    slides: list[GeneratedSlide] = Field(min_length=1)
 
 
 # --- Eventos SSE del endpoint /transform/stream (Hito 5d) ---

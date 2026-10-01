@@ -18,8 +18,9 @@ from ..config import Settings, get_settings
 from ..model_provider import build_model, build_summary_model
 from ..pipeline import transform
 from ..pipeline.chat import chat_stream, generate_suggestions
+from ..pipeline.deck import generate_deck
 from ..pipeline.extraction import prepare_input
-from ..pipeline.illustration import illustrate
+from ..pipeline.illustration import has_image_provider, illustrate
 from ..pipeline.image_explanation import explain_image
 from ..pipeline.narration import narrate
 from ..pipeline.streaming import transform_stream
@@ -30,6 +31,7 @@ from ..schemas.chat import ChatStreamError, ChatTurn, SuggestionsResponse
 from ..schemas.presentation import Section
 from ..schemas.telemetry import TelemetryBatch
 from ..schemas.transform import (
+    GeneratedDeck,
     IllustrationItem,
     IllustrationsRequest,
     IllustrationsResponse,
@@ -303,6 +305,26 @@ async def transcribe_endpoint(
     return TranscriptionResponse(text=text)
 
 
+@router.post("/deck", response_model=GeneratedDeck)
+async def deck_endpoint(
+    text: str | None = Form(default=None),
+    file: UploadFile | None = File(default=None),
+    model: Model = Depends(get_model),
+    settings: Settings = Depends(get_settings),
+) -> GeneratedDeck:
+    """Presentación en diapositivas GENERADA (guion propio, desde la fuente). On-demand.
+
+    Relee el documento original (como el chat) y sintetiza un deck pensado para slides. Distinto de
+    la vista de slides del 5h (re-composición sin generación). Si no hay clave de OpenAI, el deck se
+    genera igual pero sin imágenes de apoyo (degradación honesta, no falla).
+    """
+    text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    extraction = prepare_input(
+        text=text_value, binary=binary, media_type=media_type, filename=filename
+    )
+    return await generate_deck(model, settings, extraction)
+
+
 @router.post("/illustrations", response_model=IllustrationsResponse)
 async def illustrations_endpoint(
     req: IllustrationsRequest,
@@ -312,11 +334,12 @@ async def illustrations_endpoint(
     """Ilustraciones de apoyo generadas (Hito 5h Parte 1). On-demand tras la transformación.
 
     El frontend solo lo llama para documentos de fuente TEXTO (condición 1: un texto no trae
-    imágenes). Clasifica los núcleos (Haiku) y genera imagen (gpt-image-1) solo para los que
-    califican, hasta un techo de seguridad. Cacheado por documento. `503` si falta la clave;
-    si falla la generación, `502` (falla visible; el frontend simplemente no muestra ilustración).
+    imágenes). Clasifica los núcleos (Haiku) y genera imagen (Ideogram primario, gpt-image-1 de
+    fallback) solo para los que califican, hasta un techo de seguridad. Cacheado por documento.
+    `503` si no hay proveedor de imagen; si falla la generación, `502` (falla visible; el frontend
+    simplemente no muestra ilustración).
     """
-    if not settings.openai_api_key:
+    if not has_image_provider(settings):
         raise HTTPException(
             status_code=503, detail="Las ilustraciones generadas no están configuradas."
         )

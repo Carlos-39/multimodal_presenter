@@ -5,11 +5,13 @@ import { AppShell } from "@/components/shell/AppShell";
 import { Workspace } from "@/components/shell/Workspace";
 import { ChatPanel } from "@/components/shell/ChatPanel";
 import { ContentArea } from "@/components/content/ContentArea";
+import { DeckView } from "@/components/content/DeckView";
 import { SlideView } from "@/components/content/SlideView";
 import { SourcePanel } from "@/components/content/SourcePanel";
 import { SummaryBanner } from "@/components/content/SummaryBanner";
 import { TransformInput } from "@/components/TransformInput";
 import { postTransform } from "@/lib/api";
+import { fetchDeck } from "@/lib/deck";
 import { fetchIllustrations } from "@/lib/illustrations";
 import { fetchSummary } from "@/lib/summary";
 import { streamTransform } from "@/lib/stream";
@@ -20,6 +22,7 @@ import { initTelemetry, track, flush } from "@/lib/telemetry";
 import type { PanelId } from "@/lib/workspace";
 import type {
   ChartNote,
+  GeneratedDeck,
   GroundingReport,
   GroundingStatus,
   Section,
@@ -94,7 +97,42 @@ export default function Page() {
 
   // Vista de slides (Hito 5h Parte 2): modo alterno de consumir el MISMO contenido ya generado.
   const [slidesOpen, setSlidesOpen] = useState(false);
-  const toggleSlides = useCallback(() => setSlidesOpen((v) => !v), []);
+
+  // Presentación GENERADA en diapositivas (guion propio desde la fuente): pieza nueva, bajo demanda.
+  const [deckOpen, setDeckOpen] = useState(false);
+  const [deck, setDeck] = useState<GeneratedDeck | null>(null);
+  const [deckStatus, setDeckStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+
+  const toggleSlides = useCallback(() => {
+    setSlidesOpen((v) => !v);
+    setDeckOpen(false); // vistas mutuamente excluyentes
+  }, []);
+
+  // "Presentación": genera el deck on-demand. Mejor UX: NO se abre la vista hasta que el deck está
+  // COMPLETO (generarlo tarda); mientras tanto el usuario se queda en su contenido y el botón
+  // muestra "Generando…". Solo al terminar se cambia a la vista. Falla visible (Reintentar).
+  const toggleDeck = useCallback(() => {
+    if (deckOpen) {
+      setDeckOpen(false);
+      return;
+    }
+    if (deck) {
+      // ya generado → abrir de una
+      setSlidesOpen(false);
+      setDeckOpen(true);
+      return;
+    }
+    if (deckStatus === "loading" || !original) return;
+    setDeckStatus("loading");
+    fetchDeck(original.text, original.file)
+      .then((d) => {
+        setDeck(d);
+        setDeckStatus("ready");
+        setSlidesOpen(false);
+        setDeckOpen(true); // recién ahora se muestra, ya completo
+      })
+      .catch(() => setDeckStatus("error"));
+  }, [deckOpen, deck, deckStatus, original]);
 
   const openPanel = useCallback((id: PanelId) => {
     setOpenOrder((prev) => [...prev.filter((p) => p !== id), id]);
@@ -156,6 +194,9 @@ export default function Page() {
     setSummary(null);
     setSummaryStatus("idle");
     setSlidesOpen(false); // documento nuevo → vuelve a la vista de scroll
+    setDeckOpen(false);
+    setDeck(null);
+    setDeckStatus("idle");
     setOpenOrder((prev) => prev.filter((p) => p !== "source")); // cierra la fuente; conserva el chat
     setOriginal({ text, file });
     setSourceKind(file ? (file.type === "application/pdf" ? "pdf" : "image") : "text");
@@ -357,6 +398,11 @@ export default function Page() {
       slidesOpen={slidesOpen}
       slidesAvailable={hasContent}
       onToggleSlides={toggleSlides}
+      deckOpen={deckOpen}
+      deckAvailable={hasContent && original !== null}
+      deckLoading={deckStatus === "loading"}
+      deckError={deckStatus === "error"}
+      onToggleDeck={toggleDeck}
       narrationStatus={narration.status}
       narrationAvailable={narration.available}
       onNarrationPlay={narration.play}
@@ -392,7 +438,11 @@ export default function Page() {
           />
         }
       >
-        {slidesOpen && hasContent ? (
+        {deckOpen && deck ? (
+          // Presentación GENERADA (guion propio desde la fuente). Solo se muestra cuando está
+          // COMPLETA (la generación ocurre antes, con el botón en "Generando…").
+          <DeckView deck={deck} onOpenSource={openChatSource} />
+        ) : slidesOpen && hasContent ? (
           // Modo slides (Hito 5h Parte 2): re-vista del MISMO contenido ya generado; el núcleo
           // fijo y las columnas (fuente/chat) siguen disponibles.
           <SlideView

@@ -30,6 +30,11 @@ interface AppShellProps {
   slidesOpen: boolean;
   slidesAvailable: boolean;
   onToggleSlides: () => void;
+  deckOpen: boolean;
+  deckAvailable: boolean;
+  deckLoading: boolean;
+  deckError: boolean;
+  onToggleDeck: () => void;
   narrationStatus: NarrationStatus;
   narrationAvailable: boolean;
   onNarrationPlay: () => void;
@@ -50,6 +55,11 @@ export function AppShell({
   slidesOpen,
   slidesAvailable,
   onToggleSlides,
+  deckOpen,
+  deckAvailable,
+  deckLoading,
+  deckError,
+  onToggleDeck,
   narrationStatus,
   narrationAvailable,
   onNarrationPlay,
@@ -82,6 +92,22 @@ export function AppShell({
             }`}
           >
             Slides
+          </button>
+          <button
+            type="button"
+            onClick={onToggleDeck}
+            aria-pressed={deckOpen}
+            disabled={!deckAvailable || deckLoading}
+            title={deckLoading ? "Generando la presentación…" : "Presentación generada (bajo demanda)"}
+            className={`rounded-md border px-2.5 py-1 text-xs transition-colors disabled:opacity-40 ${
+              deckOpen
+                ? "border-accent bg-accent text-accent-foreground"
+                : deckError
+                  ? "border-warning text-warning hover:text-foreground"
+                  : "border-border text-muted hover:text-foreground"
+            }`}
+          >
+            {deckLoading ? "Generando…" : deckError ? "Reintentar" : "Presentación"}
           </button>
           <button
             type="button"
