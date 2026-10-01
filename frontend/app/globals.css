@@ -225,3 +225,23 @@ body {
     opacity: 0.5;
   }
 }
+
+/*
+ * Pista de desplazamiento para contenedores con scroll propio (tablas anchas o largas): una
+ * sombra tenue en el borde hacia donde queda contenido por ver, que desaparece al llegar al
+ * final. Sin JS: capas "tapa" que se mueven con el contenido (local) sobre sombras fijas (scroll).
+ * `--table-bg` lo fija el contenedor cuando su fondo no es el papel (satélite, burbuja del chat).
+ */
+.scroll-hint {
+  --hint-bg: var(--table-bg, var(--surface));
+  --hint-shadow: color-mix(in srgb, var(--foreground) 16%, transparent);
+  background:
+    linear-gradient(to right, var(--hint-bg) 40%, transparent) left center / 28px 100% no-repeat local,
+    linear-gradient(to left, var(--hint-bg) 40%, transparent) right center / 28px 100% no-repeat local,
+    linear-gradient(to bottom, var(--hint-bg) 40%, transparent) center top / 100% 28px no-repeat local,
+    linear-gradient(to top, var(--hint-bg) 40%, transparent) center bottom / 100% 28px no-repeat local,
+    linear-gradient(to right, var(--hint-shadow), transparent) left center / 10px 100% no-repeat scroll,
+    linear-gradient(to left, var(--hint-shadow), transparent) right center / 10px 100% no-repeat scroll,
+    linear-gradient(to bottom, var(--hint-shadow), transparent) center top / 100% 10px no-repeat scroll,
+    linear-gradient(to top, var(--hint-shadow), transparent) center bottom / 100% 10px no-repeat scroll;
+}

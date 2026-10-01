@@ -46,7 +46,7 @@ export function SectionCard({
       // título más liviano → se lee como profundidad adicional, no como otra pieza principal.
       className={`section-enter scroll-mt-4 rounded-lg border p-6 ${
         active ? "border-accent" : "border-border"
-      } ${isSatellite ? "bg-transparent" : "bg-surface"}`}
+      } ${isSatellite ? "bg-transparent [--table-bg:var(--background)]" : "bg-surface"}`}
     >
       <header className="mb-3 flex items-baseline justify-between gap-3">
         <h2

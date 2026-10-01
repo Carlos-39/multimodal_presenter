@@ -259,7 +259,7 @@ function Message({
   const isComponent = response && response.content.content_type !== "text";
 
   return (
-    <div className="section-enter rounded-lg border border-border bg-background px-3 py-2.5">
+    <div className="section-enter rounded-lg border border-border bg-background px-3 py-2.5 [--table-bg:var(--background)]">
       {isComponent ? (
         <ContentRenderer content={response.content} />
       ) : message.status === "streaming" && message.text.length === 0 ? (
