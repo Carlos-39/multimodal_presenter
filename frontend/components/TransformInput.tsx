@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { CircleNotch } from "@phosphor-icons/react";
 
 type Status = "idle" | "loading" | "streaming" | "error" | "done";
 
@@ -50,7 +51,7 @@ export function TransformInput({ status, onSubmit }: TransformInputProps) {
           onChange={(e) => setText(e.target.value)}
           rows={5}
           placeholder="Pega un texto, o escribe una instrucción para acompañar al documento."
-          className="w-full resize-y rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+          className="w-full resize-y rounded-md border border-border-strong bg-surface px-3 py-2 text-sm leading-6 text-foreground placeholder:text-muted disabled:opacity-60"
           disabled={loading}
         />
       </div>
@@ -64,8 +65,8 @@ export function TransformInput({ status, onSubmit }: TransformInputProps) {
           }}
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
-          className={`rounded-md border border-dashed p-4 text-sm transition-colors ${
-            dragging ? "border-accent bg-background" : "border-border"
+          className={`rounded-md border p-4 text-sm transition-colors ${
+            dragging ? "border-accent bg-accent-subtle" : "border-transparent bg-surface-sunken"
           }`}
         >
           {file ? (
@@ -74,7 +75,7 @@ export function TransformInput({ status, onSubmit }: TransformInputProps) {
               <button
                 type="button"
                 onClick={() => setFile(null)}
-                className="shrink-0 text-xs text-muted underline underline-offset-2"
+                className="shrink-0 text-xs text-accent underline decoration-1 underline-offset-2 hover:text-accent-hover"
               >
                 quitar
               </button>
@@ -83,7 +84,7 @@ export function TransformInput({ status, onSubmit }: TransformInputProps) {
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="w-full text-left text-muted"
+              className="w-full text-left text-muted hover:text-foreground"
             >
               Arrastra un PDF o imagen aquí, o haz clic para seleccionar.
             </button>
@@ -103,8 +104,9 @@ export function TransformInput({ status, onSubmit }: TransformInputProps) {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover disabled:opacity-40 disabled:hover:bg-accent"
+          className="flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover active:scale-[0.98] disabled:opacity-45 disabled:hover:bg-accent"
         >
+          {loading ? <CircleNotch size={15} className="animate-spin" aria-hidden /> : null}
           {loading ? "Transformando…" : "Transformar"}
         </button>
       </div>

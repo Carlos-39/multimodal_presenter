@@ -37,6 +37,25 @@ const GRID = "var(--chart-grid)";
 const HEIGHT = 288;
 // Ejes/etiquetas en monoespaciada tabular (números como "herramienta de datos").
 const TICK = { fontFamily: "var(--font-geist-mono)", fontSize: 12, fill: AXIS } as const;
+// Chrome del gráfico (tooltip, leyenda) con los tokens del sistema: sigue al tema claro/oscuro.
+const TOOLTIP = {
+  contentStyle: {
+    background: "var(--surface)",
+    border: "1px solid var(--border)",
+    borderRadius: 6,
+    boxShadow: "var(--elevation-float)",
+    fontSize: 12,
+    color: "var(--foreground)",
+  },
+  labelStyle: { color: "var(--muted)", marginBottom: 2 },
+  itemStyle: { color: "var(--foreground)", fontFamily: "var(--font-geist-mono)" },
+  cursor: { fill: "var(--surface-sunken)", stroke: "var(--border)" },
+} as const;
+const LEGEND = {
+  iconSize: 10,
+  wrapperStyle: { fontSize: 12, paddingTop: 8 },
+  formatter: (value: string) => <span style={{ color: "var(--foreground-secondary)" }}>{value}</span>,
+} as const;
 
 /**
  * Render de gráficos con Recharts. En este hito renderiza lo que llega; la regla
@@ -57,7 +76,7 @@ export function ChartSection({ content }: { content: ChartContent }) {
     return (
       <div
         style={{ height: HEIGHT }}
-        className="rounded-md border border-border bg-surface"
+        className="skeleton rounded-md"
         aria-hidden
       />
     );
@@ -80,8 +99,8 @@ export function ChartSection({ content }: { content: ChartContent }) {
           <CartesianGrid stroke={GRID} vertical={false} />
           <XAxis dataKey="name" stroke={AXIS} tick={TICK} />
           <YAxis stroke={AXIS} tick={TICK} />
-          <Tooltip />
-          <Legend />
+          <Tooltip {...TOOLTIP} />
+          <Legend {...LEGEND} />
           {data.series.map((s, i) => (
             <Line
               key={s.name}
@@ -100,8 +119,8 @@ export function ChartSection({ content }: { content: ChartContent }) {
           <CartesianGrid stroke={GRID} vertical={false} />
           <XAxis dataKey="name" stroke={AXIS} tick={TICK} />
           <YAxis stroke={AXIS} tick={TICK} />
-          <Tooltip />
-          <Legend />
+          <Tooltip {...TOOLTIP} />
+          <Legend {...LEGEND} />
           {data.series.map((s, i) => (
             <Bar key={s.name} dataKey={s.name} fill={PALETTE[i % PALETTE.length]} />
           ))}
@@ -120,8 +139,8 @@ export function ChartSection({ content }: { content: ChartContent }) {
               <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
             ))}
           </Pie>
-          <Tooltip />
-          <Legend />
+          <Tooltip {...TOOLTIP} />
+          <Legend {...LEGEND} />
         </PieChart>
       );
       break;
@@ -132,8 +151,8 @@ export function ChartSection({ content }: { content: ChartContent }) {
           <CartesianGrid stroke={GRID} />
           <XAxis dataKey="x" type="number" stroke={AXIS} tick={TICK} />
           <YAxis dataKey="y" type="number" stroke={AXIS} tick={TICK} />
-          <Tooltip />
-          <Legend />
+          <Tooltip {...TOOLTIP} />
+          <Legend {...LEGEND} />
           {data.series.map((s, i) => (
             <Scatter
               key={s.name}

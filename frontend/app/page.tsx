@@ -8,6 +8,7 @@ import { ContentArea } from "@/components/content/ContentArea";
 import { DeckView } from "@/components/content/DeckView";
 import { SlideView } from "@/components/content/SlideView";
 import { SourcePanel } from "@/components/content/SourcePanel";
+import { StreamingStatus } from "@/components/content/StreamingStatus";
 import { SummaryBanner } from "@/components/content/SummaryBanner";
 import { TransformInput } from "@/components/TransformInput";
 import { postTransform } from "@/lib/api";
@@ -384,13 +385,22 @@ export default function Page() {
   }
 
   const hasContent = sections.length > 0;
+  const streaming = status === "streaming";
+
+  // Elegir una sección en el rail siempre lleva a ella. Con la presentación generada abierta (que
+  // tiene sus propias diapositivas, no las secciones) se vuelve al contenido en esa sección, en
+  // vez de dejar el clic sin efecto.
+  function handleSelectSection(id: string) {
+    setActiveSectionId(id);
+    if (deckOpen) setDeckOpen(false);
+  }
 
   return (
     <AppShell
       sections={visible}
       grounding={displayGrounding}
       activeSectionId={effectiveActiveId}
-      onSelectSection={setActiveSectionId}
+      onSelectSection={handleSelectSection}
       detailLevel={detailLevel}
       onDetailLevelChange={handleDetailLevelChange}
       chatOpen={openOrder.includes("chat")}
@@ -399,6 +409,7 @@ export default function Page() {
       slidesAvailable={hasContent}
       onToggleSlides={toggleSlides}
       deckOpen={deckOpen}
+      deckReady={deck !== null}
       deckAvailable={hasContent && original !== null}
       deckLoading={deckStatus === "loading"}
       deckError={deckStatus === "error"}
@@ -453,20 +464,19 @@ export default function Page() {
             onOpenSource={handleOpenSectionSource}
             activeSourceKey={activeSource?.key ?? null}
             groundingBySection={groundingBySection}
+            activeSectionId={effectiveActiveId}
+            onSelectSection={setActiveSectionId}
+            streaming={streaming}
           />
         ) : (
           <>
             <div className="mx-auto max-w-3xl space-y-4 p-6">
               <TransformInput status={status} onSubmit={handleTransform} />
 
-              {status === "streaming" ? (
-                <p className="text-sm text-muted">
-                  Generando… {sections.length} {sections.length === 1 ? "sección" : "secciones"}
-                </p>
-              ) : null}
+              {streaming ? <StreamingStatus count={sections.length} /> : null}
 
               {status === "error" ? (
-                <div className="rounded-md border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
+                <div className="rounded-md border border-warning/40 px-4 py-3 text-sm text-warning">
                   {error}
                 </div>
               ) : null}
@@ -474,7 +484,7 @@ export default function Page() {
 
             <SummaryBanner status={summaryStatus} summary={summary} />
 
-            {hasContent ? (
+            {hasContent || streaming ? (
               <ContentArea
                 title={presentation.title}
                 sections={visible}
@@ -485,6 +495,7 @@ export default function Page() {
                 onOpenSource={handleOpenSectionSource}
                 activeSourceKey={activeSource?.key ?? null}
                 groundingBySection={groundingBySection}
+                streaming={streaming}
               />
             ) : null}
           </>

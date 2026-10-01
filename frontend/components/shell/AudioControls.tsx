@@ -1,7 +1,9 @@
+import { CircleNotch, Pause, Play, Stop } from "@phosphor-icons/react/dist/ssr";
 import type { NarrationStatus } from "@/hooks/useNarration";
 
 /**
- * Controles de la narración tipo audiolibro (núcleo fijo, Punto 8 · Hito 5g Parte 3).
+ * Controles de la narración tipo audiolibro (núcleo fijo, Punto 8 · Hito 5g Parte 3). Viven
+ * dentro del bloque "Generar" del rail (`GeneratePanel`), junto a la presentación.
  *
  * Reproduce una narración generada aparte (guion sintetizado, NO el texto en pantalla). Nunca
  * autoplay: solo arranca si el usuario pulsa reproducir. Si el TTS falla, se dice (honestidad).
@@ -20,25 +22,21 @@ export function AudioControls({ status, available, onPlay, onPause, onStop }: Au
   const disabled = !available || loading;
 
   return (
-    <div className="p-3">
-      <h2 className="px-1 pb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-        Narración
-      </h2>
-
+    <div className="mt-2.5">
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={playing ? onPause : onPlay}
           disabled={disabled}
           aria-label={playing ? "Pausar narración" : "Reproducir narración"}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-accent hover:text-accent active:scale-95 disabled:opacity-40 disabled:hover:border-border disabled:hover:text-foreground"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-subtle text-accent transition-colors hover:text-accent-hover active:scale-95 disabled:opacity-45 disabled:hover:text-accent"
         >
           {loading ? (
-            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted border-t-accent" />
+            <CircleNotch size={15} className="animate-spin" aria-hidden />
           ) : playing ? (
-            <PauseIcon />
+            <Pause size={15} weight="fill" aria-hidden />
           ) : (
-            <PlayIcon />
+            <Play size={15} weight="fill" aria-hidden />
           )}
         </button>
 
@@ -47,60 +45,41 @@ export function AudioControls({ status, available, onPlay, onPause, onStop }: Au
           onClick={onStop}
           disabled={status !== "playing" && status !== "paused"}
           aria-label="Detener narración"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:text-foreground disabled:opacity-30 disabled:hover:text-muted"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-sunken hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted"
         >
-          <StopIcon />
+          <Stop size={14} weight="fill" aria-hidden />
         </button>
 
-        <span className="min-w-0 flex-1 truncate text-xs text-muted">
+        {/* El estado se muestra COMPLETO (puede ocupar dos líneas): nunca recortado con "…". */}
+        <span
+          className={`min-w-0 flex-1 text-xs leading-4 ${status === "error" ? "text-warning" : "text-muted"}`}
+          aria-live="polite"
+        >
           {!available
-            ? "Transforma un documento"
+            ? "Disponible con un documento"
             : loading
-              ? "Generando narración…"
+              ? "Generando la narración…"
               : status === "error"
-                ? "No se pudo generar la narración"
+                ? "No se pudo generar la narración."
                 : playing
                   ? "Reproduciendo"
                   : status === "paused"
                     ? "En pausa"
-                    : "Escucha un resumen narrado"}
+                    : "Pulsa para escuchar"}
         </span>
       </div>
+
+      {loading ? <div className="progress-indeterminate mt-2.5" aria-hidden /> : null}
 
       {status === "error" ? (
         <button
           type="button"
           onClick={onPlay}
-          className="mt-2 text-xs text-warning underline underline-offset-2 hover:text-foreground"
+          className="mt-2 text-xs text-accent underline decoration-1 underline-offset-2 hover:text-accent-hover"
         >
           Reintentar
         </button>
       ) : null}
     </div>
-  );
-}
-
-function PlayIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
-      <path d="M4.5 3.3v9.4c0 .5.56.82.99.55l7.3-4.7a.65.65 0 0 0 0-1.1l-7.3-4.7a.65.65 0 0 0-.99.55Z" />
-    </svg>
-  );
-}
-
-function PauseIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
-      <rect x="4" y="3" width="3" height="10" rx="1" />
-      <rect x="9" y="3" width="3" height="10" rx="1" />
-    </svg>
-  );
-}
-
-function StopIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
-      <rect x="3.5" y="3.5" width="9" height="9" rx="1.5" />
-    </svg>
   );
 }

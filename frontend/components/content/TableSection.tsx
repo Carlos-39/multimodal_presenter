@@ -10,11 +10,11 @@ export function TableSection({ content }: { content: TableContent }) {
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-border">
+          <tr className="border-b border-border-strong">
             {content.columns.map((col, i) => (
               <th
                 key={i}
-                className={`px-3 py-2 font-medium text-muted ${
+                className={`px-3 py-2 text-[0.8125rem] font-medium text-muted ${
                   numericCols[i] ? "text-right" : "text-left"
                 }`}
               >
@@ -25,7 +25,7 @@ export function TableSection({ content }: { content: TableContent }) {
         </thead>
         <tbody>
           {content.rows.map((row, r) => (
-            <tr key={r} className="border-b border-border/60 last:border-0">
+            <tr key={r} className="border-b border-border last:border-0">
               {row.map((cell, c) => (
                 <td
                   key={c}

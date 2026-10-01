@@ -2,7 +2,7 @@ import type { TimelineContent } from "@/lib/types";
 
 export function TimelineSection({ content }: { content: TimelineContent }) {
   return (
-    <ol className="space-y-4 border-l border-border pl-5">
+    <ol className="space-y-5 border-l border-border pl-5">
       {content.events.map((event, i) => (
         <li key={i} className="relative">
           <span
@@ -11,9 +11,11 @@ export function TimelineSection({ content }: { content: TimelineContent }) {
             aria-hidden
           />
           <div className="text-xs font-medium text-muted">{event.date}</div>
-          <div className="text-sm font-medium text-foreground">{event.label}</div>
+          <div className="font-serif text-base font-semibold leading-6 text-foreground">{event.label}</div>
           {event.description ? (
-            <p className="mt-0.5 text-sm text-muted">{event.description}</p>
+            <p className="mt-0.5 font-serif text-[0.9375rem] leading-6 text-foreground-secondary">
+              {event.description}
+            </p>
           ) : null}
         </li>
       ))}
