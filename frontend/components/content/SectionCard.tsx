@@ -1,6 +1,6 @@
-import { Sparkle } from "@phosphor-icons/react/dist/ssr";
 import { isAnchored, UNANCHORED_NOTICE } from "@/lib/grounding";
 import type { ChartNote, GroundingStatus, Section, SemanticObservation } from "@/lib/types";
+import { GeneratedFigure } from "./GeneratedFigure";
 import { SectionRenderer } from "./SectionRenderer";
 import { SourceCitation, UnanchoredNotice } from "./SourceCitation";
 
@@ -71,18 +71,10 @@ export function SectionCard({
         </div>
       ) : null}
 
-      {/* Ilustración de apoyo GENERADA (Hito 5h Parte 1). Etiqueta permanente SIEMPRE visible (no
-          tooltip), borde punteado y banda propia → imposible confundirla con contenido verificado.
-          No tiene fuente ni grounding: es ayuda didáctica declarada. */}
+      {/* Ilustración de apoyo GENERADA (Hito 5h Parte 1): etiqueta permanente, borde punteado y
+          banda propia; sin fuente ni grounding. Ver `GeneratedFigure`. */}
       {section.illustration ? (
-        <figure className="mt-4 overflow-hidden rounded-md border border-dashed border-border-strong bg-background">
-          <figcaption className="flex items-center gap-1.5 border-b border-dashed border-border-strong bg-surface-sunken px-3 py-1.5 text-xs font-medium text-muted">
-            <Sparkle size={12} weight="fill" aria-hidden />
-            <span>{section.illustration.label}</span>
-          </figcaption>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={section.illustration.image_url} alt={section.illustration.alt} className="block w-full" />
-        </figure>
+        <GeneratedFigure illustration={section.illustration} className="mt-4" />
       ) : null}
 
       <footer className="mt-5 border-t border-border pt-3">

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CaretLeft, CaretRight, Sparkle } from "@phosphor-icons/react";
 import type { GeneratedDeck, GroundingStatus, SourceReference } from "@/lib/types";
+import { GeneratedFigure } from "./GeneratedFigure";
 import { SourceCitation, UnanchoredNotice } from "./SourceCitation";
 
 /**
@@ -80,14 +81,7 @@ export function DeckView({ deck, onOpenSource }: DeckViewProps) {
           ) : null}
 
           {slide.illustration ? (
-            <figure className="mt-5 overflow-hidden rounded-md border border-dashed border-border-strong bg-background">
-              <figcaption className="flex items-center gap-1.5 border-b border-dashed border-border-strong bg-surface-sunken px-3 py-1.5 text-xs font-medium text-muted">
-                <Sparkle size={12} weight="fill" aria-hidden />
-                {slide.illustration.label}
-              </figcaption>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={slide.illustration.image_url} alt={slide.illustration.alt} className="block w-full" />
-            </figure>
+            <GeneratedFigure illustration={slide.illustration} className="mt-5" />
           ) : null}
 
           <footer className="mt-auto pt-6">

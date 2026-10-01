@@ -42,6 +42,10 @@
   --accent-foreground: light-dark(#ffffff, #14171f);
   --accent-subtle: light-dark(#e5eaf6, #252c42);
 
+  /* Papel fijo (igual en claro y oscuro): marco de las ilustraciones generadas, que vienen con
+     fondo claro. */
+  --paper: #fdfcfa;
+
   /* Rastro de verificación */
   --highlight: light-dark(#f7e7a0, #6b5613);
 

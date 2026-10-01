@@ -78,6 +78,10 @@ export default function Page() {
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryStatus, setSummaryStatus] = useState<SummaryStatus>("idle");
 
+  // Ilustraciones de apoyo en camino (post-pase del 5h): solo para avisar en pantalla.
+  const [illustrationsPending, setIllustrationsPending] = useState(false);
+  const illustrationRunRef = useRef(0); // descarta el resultado de un documento anterior
+
   // Chat (Hito 6): historial de sesión + streaming + sugerencias, aislado en un hook.
   const chat = useChat(original);
 
@@ -194,6 +198,8 @@ export default function Page() {
     setActiveSource(null);
     setSummary(null);
     setSummaryStatus("idle");
+    illustrationRunRef.current += 1; // invalida ilustraciones en camino del documento anterior
+    setIllustrationsPending(false);
     setSlidesOpen(false); // documento nuevo → vuelve a la vista de scroll
     setDeckOpen(false);
     setDeck(null);
@@ -222,9 +228,12 @@ export default function Page() {
     isText: boolean,
   ) {
     if (!isText || pres.sections.length === 0) return;
+    const run = ++illustrationRunRef.current;
+    setIllustrationsPending(true);
     try {
       const items = await fetchIllustrations(pres);
-      if (items.length === 0) return;
+      // Si entretanto se transformó otro documento, este resultado ya no le corresponde.
+      if (run !== illustrationRunRef.current || items.length === 0) return;
       setSections((prev) =>
         prev.map((s) => {
           const item = items.find((i) => i.section_id === s.id);
@@ -233,6 +242,8 @@ export default function Page() {
       );
     } catch {
       // extra no crítico: sin ilustración, la presentación sigue intacta.
+    } finally {
+      if (run === illustrationRunRef.current) setIllustrationsPending(false);
     }
   }
 
@@ -467,6 +478,7 @@ export default function Page() {
             activeSectionId={effectiveActiveId}
             onSelectSection={setActiveSectionId}
             streaming={streaming}
+            illustrationsPending={illustrationsPending}
           />
         ) : (
           <>
@@ -496,6 +508,7 @@ export default function Page() {
                 activeSourceKey={activeSource?.key ?? null}
                 groundingBySection={groundingBySection}
                 streaming={streaming}
+                illustrationsPending={illustrationsPending}
               />
             ) : null}
           </>

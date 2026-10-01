@@ -27,6 +27,7 @@ interface SlideViewProps {
   activeSectionId: string | null;
   onSelectSection: (id: string) => void;
   streaming?: boolean; // la transformación sigue en curso: aún pueden llegar slides
+  illustrationsPending?: boolean; // se están preparando ilustraciones de apoyo
 }
 
 export function SlideView({
@@ -40,6 +41,7 @@ export function SlideView({
   activeSectionId,
   onSelectSection,
   streaming = false,
+  illustrationsPending = false,
 }: SlideViewProps) {
   const total = sections.length;
   // Derivado, sin estado propio: si la sección activa no está entre las visibles (p. ej. al pasar
@@ -77,10 +79,10 @@ export function SlideView({
           {title}
         </h1>
         <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted">
-          {streaming ? (
+          {streaming || illustrationsPending ? (
             <span className="flex items-center gap-1.5" role="status">
               <CircleNotch size={12} className="animate-spin text-accent" aria-hidden />
-              Llegando más
+              {streaming ? "Llegando más" : "Preparando ilustraciones"}
             </span>
           ) : null}
           <span className="tabular">

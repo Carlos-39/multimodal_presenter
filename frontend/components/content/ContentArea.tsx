@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import type { DetailLevel } from "@/lib/detail";
 import type { ChartNote, GroundingStatus, Section, SemanticObservation } from "@/lib/types";
+import { PendingNotice } from "./PendingNotice";
 import { SectionCard } from "./SectionCard";
 import { SectionSkeleton, SkeletonLine } from "./Skeleton";
 
@@ -22,6 +23,7 @@ interface ContentAreaProps {
   activeSourceKey?: string | null;
   groundingBySection?: Record<string, GroundingStatus>; // estado de anclaje por sección (Hito 8)
   streaming?: boolean; // la transformación sigue en curso: aún pueden llegar secciones
+  illustrationsPending?: boolean; // se están preparando ilustraciones de apoyo (llegan después)
 }
 
 export function ContentArea({
@@ -35,6 +37,7 @@ export function ContentArea({
   activeSourceKey = null,
   groundingBySection = {},
   streaming = false,
+  illustrationsPending = false,
 }: ContentAreaProps) {
   // Re-ancla la vista a la sección activa al navegar o al cambiar de nivel (no perder el lugar).
   useEffect(() => {
@@ -73,6 +76,12 @@ export function ContentArea({
       {/* Mientras dura el streaming, el hueco de la sección que viene: avisa que falta contenido
           y evita que la página "termine" antes de tiempo. Desaparece con el evento final. */}
       {streaming ? <SectionSkeleton /> : null}
+
+      {/* Las ilustraciones llegan después del contenido y no se sabe de antemano en qué
+          secciones: se avisa que vienen, en vez de que aparezcan de golpe. */}
+      {illustrationsPending ? (
+        <PendingNotice>Preparando ilustraciones de apoyo…</PendingNotice>
+      ) : null}
     </div>
   );
 }
