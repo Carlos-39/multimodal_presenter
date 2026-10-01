@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { highlightSegments } from "@/lib/highlight";
 import type { GroundingStatus, SourceKind, SourceReference } from "@/lib/types";
+import { ImageExplanation } from "./ImageExplanation";
 
 /**
  * Panel de documento fuente (atribución interactiva, Punto 4 · Hito 5c). Lo comparten la
@@ -83,6 +84,18 @@ export function SourcePanel({
           <ImageSource url={fileUrl} />
         )}
       </div>
+
+      {/* Explicar imagen REAL (Hito 5h Parte 3): solo para fuentes binarias (PDF/imagen). Vive
+          aquí, sobre la imagen real = trazabilidad reforzada; NO es una ilustración generada. Se
+          remonta por `sourceKey` → colapsada de nuevo al cambiar de fuente. */}
+      {sourceKind !== "text" && original.file ? (
+        <ImageExplanation
+          key={sourceKey}
+          file={original.file}
+          page={source.page ?? null}
+          context={source.quote}
+        />
+      ) : null}
     </aside>
   );
 }
