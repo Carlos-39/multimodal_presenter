@@ -39,9 +39,10 @@ _SCRIPT_SYSTEM = (
     "para escuchar como un audiolibro: una síntesis coherente y con hilo propio, NO una lectura "
     "literal de las secciones ni una transcripción. Usa los núcleos como columna vertebral del "
     "relato y, de forma natural, menciona que hay más detalle disponible en el modo detallado "
-    "para quien quiera profundizar. Español neutro y claro, pensado para el oído. Sin fórmulas de "
-    "cuento infantil, sin 'bienvenidos', sin leer URLs ni fórmulas matemáticas en voz alta. "
-    "Devuelve solo el guion."
+    "para quien quiera profundizar. Es un PANORAMA escuchable de entre 250 y 500 palabras, sin "
+    "importar el tamaño del documento (una síntesis, no un recuento exhaustivo). Español neutro y "
+    "claro, pensado para el oído. Sin fórmulas de cuento infantil, sin 'bienvenidos', sin leer "
+    "URLs ni fórmulas matemáticas en voz alta. Devuelve solo el guion."
 )
 
 script_agent = Agent(system_prompt=_SCRIPT_SYSTEM)
