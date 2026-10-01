@@ -95,6 +95,12 @@ class TransformResponse(_Strict):
     chart_notes: list[ChartNote] = Field(default_factory=list)
 
 
+class SummaryResponse(_Strict):
+    """Adelanto inicial del contenido (Hito 5g), separado de la presentación completa."""
+
+    summary: str
+
+
 # --- Eventos SSE del endpoint /transform/stream (Hito 5d) ---
 # Cada `Section` streameada es indistinguible en forma de una del contrato no-streaming.
 

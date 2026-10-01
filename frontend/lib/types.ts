@@ -13,6 +13,9 @@
 export type SectionRole = "core" | "satellite";
 export type ChartType = "line" | "bar" | "pie" | "scatter";
 
+/** Estado del adelanto inicial (Hito 5g): sin pedir, en curso, listo o fallido. */
+export type SummaryStatus = "idle" | "loading" | "done" | "error";
+
 export interface SourceReference {
   document_id: string;
   quote: string;

@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # Primario — Anthropic (OBLIGATORIO para ejecutar el pipeline):
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-sonnet-5"
+    # Modelo liviano para el adelanto/resumen inicial (Hito 5g): rápido y barato, corre en
+    # paralelo a la estructuración (Sonnet) para dar un preview mientras el pipeline trabaja.
+    anthropic_summary_model: str = "claude-haiku-4-5-20251001"
     #
     # Fallback — Gemini vía OpenRouter (recomendado; si falta, solo se usa el primario).
     # El id es el de OpenRouter (gateway OpenAI-compatible), configurable sin tocar código.

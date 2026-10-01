@@ -52,3 +52,17 @@ def build_model(settings: Settings) -> Model:
         provider=OpenRouterProvider(api_key=settings.openrouter_api_key),
     )
     return FallbackModel(primary, fallback)
+
+
+def build_summary_model(settings: Settings) -> Model:
+    """Modelo liviano (Haiku) para el adelanto inicial (Hito 5g). Mismo proveedor Anthropic.
+
+    Sin fallback: el adelanto es un extra no crítico; si falla, el frontend lo muestra como tal
+    (honestidad) y la transformación completa (Sonnet) sigue su curso aparte.
+    """
+    if not settings.anthropic_api_key:
+        raise RuntimeError("ANTHROPIC_API_KEY es obligatoria para el adelanto inicial.")
+    return AnthropicModel(
+        settings.anthropic_summary_model,
+        provider=AnthropicProvider(api_key=settings.anthropic_api_key),
+    )

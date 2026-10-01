@@ -6,8 +6,10 @@ import { Workspace } from "@/components/shell/Workspace";
 import { ChatPanel } from "@/components/shell/ChatPanel";
 import { ContentArea } from "@/components/content/ContentArea";
 import { SourcePanel } from "@/components/content/SourcePanel";
+import { SummaryBanner } from "@/components/content/SummaryBanner";
 import { TransformInput } from "@/components/TransformInput";
 import { postTransform } from "@/lib/api";
+import { fetchSummary } from "@/lib/summary";
 import { streamTransform } from "@/lib/stream";
 import { useChat, type OriginalSource } from "@/hooks/useChat";
 import { DEFAULT_DETAIL_LEVEL, visibleSections, type DetailLevel } from "@/lib/detail";
@@ -22,6 +24,7 @@ import type {
   SemanticCoherenceReport,
   SourceKind,
   SourceReference,
+  SummaryStatus,
   TransformResponse,
 } from "@/lib/types";
 
@@ -63,6 +66,10 @@ export default function Page() {
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [detailLevel, setDetailLevel] = useState<DetailLevel>(DEFAULT_DETAIL_LEVEL);
   const [activeSource, setActiveSource] = useState<ActiveSource | null>(null);
+
+  // Adelanto inicial (Hito 5g): preview corto mientras corre la transformación completa.
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryStatus, setSummaryStatus] = useState<SummaryStatus>("idle");
 
   // Chat (Hito 6): historial de sesión + streaming + sugerencias, aislado en un hook.
   const chat = useChat(original);
@@ -132,6 +139,8 @@ export default function Page() {
     setChartNotes([]);
     setActiveSectionId(null);
     setActiveSource(null);
+    setSummary(null);
+    setSummaryStatus("idle");
     setOpenOrder((prev) => prev.filter((p) => p !== "source")); // cierra la fuente; conserva el chat
     setOriginal({ text, file });
     setSourceKind(file ? (file.type === "application/pdf" ? "pdf" : "image") : "text");
@@ -155,6 +164,17 @@ export default function Page() {
     track("transform_submit", { source_kind: sk });
     resetForRun(text, file);
     setStatus("streaming");
+
+    // Adelanto en PARALELO (Hito 5g): no se espera (no bloquea el streaming). Latencia real del
+    // LLM liviano, sin sleep. Si falla, se marca como error y se muestra como tal (honestidad).
+    setSummaryStatus("loading");
+    fetchSummary(text, file)
+      .then((s) => {
+        setSummary(s);
+        setSummaryStatus("done");
+      })
+      .catch(() => setSummaryStatus("error"));
+
     let received = 0;
     try {
       await streamTransform(text, file, (event) => {
@@ -337,6 +357,8 @@ export default function Page() {
             </div>
           ) : null}
         </div>
+
+        <SummaryBanner status={summaryStatus} summary={summary} />
 
         {hasContent ? (
           <ContentArea

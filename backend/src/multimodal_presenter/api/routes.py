@@ -15,16 +15,17 @@ from pydantic import ValidationError
 from pydantic_ai.models import Model
 
 from ..config import Settings, get_settings
-from ..model_provider import build_model
+from ..model_provider import build_model, build_summary_model
 from ..pipeline import transform
 from ..pipeline.chat import chat_stream, generate_suggestions
 from ..pipeline.extraction import prepare_input
 from ..pipeline.streaming import transform_stream
+from ..pipeline.summary import summarize
 from ..pipeline.uploads import read_and_validate_upload
 from ..schemas.chat import ChatStreamError, ChatTurn, SuggestionsResponse
 from ..schemas.presentation import Section
 from ..schemas.telemetry import TelemetryBatch
-from ..schemas.transform import StreamError, TransformResponse
+from ..schemas.transform import StreamError, SummaryResponse, TransformResponse
 from ..telemetry import record_ux_event, resolve_telemetry_dir
 
 router = APIRouter(tags=["pipeline"])
@@ -35,6 +36,11 @@ MAX_CHAT_HISTORY = 12  # se acotan los turnos que viajan al modelo (prompt bound
 def get_model(settings: Settings = Depends(get_settings)) -> Model:
     """Provee el modelo (Anthropic + fallback OpenRouter). Sobreescribible en tests."""
     return build_model(settings)
+
+
+def get_summary_model(settings: Settings = Depends(get_settings)) -> Model:
+    """Provee el modelo liviano (Haiku) del adelanto inicial. Sobreescribible en tests."""
+    return build_summary_model(settings)
 
 
 async def _parse_inputs(
@@ -184,6 +190,27 @@ async def chat_suggestions_endpoint(
     )
     questions = await generate_suggestions(model, extraction=extraction, section=section_obj)
     return SuggestionsResponse(questions=questions)
+
+
+@router.post("/summary", response_model=SummaryResponse)
+async def summary_endpoint(
+    text: str | None = Form(default=None),
+    file: UploadFile | None = File(default=None),
+    model: Model = Depends(get_summary_model),
+    settings: Settings = Depends(get_settings),
+) -> SummaryResponse:
+    """Adelanto corto del contenido (Hito 5g), con un modelo liviano (Haiku).
+
+    El frontend lo pide EN PARALELO a /transform/stream: da un preview de qué trata lo subido
+    mientras el pipeline completo (Sonnet) trabaja. Es un extra no crítico; si falla, el frontend
+    lo muestra como tal y la transformación sigue su curso.
+    """
+    text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    extraction = prepare_input(
+        text=text_value, binary=binary, media_type=media_type, filename=filename
+    )
+    summary = await summarize(model, extraction=extraction)
+    return SummaryResponse(summary=summary)
 
 
 @router.post("/telemetry", status_code=204)
