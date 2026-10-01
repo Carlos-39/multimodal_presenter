@@ -35,6 +35,7 @@ def apply_unanswerable_gate(
     retrieval_ok = condition == "baseline" or len(retrieved_pages) > 0
     return judge_score if retrieval_ok else 0.0
 
+
 _RUBRICA = (
     "Eres un evaluador. Compara la RESPUESTA del sistema con la RESPUESTA DE REFERENCIA para la "
     'PREGUNTA. Devuelve SOLO un JSON: {"correctness": <0.0-1.0>, "nota": "<breve>"}. '
