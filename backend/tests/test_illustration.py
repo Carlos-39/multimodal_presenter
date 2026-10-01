@@ -51,7 +51,11 @@ def test_genera_ilustracion_con_etiqueta(monkeypatch, mock_presentation: dict) -
 
 
 def test_sin_clave_es_503(mock_presentation: dict) -> None:
-    app.dependency_overrides[get_settings] = lambda: Settings(openai_api_key=None, logfire_token="")
+    # Sin NINGÚN proveedor de imagen (ni Ideogram ni OpenAI). Se anulan ambos explícitamente para
+    # no depender de lo que tenga el `.env` real de la máquina.
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        openai_api_key=None, ideogram_api_key=None, logfire_token=""
+    )
     app.dependency_overrides[get_summary_model] = lambda: _plan_model("s1")
     client = TestClient(app)
     r = client.post("/illustrations", json={"presentation": mock_presentation})

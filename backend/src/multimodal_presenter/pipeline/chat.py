@@ -40,7 +40,20 @@ Eres un asistente que responde preguntas SOBRE un documento. Reglas:
 con honestidad en el texto (no finjas seguridad ni inventes una fuente).
 - Elige el `content_type` que mejor represente la respuesta: normalmente `text`; usa `table`, \
 `chart` o `timeline` SOLO si la respuesta es información que se entiende mejor así.
-- Responde en el idioma del documento y la pregunta.\
+- Responde en el idioma del documento y la pregunta.
+
+Aclaración ante ambigüedad (úsala con MUCHA moderación; por defecto RESPONDE):
+- Antes de responder, evalúa si la pregunta es GENUINAMENTE ambigua de un modo que CAMBIARÍA la \
+respuesta. Pide aclaración SOLO si: (a) tiene un referente poco claro que el historial no \
+resuelve ("¿y el otro?", "¿eso cómo va?" sin antecedente claro), o (b) admite dos lecturas \
+realmente distintas con respuestas ancladas distintas.
+- NO pidas aclaración por preguntas simplemente cortas, informales, con errores de tipeo, o que \
+tienen una interpretación razonable: en esos casos RESPONDE. Ante la duda, RESPONDE.
+- Pide aclaración A LO SUMO UNA VEZ: si tu turno ANTERIOR en el historial ya fue un pedido de \
+aclaración, esta vez RESPONDE con la mejor interpretación, no vuelvas a preguntar.
+- Para pedir aclaración: llena `clarification` con una `question` breve y de cortesía (1 frase) y \
+1-2 `options` concretas (las interpretaciones posibles). Cuando la llenes, deja `source_quote` en \
+null y pon en `content.text` la MISMA pregunta de aclaración (sin inventar una respuesta).\
 """
 
 _SUGGESTIONS_PROMPT = """\
@@ -114,6 +127,18 @@ async def chat_stream(
                     last = text
                     yield ChatStreamText(text=text)
             answer: ChatAnswer = await result.get_output()
+
+        # Opción D: si el LLM pide aclaración, este turno NO es una respuesta anclada.
+        if answer.clarification is not None:
+            yield ChatStreamDone(
+                response=ChatResponse(
+                    content=answer.content,
+                    source=None,
+                    grounding="not_found",
+                    clarification=answer.clarification,
+                )
+            )
+            return
 
         # Fase 3 determinista: el código valida la cita, no el LLM.
         source, grounding = ground_quote(answer.source_quote, answer.source_page, extraction)

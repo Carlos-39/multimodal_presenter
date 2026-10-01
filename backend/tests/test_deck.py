@@ -71,7 +71,11 @@ def test_deck_mix_trazabilidad_y_imagen(monkeypatch, input_text: str) -> None:
 
 
 def test_deck_sin_clave_openai_genera_sin_imagenes(monkeypatch, input_text: str) -> None:
-    app.dependency_overrides[get_settings] = lambda: Settings(openai_api_key=None, logfire_token="")
+    # Sin NINGÚN proveedor de imagen (Ideogram ni OpenAI): el deck degrada sin imágenes. Se anulan
+    # ambas claves explícitamente para no depender del `.env` real de la máquina.
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        openai_api_key=None, ideogram_api_key=None, logfire_token=""
+    )
     app.dependency_overrides[get_model] = lambda: _deck_model(input_text)
 
     async def boom(settings, prompt):  # noqa: ANN001, ARG001
