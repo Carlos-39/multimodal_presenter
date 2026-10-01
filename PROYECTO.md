@@ -1,6 +1,6 @@
 # PROYECTO.md — Contexto maestro del sistema
 
-> **Qué es este archivo.** Contexto permanente del proyecto para cualquier agente de IA (Claude Code) o persona que trabaje en el repositorio. Se lee al inicio de cada sesión de desarrollo para tener el marco completo. NO es una orden de trabajo — las órdenes de trabajo concretas llegan por hito, con sus propios criterios de aceptación. Este archivo describe el "qué" y el "por qué"; cada prompt de hito describe el "qué hacer ahora".
+> **Qué es este archivo.** Contexto permanente del proyecto para cualquier agente de IA o persona que trabaje en el repositorio. Se lee al inicio de cada sesión de desarrollo para tener el marco completo. NO es una orden de trabajo — las órdenes de trabajo concretas llegan por hito, con sus propios criterios de aceptación. Este archivo describe el "qué" y el "por qué"; cada prompt de hito describe el "qué hacer ahora".
 
 ---
 

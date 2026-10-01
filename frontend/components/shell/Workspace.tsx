@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import { resolveWorkspace, WORKSPACE_WIDE, type PanelId } from "@/lib/workspace";
 
 /**
@@ -44,6 +44,17 @@ export function Workspace({ children, source, chat, openOrder, onClosePanel }: W
   const width = useViewportWidth();
   const layout = resolveWorkspace(openOrder, width);
 
+  // Progreso de lectura (Hito 5g): barra fina atada al scroll del contenido. Da sensación de
+  // avance en documentos largos sin reabrir el layout del 5e. 0 cuando no hay desplazamiento.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [progress, setProgress] = useState(0);
+  const onScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const max = el.scrollHeight - el.clientHeight;
+    setProgress(max > 0 ? Math.min(1, el.scrollTop / max) : 0);
+  }, []);
+
   // Solo se consideran paneles con contenido real (la fuente puede no tener sección activa).
   const panels: { id: PanelId; node: React.ReactNode }[] = [];
   if (source) panels.push({ id: "source", node: source });
@@ -54,7 +65,15 @@ export function Workspace({ children, source, chat, openOrder, onClosePanel }: W
 
   return (
     <div className="relative flex h-full">
-      <div className="min-w-0 flex-1 overflow-y-auto">{children}</div>
+      <div ref={scrollRef} onScroll={onScroll} className="relative min-w-0 flex-1 overflow-y-auto">
+        {/* Barra de progreso de lectura: sticky al tope del contenido; crece con el scroll. */}
+        <div
+          className="pointer-events-none sticky top-0 z-10 h-0.5 bg-accent transition-[width] duration-150 ease-out"
+          style={{ width: `${progress * 100}%` }}
+          aria-hidden
+        />
+        {children}
+      </div>
 
       {columns.map((p) => (
         <div

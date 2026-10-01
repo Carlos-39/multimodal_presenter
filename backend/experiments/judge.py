@@ -1,4 +1,4 @@
-"""Juez de calidad (Hito 7 dry run). Juez = Claude Haiku 4.5.
+"""Juez de calidad (Hito 7 dry run). Juez = Haiku 4.5 (Anthropic).
 
 LIMITACIÓN HONESTA (declarar en el informe): el juez es de la MISMA familia que el generador
 (Sonnet), distinta generación/tamaño — no es el ideal cross-vendor (Gemini quedó bloqueado por
@@ -34,6 +34,7 @@ def apply_unanswerable_gate(
         return judge_score
     retrieval_ok = condition == "baseline" or len(retrieved_pages) > 0
     return judge_score if retrieval_ok else 0.0
+
 
 _RUBRICA = (
     "Eres un evaluador. Compara la RESPUESTA del sistema con la RESPUESTA DE REFERENCIA para la "

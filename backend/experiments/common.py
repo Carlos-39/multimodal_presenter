@@ -190,7 +190,7 @@ def subset_pdf(pdf_bytes: bytes, pages_1based: list[int]) -> bytes:
 def compress_pdf(pdf_bytes: bytes, max_mb: float = 30.0) -> bytes:
     """Reduce un PDF a <max_mb re-renderizando páginas a JPEG (para el baseline: Anthropic
     limita a 32MB/PDF). Si ya cabe, lo devuelve tal cual. Las páginas siguen siendo NATIVAS
-    (imágenes que Claude lee con visión); no se aplana a texto."""
+    (imágenes que el modelo lee con visión); no se aplana a texto."""
     import pypdfium2 as pdfium
     from PIL import Image
 

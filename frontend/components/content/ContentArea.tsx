@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 import type { DetailLevel } from "@/lib/detail";
-import type { ChartNote, Section, SemanticObservation } from "@/lib/types";
+import { isAnchored, UNANCHORED_NOTICE } from "@/lib/grounding";
+import type { ChartNote, GroundingStatus, Section, SemanticObservation } from "@/lib/types";
 import { SectionRenderer } from "./SectionRenderer";
 
 /**
@@ -19,6 +20,7 @@ interface ContentAreaProps {
   observations?: SemanticObservation[];
   onOpenSource?: (section: Section) => void;
   activeSourceKey?: string | null;
+  groundingBySection?: Record<string, GroundingStatus>; // estado de anclaje por sección (Hito 8)
 }
 
 export function ContentArea({
@@ -30,6 +32,7 @@ export function ContentArea({
   observations = [],
   onOpenSource,
   activeSourceKey = null,
+  groundingBySection = {},
 }: ContentAreaProps) {
   // Re-ancla la vista a la sección activa al navegar o al cambiar de nivel (no perder el lugar).
   useEffect(() => {
@@ -50,6 +53,8 @@ export function ContentArea({
         const observation = observations.find((o) => o.section_id === section.id);
         const isSatellite = section.role === "satellite";
         const active = section.id === activeSectionId;
+        const status = groundingBySection[section.id] ?? "unverified";
+        const anchored = isAnchored(status);
 
         return (
           <section
@@ -87,15 +92,27 @@ export function ContentArea({
             ) : null}
 
             <footer className="mt-4 border-t border-border pt-2">
-              <button
-                type="button"
-                onClick={() => onOpenSource?.(section)}
-                className={`text-left text-xs hover:text-foreground ${
-                  section.id === activeSourceKey ? "text-foreground" : "text-muted"
-                }`}
-              >
-                Fuente: “{section.source.quote}” · ver en el documento
-              </button>
+              {anchored ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenSource?.(section)}
+                  className={`text-left text-xs underline-offset-2 transition-colors hover:text-foreground hover:underline ${
+                    section.id === activeSourceKey ? "text-foreground underline" : "text-muted"
+                  }`}
+                >
+                  Fuente: “{section.source.quote}” · ver en el documento
+                </button>
+              ) : (
+                // not_found (Hito 8): NO se ofrece "ver fuente" (sería fingir una cita que no
+                // ancla); aviso honesto, como el chat. No se descarta la sección.
+                <p className="flex items-start gap-1.5 text-xs text-warning">
+                  <span
+                    className="mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full bg-warning"
+                    aria-hidden
+                  />
+                  <span>{UNANCHORED_NOTICE}</span>
+                </p>
+              )}
             </footer>
           </section>
         );

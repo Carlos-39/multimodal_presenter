@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     app_name: str = "Multimodal Presenter API"
     environment: str = "development"
 
-    # Modelo (PydanticAI). Primario: Anthropic Claude. Fallback: Gemini vía OpenRouter.
+    # Modelo (PydanticAI). Primario: Anthropic. Fallback: Gemini vía OpenRouter.
     # Las claves se validan en runtime al construir el modelo (model_provider.build_model),
     # no al importar la app, para que el CI (que mockea el LLM) no requiera claves reales.
     # Nunca se hardcodean.
@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # Primario — Anthropic (OBLIGATORIO para ejecutar el pipeline):
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-sonnet-5"
+    # Modelo liviano para el adelanto/resumen inicial (Hito 5g): rápido y barato, corre en
+    # paralelo a la estructuración (Sonnet) para dar un preview mientras el pipeline trabaja.
+    anthropic_summary_model: str = "claude-haiku-4-5-20251001"
     #
     # Fallback — Gemini vía OpenRouter (recomendado; si falta, solo se usa el primario).
     # El id es el de OpenRouter (gateway OpenAI-compatible), configurable sin tocar código.
@@ -51,6 +54,12 @@ class Settings(BaseSettings):
     # Observabilidad (Logfire)
     logfire_token: str | None = None
     logfire_service_name: str = "multimodal-presenter-backend"
+
+    # Telemetría de comportamiento (Hito 8). Se anexa a JSONL para análisis posterior.
+    # `telemetry_dir` vacío → carpeta por defecto fuera de OneDrive (LOCALAPPDATA en Windows).
+    # Apágala con TELEMETRY_ENABLED=false (sigue registrando en Logfire si hay token).
+    telemetry_enabled: bool = True
+    telemetry_dir: str | None = None
 
 
 @lru_cache
