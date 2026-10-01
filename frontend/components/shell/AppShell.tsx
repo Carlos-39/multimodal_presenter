@@ -1,6 +1,7 @@
 "use client";
 
 import type { DetailLevel } from "@/lib/detail";
+import type { NarrationStatus } from "@/hooks/useNarration";
 import type { GroundingReport, Section } from "@/lib/types";
 import { GroundingIndicator } from "@/components/GroundingIndicator";
 import { SectionNav } from "./SectionNav";
@@ -26,6 +27,11 @@ interface AppShellProps {
   onDetailLevelChange: (level: DetailLevel) => void;
   chatOpen: boolean;
   onToggleChat: () => void;
+  narrationStatus: NarrationStatus;
+  narrationAvailable: boolean;
+  onNarrationPlay: () => void;
+  onNarrationPause: () => void;
+  onNarrationStop: () => void;
   children: React.ReactNode;
 }
 
@@ -38,6 +44,11 @@ export function AppShell({
   onDetailLevelChange,
   chatOpen,
   onToggleChat,
+  narrationStatus,
+  narrationAvailable,
+  onNarrationPlay,
+  onNarrationPause,
+  onNarrationStop,
   children,
 }: AppShellProps) {
   return (
@@ -77,7 +88,13 @@ export function AppShell({
             onSelectSection={onSelectSection}
           />
           <div className="mt-auto border-t border-border">
-            <AudioControls />
+            <AudioControls
+              status={narrationStatus}
+              available={narrationAvailable}
+              onPlay={onNarrationPlay}
+              onPause={onNarrationPause}
+              onStop={onNarrationStop}
+            />
           </div>
         </aside>
 

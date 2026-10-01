@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     # el desarrollo para NO gastar esa llamada extra en documentos con gráficos.
     semantic_verification_enabled: bool = True
 
+    # Narración TTS (Hito 5g Parte 3) — OpenAI tts-1. Clave PROPIA de OpenAI (distinta a la de
+    # OpenRouter). Sin ella, /narration responde 503 y el frontend lo muestra (nunca en silencio).
+    openai_api_key: str | None = None
+    openai_tts_model: str = "tts-1"
+    openai_tts_voice: str = "nova"
+
     # Entrada multimodal (Hito 4): tope de tamaño de archivo subido, en MB.
     max_upload_mb: int = 20
 

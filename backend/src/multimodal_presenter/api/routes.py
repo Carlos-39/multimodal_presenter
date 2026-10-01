@@ -19,13 +19,19 @@ from ..model_provider import build_model, build_summary_model
 from ..pipeline import transform
 from ..pipeline.chat import chat_stream, generate_suggestions
 from ..pipeline.extraction import prepare_input
+from ..pipeline.narration import narrate
 from ..pipeline.streaming import transform_stream
 from ..pipeline.summary import summarize
 from ..pipeline.uploads import read_and_validate_upload
 from ..schemas.chat import ChatStreamError, ChatTurn, SuggestionsResponse
 from ..schemas.presentation import Section
 from ..schemas.telemetry import TelemetryBatch
-from ..schemas.transform import StreamError, SummaryResponse, TransformResponse
+from ..schemas.transform import (
+    NarrationRequest,
+    StreamError,
+    SummaryResponse,
+    TransformResponse,
+)
 from ..telemetry import record_ux_event, resolve_telemetry_dir
 
 router = APIRouter(tags=["pipeline"])
@@ -211,6 +217,31 @@ async def summary_endpoint(
     )
     summary = await summarize(model, extraction=extraction)
     return SummaryResponse(summary=summary)
+
+
+@router.post(
+    "/narration",
+    responses={200: {"content": {"audio/mpeg": {}}}},
+    response_class=Response,
+)
+async def narration_endpoint(
+    req: NarrationRequest,
+    model: Model = Depends(get_model),
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    """Narración tipo audiolibro (Hito 5g Parte 3). Devuelve mp3 (audio/mpeg).
+
+    On-demand y cacheada por documento: pedir la misma narración otra vez usa la caché (no
+    regenera guion ni audio). Si el TTS no está configurado o falla, responde con error visible
+    (503/502) para que el frontend lo muestre — nunca un reproductor mudo sin explicación.
+    """
+    if not settings.openai_api_key:
+        raise HTTPException(status_code=503, detail="La narración por voz no está configurada.")
+    try:
+        audio = await narrate(model, req.presentation, settings)
+    except Exception as exc:  # fallo del proveedor TTS / red → error visible, no silencio
+        raise HTTPException(status_code=502, detail="No se pudo generar la narración.") from exc
+    return Response(content=audio, media_type="audio/mpeg")
 
 
 @router.post("/telemetry", status_code=204)

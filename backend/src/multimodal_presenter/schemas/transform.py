@@ -101,6 +101,15 @@ class SummaryResponse(_Strict):
     summary: str
 
 
+class NarrationRequest(_Strict):
+    """Petición de narración (Hito 5g Parte 3): la presentación ya generada (sus núcleos).
+
+    No modifica el contrato: solo transporta una `Presentation` existente al endpoint de audio.
+    """
+
+    presentation: Presentation
+
+
 # --- Eventos SSE del endpoint /transform/stream (Hito 5d) ---
 # Cada `Section` streameada es indistinguible en forma de una del contrato no-streaming.
 
