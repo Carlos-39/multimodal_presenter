@@ -1,4 +1,4 @@
-"""Juez de calidad (Hito 7 dry run). Juez = Claude Haiku 4.5.
+"""Juez de calidad (Hito 7 dry run). Juez = Haiku 4.5 (Anthropic).
 
 LIMITACIÓN HONESTA (declarar en el informe): el juez es de la MISMA familia que el generador
 (Sonnet), distinta generación/tamaño — no es el ideal cross-vendor (Gemini quedó bloqueado por

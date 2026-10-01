@@ -1,6 +1,6 @@
 """Construcción del modelo (PydanticAI) desde la config tipada.
 
-Primario: Anthropic Claude (claude-sonnet-5).
+Primario: Anthropic (claude-sonnet-5).
 Fallback: Gemini vía OpenRouter (gateway OpenAI-compatible).
 Ambos envueltos en un `FallbackModel`: si el primario falla (error de API, rate limit,
 indisponibilidad), PydanticAI reintenta automáticamente con el fallback.

@@ -1,6 +1,6 @@
 """Generador de respuesta ÚNICO y compartido por las 4 condiciones (Hito 7).
 
-Restricción clave del experimento: el generador (Claude Sonnet 5) y el prompt son los MISMOS en
+Restricción clave del experimento: el generador (Sonnet 5) y el prompt son los MISMOS en
 las 4 condiciones — solo cambia qué páginas (nativas: PDF/imagen) recibe. Nunca texto aplanado.
 El documento va con `cache_control` para que el baseline (mismo documento cada pregunta) se
 beneficie del prompt caching, y ese ahorro quede medido igual que en el Hito 6.

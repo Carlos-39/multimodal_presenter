@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     app_name: str = "Multimodal Presenter API"
     environment: str = "development"
 
-    # Modelo (PydanticAI). Primario: Anthropic Claude. Fallback: Gemini vía OpenRouter.
+    # Modelo (PydanticAI). Primario: Anthropic. Fallback: Gemini vía OpenRouter.
     # Las claves se validan en runtime al construir el modelo (model_provider.build_model),
     # no al importar la app, para que el CI (que mockea el LLM) no requiera claves reales.
     # Nunca se hardcodean.
