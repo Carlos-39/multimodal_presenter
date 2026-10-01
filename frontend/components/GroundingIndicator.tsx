@@ -19,11 +19,13 @@ export function GroundingIndicator({ grounding }: GroundingIndicatorProps) {
   if (grounding.source_kind !== "text") {
     return (
       <div
-        className="flex items-center gap-1.5 text-xs text-muted"
+        className="hidden items-center gap-1.5 text-xs text-muted sm:flex"
         title="Documento no-texto: atribución por página; verificación de contenido pendiente (Hito 5)"
       >
         <span className="inline-block h-2 w-2 rounded-full bg-muted" aria-hidden />
-        <span>{grounding.total_sections} secciones · anclaje pendiente</span>
+        <span>
+          <span className="tabular">{grounding.total_sections}</span> secciones, anclaje pendiente
+        </span>
       </div>
     );
   }
@@ -31,7 +33,7 @@ export function GroundingIndicator({ grounding }: GroundingIndicatorProps) {
   const hasWarnings = grounding.not_found_sections > 0;
   return (
     <div
-      className="flex items-center gap-1.5 text-xs"
+      className="hidden items-center gap-1.5 text-xs sm:flex"
       title={
         hasWarnings
           ? `${grounding.not_found_sections} cita(s) no encontrada(s) en el documento`
@@ -40,12 +42,15 @@ export function GroundingIndicator({ grounding }: GroundingIndicatorProps) {
     >
       <span
         className={`inline-block h-2 w-2 rounded-full ${
-          hasWarnings ? "bg-warning" : "bg-emerald-600"
+          hasWarnings ? "bg-warning" : "bg-verified"
         }`}
         aria-hidden
       />
-      <span className={hasWarnings ? "text-warning" : "text-muted"}>
-        {grounding.verified_sections}/{grounding.total_sections} ancladas
+      <span className={hasWarnings ? "text-warning" : "text-foreground-secondary"}>
+        <span className="tabular">
+          {grounding.verified_sections}/{grounding.total_sections}
+        </span>{" "}
+        ancladas
       </span>
     </div>
   );

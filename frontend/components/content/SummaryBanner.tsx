@@ -1,4 +1,5 @@
 import type { SummaryStatus } from "@/lib/types";
+import { SkeletonText } from "./Skeleton";
 
 /**
  * Adelanto inicial del contenido (Hito 5g). Estado transitorio en la zona dinámica, antes/junto
@@ -14,18 +15,18 @@ export function SummaryBanner({ status, summary }: SummaryBannerProps) {
   if (status === "idle") return null;
 
   return (
-    <div className="section-enter mx-auto max-w-3xl px-6">
-      <div className="rounded-md border border-border bg-surface/60 px-4 py-3">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Adelanto</p>
+    <div className="section-enter mx-auto max-w-3xl px-6 pb-8">
+      <div className="rounded-lg bg-surface-sunken px-5 py-4">
+        <p className="mb-1 text-xs font-medium text-muted">Adelanto del documento</p>
         {status === "loading" ? (
-          <p className="flex items-center gap-2 text-sm text-muted">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-accent" aria-hidden />
-            Leyendo el documento…
-          </p>
+          <div role="status">
+            <span className="sr-only">Leyendo el documento…</span>
+            <SkeletonText lines={2} />
+          </div>
         ) : status === "error" ? (
           <p className="text-sm text-warning">No se pudo generar el adelanto.</p>
         ) : (
-          <p className="text-sm leading-relaxed text-foreground">{summary}</p>
+          <p className="max-w-[68ch] font-serif text-base leading-[1.6] text-foreground">{summary}</p>
         )}
       </div>
     </div>

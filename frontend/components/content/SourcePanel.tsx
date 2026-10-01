@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import { X } from "@phosphor-icons/react";
 import { highlightSegments } from "@/lib/highlight";
 import type { GroundingStatus, SourceKind, SourceReference } from "@/lib/types";
 import { ImageExplanation } from "./ImageExplanation";
@@ -52,16 +53,16 @@ export function SourcePanel({
 
   return (
     <aside className="section-enter flex h-full w-full flex-col bg-surface">
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
-          Documento fuente
-        </h2>
+      <header className="flex items-center justify-between border-b border-border py-2 pl-4 pr-2">
+        <h2 className="text-[0.8125rem] font-medium text-foreground">Documento fuente</h2>
         <button
           type="button"
           onClick={onClose}
-          className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
+          aria-label="Cerrar el documento fuente"
+          title="Cerrar"
+          className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-sunken hover:text-foreground"
         >
-          cerrar
+          <X size={15} aria-hidden />
         </button>
       </header>
 
@@ -119,16 +120,16 @@ function TextSource({
   }, [sourceKey]);
 
   return (
-    <div className="p-4">
+    <div className="px-5 py-4">
       {status === "not_found" ? (
-        <p className="mb-3 rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-xs text-warning">
+        <p className="mb-3 rounded-md border border-warning/40 px-3 py-2 text-xs text-warning">
           No se pudo verificar este fragmento en el documento.
         </p>
       ) : null}
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+      <p className="whitespace-pre-wrap font-serif text-[0.9375rem] leading-[1.65] text-foreground-secondary">
         {segments.before}
         {segments.mark ? (
-          <mark ref={markRef} className="rounded bg-accent px-0.5 text-accent-foreground">
+          <mark ref={markRef} className="rounded-[2px] bg-highlight px-0.5 text-foreground">
             {segments.mark}
           </mark>
         ) : null}
@@ -146,12 +147,20 @@ function PdfSource({ url, page }: { url: string | null; page: number | null }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2 text-xs">
-        <span className="text-muted">{page ? `Referencia: página ${page}.` : "Documento PDF"}</span>
+        <span className="text-muted">
+          {page ? (
+            <>
+              Referencia: página <span className="tabular">{page}</span>
+            </>
+          ) : (
+            "Documento PDF"
+          )}
+        </span>
         <a
           href={src}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 text-muted underline underline-offset-2 hover:text-foreground"
+          className="shrink-0 text-accent underline decoration-1 underline-offset-2 hover:text-accent-hover"
         >
           Abrir PDF en pestaña nueva
         </a>

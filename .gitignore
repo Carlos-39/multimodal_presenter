@@ -63,6 +63,15 @@ yarn-debug.log*
 yarn-error.log*
 
 # ─────────────────────────────────────────────────────────────
+# Material de diseño LOCAL (rediseño visual 5k) — NO va al repositorio
+# ─────────────────────────────────────────────────────────────
+# La galería de referencia /galeria (ruta con fixtures) y las capturas/propuesta del rediseño:
+# son útiles SOLO en local (referencia de diseño), no deben servirse en producción ni versionarse.
+# Los archivos siguen en disco; /galeria funciona en `npm run dev` de esta máquina.
+frontend/app/galeria/
+docs/diseno/
+
+# ─────────────────────────────────────────────────────────────
 # Editores / SO
 # ─────────────────────────────────────────────────────────────
 .vscode/

@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { CircleNotch, Microphone, Question, Stop } from "@phosphor-icons/react";
 import { ContentRenderer } from "@/components/content/ContentRenderer";
+import { SkeletonText } from "@/components/content/Skeleton";
+import { SourceCitation, UnanchoredNotice } from "@/components/content/SourceCitation";
 import type { ChatMessage } from "@/hooks/useChat";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { track } from "@/lib/telemetry";
@@ -78,13 +81,13 @@ export function ChatPanel({
 
   return (
     <div className="flex h-full flex-col">
-      <h2 className="border-b border-border px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted">
+      <h2 className="border-b border-border px-4 py-3 text-[0.8125rem] font-medium leading-4 text-foreground">
         Chat
       </h2>
 
       <div ref={listRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 ? (
-          <p className="text-center text-sm text-muted">
+          <p className="px-2 pt-6 text-center text-[0.8125rem] leading-5 text-muted">
             {disabled
               ? "Transforma un documento para conversar sobre él."
               : "Pregunta sobre el documento. Cada respuesta se ancla a su fuente."}
@@ -103,8 +106,8 @@ export function ChatPanel({
       </div>
 
       {suggestions.length > 0 ? (
-        <div className="border-t border-border px-4 py-2">
-          <p className="mb-1.5 text-xs text-muted">Preguntas sugeridas</p>
+        <div className="border-t border-border px-4 py-3">
+          <p className="mb-2 text-xs text-muted">Preguntas sugeridas</p>
           <div className="flex flex-wrap gap-1.5">
             {suggestions.map((question, index) => (
               <button
@@ -112,7 +115,7 @@ export function ChatPanel({
                 type="button"
                 onClick={() => submit(question, "suggested", index)}
                 disabled={disabled || streaming}
-                className="rounded-full border border-border px-2.5 py-1 text-left text-xs text-foreground transition-[colors,transform] hover:border-accent hover:bg-accent/5 hover:text-accent active:scale-[0.97] disabled:opacity-40"
+                className="rounded-full border border-border px-2.5 py-1 text-left text-xs text-foreground-secondary transition-[colors,transform] hover:border-accent hover:bg-accent-subtle hover:text-accent active:scale-[0.97] disabled:opacity-40"
               >
                 {question}
               </button>
@@ -151,15 +154,15 @@ export function ChatPanel({
             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border transition-colors active:scale-95 disabled:opacity-40 ${
               voice.status === "recording"
                 ? "animate-pulse border-warning text-warning"
-                : "border-border text-muted hover:border-accent hover:text-accent"
+                : "border-border text-muted hover:border-border-strong hover:text-foreground"
             }`}
           >
             {voice.status === "transcribing" ? (
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted border-t-accent" />
+              <CircleNotch size={16} className="animate-spin" aria-hidden />
             ) : voice.status === "recording" ? (
-              <StopDot />
+              <Stop size={14} weight="fill" aria-hidden />
             ) : (
-              <MicIcon />
+              <Microphone size={16} aria-hidden />
             )}
           </button>
 
@@ -174,15 +177,15 @@ export function ChatPanel({
             }}
             rows={1}
             disabled={disabled}
-            placeholder={disabled ? "Sin documento…" : "Escribe o dicta una pregunta…"}
-            className="max-h-28 min-h-9 flex-1 resize-none rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent disabled:opacity-50"
+            placeholder={disabled ? "Aún no hay documento" : "Haz una pregunta"}
+            className="max-h-28 min-h-9 flex-1 resize-none rounded-md border border-border-strong bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={!canSend}
-            className="shrink-0 rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover disabled:opacity-40 disabled:hover:bg-accent"
+            className="flex h-9 shrink-0 items-center rounded-md bg-accent px-3 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover active:scale-[0.98] disabled:opacity-45 disabled:hover:bg-accent"
           >
-            {streaming ? "…" : "Enviar"}
+            {streaming ? <CircleNotch size={16} className="animate-spin" aria-label="Respondiendo" /> : "Enviar"}
           </button>
         </div>
       </form>
@@ -204,7 +207,7 @@ function Message({
   if (message.role === "user") {
     return (
       <div className="section-enter flex justify-end">
-        <p className="max-w-[85%] rounded-lg bg-accent px-3 py-2 text-sm text-accent-foreground">
+        <p className="max-w-[85%] rounded-lg bg-accent-subtle px-3 py-2 text-sm leading-5 text-foreground">
           {message.text}
         </p>
       </div>
@@ -213,7 +216,7 @@ function Message({
 
   if (message.status === "error") {
     return (
-      <div className="section-enter rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-sm text-warning">
+      <div className="section-enter rounded-lg border border-warning/40 px-3 py-2 text-sm leading-5 text-warning">
         {message.text}
       </div>
     );
@@ -226,23 +229,23 @@ function Message({
   // opciones son un atajo y el usuario siempre puede reescribir abajo.
   if (clarification) {
     return (
-      <div className="section-enter rounded-lg border border-accent/40 bg-accent/5 px-3 py-2">
+      <div className="section-enter rounded-lg border border-accent/40 bg-accent-subtle px-3 py-2.5">
         <p className="flex items-center gap-1.5 text-xs font-medium text-accent">
-          <QuestionIcon />
+          <Question size={14} aria-hidden />
           Para responder mejor
         </p>
         <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
           {clarification.question}
         </p>
-        {clarification.options.length > 0 ? (
+        {(clarification.options ?? []).length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {clarification.options.map((option) => (
+            {(clarification.options ?? []).map((option) => (
               <button
                 key={option}
                 type="button"
                 onClick={() => onAsk(option)}
                 disabled={!canAsk}
-                className="rounded-full border border-accent/50 px-2.5 py-1 text-left text-xs text-accent transition-[colors,transform] hover:bg-accent hover:text-accent-foreground active:scale-[0.97] disabled:opacity-40"
+                className="rounded-full border border-accent/50 bg-surface px-2.5 py-1 text-left text-xs text-accent transition-[colors,transform] hover:bg-accent hover:text-accent-foreground active:scale-[0.97] disabled:opacity-40"
               >
                 {option}
               </button>
@@ -256,13 +259,24 @@ function Message({
   const isComponent = response && response.content.content_type !== "text";
 
   return (
-    <div className="section-enter rounded-lg border border-border bg-background px-3 py-2">
+    <div className="section-enter rounded-lg border border-border bg-background px-3 py-2.5 [--table-bg:var(--background)]">
       {isComponent ? (
         <ContentRenderer content={response.content} />
+      ) : message.status === "streaming" && message.text.length === 0 ? (
+        // Aún no llega el primer fragmento: el hueco de la respuesta, no una burbuja vacía.
+        <div role="status">
+          <span className="sr-only">Buscando la respuesta en el documento…</span>
+          <SkeletonText lines={2} />
+        </div>
       ) : (
         <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
           {message.text}
-          {message.status === "streaming" ? <span className="animate-pulse">▋</span> : null}
+          {message.status === "streaming" ? (
+            <span
+              className="ml-0.5 inline-block h-[1em] w-[0.45em] translate-y-[0.15em] animate-pulse rounded-[1px] bg-accent"
+              aria-hidden
+            />
+          ) : null}
         </p>
       )}
 
@@ -285,54 +299,23 @@ function SourceChip({
   // No anclada: se dice con honestidad, no se inventa una fuente (mismo espíritu que not_found 5c).
   if (!source || grounding === "not_found") {
     return (
-      <p className="mt-2 flex items-center gap-1.5 border-t border-border pt-2 text-xs text-warning">
-        <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-warning" aria-hidden />
-        Respuesta no anclada a la fuente
-      </p>
+      <div className="mt-2.5 border-t border-border pt-2">
+        <UnanchoredNotice>Respuesta no anclada a la fuente</UnanchoredNotice>
+      </div>
     );
   }
 
-  const label =
-    grounding === "unverified" && source.page
-      ? `Fuente: página ${source.page}`
-      : `Fuente: “${truncate(source.quote)}”`;
+  const byPage = grounding === "unverified" && source.page;
 
   return (
-    <button
-      type="button"
-      onClick={() => onOpenSource(source, grounding)}
-      className="mt-2 border-t border-border pt-2 text-left text-xs text-muted hover:text-foreground"
-    >
-      {label} · ver en el documento
-    </button>
+    <div className="mt-2.5 border-t border-border pt-2">
+      <SourceCitation onOpen={() => onOpenSource(source, grounding)} quoted={!byPage} action="ver">
+        {byPage ? `página ${source.page}` : truncate(source.quote)}
+      </SourceCitation>
+    </div>
   );
 }
 
 function truncate(text: string, max = 60): string {
   return text.length > max ? `${text.slice(0, max)}…` : text;
-}
-
-function QuestionIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
-      <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm0 1.2a5.3 5.3 0 1 1 0 10.6 5.3 5.3 0 0 1 0-10.6Zm0 1.9a2 2 0 0 0-2 2 .6.6 0 1 0 1.2 0 .8.8 0 1 1 1.2.7c-.5.3-1 .8-1 1.6a.6.6 0 0 0 1.2 0c0-.2.2-.4.5-.6.6-.4 1.1-.9 1.1-1.7a2 2 0 0 0-2.2-2Zm0 6.3a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z" />
-    </svg>
-  );
-}
-
-function MicIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
-      <path d="M8 1.5a2 2 0 0 0-2 2v4a2 2 0 1 0 4 0v-4a2 2 0 0 0-2-2Z" />
-      <path d="M4 7a.6.6 0 0 1 1.2 0 2.8 2.8 0 0 0 5.6 0A.6.6 0 0 1 12 7a4 4 0 0 1-3.4 3.96V13h1.6a.6.6 0 0 1 0 1.2H5.8a.6.6 0 0 1 0-1.2h1.6v-2.04A4 4 0 0 1 4 7Z" />
-    </svg>
-  );
-}
-
-function StopDot() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
-      <rect x="3.5" y="3.5" width="9" height="9" rx="1.5" />
-    </svg>
-  );
 }

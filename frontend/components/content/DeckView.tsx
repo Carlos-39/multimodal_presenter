@@ -1,130 +1,192 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useId, useState, useSyncExternalStore } from "react";
+import { CornersIn, CornersOut, Sparkle } from "@phosphor-icons/react";
+import { useSlideKeys } from "@/hooks/useSlideKeys";
+import { slideLayout } from "@/lib/deckLayout";
 import type { GeneratedDeck, GroundingStatus, SourceReference } from "@/lib/types";
+import { GeneratedFigure } from "./GeneratedFigure";
+import { SlideNav } from "./SlideNav";
+import { SourceCitation, UnanchoredNotice } from "./SourceCitation";
 
 /**
  * Presentación GENERADA en diapositivas (guion propio, desde la fuente). Pieza nueva y separada de
- * la vista de slides del 5h (re-composición sin generación). Usa los tokens del 5a. Trazabilidad
- * por slide (mix honesto): anclada a la fuente ("ver fuente"), o marcada como "Síntesis" si es una
- * simplificación declarada. Las imágenes de apoyo llevan su etiqueta obligatoria.
+ * la vista de slides del 5h (re-composición sin generación). Trazabilidad por slide (mix honesto):
+ * anclada a la fuente ("ver en el documento"), o marcada como síntesis si es una simplificación
+ * declarada. Las imágenes de apoyo llevan su etiqueta obligatoria.
+ *
+ * Cada diapositiva se dibuja sobre un lienzo 16:9 cuya tipografía escala con su ancho (unidades de
+ * contenedor en `globals.css`), así se ve igual en la app y proyectada a pantalla completa. La
+ * composición la decide `slideLayout` según lo que la slide trae. Si el contenido no cupiera, el
+ * lienzo se desplaza por dentro: nunca se recorta.
  */
 interface DeckViewProps {
   deck: GeneratedDeck;
   onOpenSource: (source: SourceReference, status: GroundingStatus) => void;
+  initialIndex?: number; // diapositiva en la que se abre (0-based)
 }
 
-export function DeckView({ deck, onOpenSource }: DeckViewProps) {
-  const [index, setIndex] = useState(0);
+function subscribeFullscreen(onChange: () => void): () => void {
+  document.addEventListener("fullscreenchange", onChange);
+  return () => document.removeEventListener("fullscreenchange", onChange);
+}
+
+export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps) {
+  const [index, setIndex] = useState(initialIndex);
   const total = deck.slides.length;
   const shown = total > 0 ? Math.min(index, total - 1) : 0;
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const el = e.target;
-      if (el instanceof HTMLElement && /INPUT|TEXTAREA/.test(el.tagName)) return;
-      if (e.key === "ArrowRight") setIndex((i) => Math.min(total - 1, Math.min(i, total - 1) + 1));
-      else if (e.key === "ArrowLeft") setIndex((i) => Math.max(0, Math.min(i, total - 1) - 1));
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [total]);
+  const rootId = useId();
+  // Pantalla completa (API del navegador). SSR-safe; donde no existe, el botón no aparece.
+  const canFullscreen = useSyncExternalStore(
+    subscribeFullscreen,
+    () => document.fullscreenEnabled === true,
+    () => false,
+  );
+  const isFullscreen = useSyncExternalStore(
+    subscribeFullscreen,
+    () => document.fullscreenElement?.id === rootId,
+    () => false,
+  );
+
+  const goTo = useCallback(
+    (i: number) => setIndex(Math.max(0, Math.min(total - 1, i))),
+    [total],
+  );
+  const step = useCallback(
+    (delta: 1 | -1) => setIndex((i) => Math.max(0, Math.min(total - 1, Math.min(i, total - 1) + delta))),
+    [total],
+  );
+  useSlideKeys(step);
 
   if (total === 0) return null;
   const slide = deck.slides[shown];
-  const go = (d: number) => setIndex(Math.max(0, Math.min(total - 1, shown + d)));
+  const layout = slideLayout(slide);
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => {});
+    } else {
+      // Puede rechazarse (permisos del navegador): la presentación sigue usable en la vista normal.
+      void document.getElementById(rootId)?.requestFullscreen().catch(() => {});
+    }
+  }
+
+  // El panel de fuente vive fuera de la pantalla completa: se sale primero para poder verlo.
+  function openSource(source: SourceReference, status: GroundingStatus) {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    onOpenSource(source, status);
+  }
 
   return (
-    <div className="mx-auto flex h-full max-w-3xl flex-col px-6 py-6">
-      <div className="mb-3 flex items-baseline justify-between gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted">
-          Presentación generada
-        </span>
-        <span className="tabular shrink-0 text-xs text-muted">
-          {shown + 1} / {total}
-        </span>
+    <div
+      id={rootId}
+      className={`mx-auto flex h-full flex-col bg-background ${
+        isFullscreen ? "max-w-none px-8 py-6" : "max-w-5xl px-6 py-5"
+      }`}
+    >
+      {/* Identifica la pieza: es una presentación GENERADA (guion propio), no otra vista del
+          contenido. Misma marca de "generado" que las ilustraciones de apoyo. */}
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="flex min-w-0 items-baseline gap-1.5 text-xs text-muted">
+          <Sparkle size={12} weight="fill" className="shrink-0 translate-y-px text-accent" aria-hidden />
+          <span className="shrink-0 font-medium text-foreground">Presentación generada</span>
+          <span className="hidden truncate sm:inline">con guion propio a partir de tu documento</span>
+        </p>
+        {canFullscreen ? (
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-foreground-secondary transition-colors hover:border-border-strong hover:text-foreground"
+          >
+            {isFullscreen ? <CornersIn size={14} aria-hidden /> : <CornersOut size={14} aria-hidden />}
+            {isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+          </button>
+        ) : null}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="slide-frame flex min-h-0 flex-1 items-center justify-center">
         {/* `key` por slide → entra con la animación al cambiar de diapositiva. */}
         <article
           key={shown}
-          className="section-enter flex min-h-full flex-col rounded-md border border-border bg-surface p-6"
+          className="slide-stage section-enter overflow-hidden rounded-lg border border-border bg-surface"
+          aria-roledescription="diapositiva"
+          aria-label={`Diapositiva ${shown + 1} de ${total}: ${slide.title}`}
         >
-          <h2 className="mb-4 text-xl font-semibold tracking-tight text-foreground">
-            {slide.title}
-          </h2>
+          <div className="slide-pad flex h-full flex-col overflow-y-auto">
+            <div
+              className={`min-h-0 flex-1 ${
+                layout === "media"
+                  ? "slide-media"
+                  : layout === "statement"
+                    ? "flex flex-col justify-center"
+                    : ""
+              }`}
+            >
+              <div className="min-w-0">
+                <h2 className="slide-title text-balance font-serif font-semibold text-foreground">
+                  {slide.title}
+                </h2>
 
-          {/* No todo es viñetas: `body` es una frase/idea central; los bullets, enumeraciones. */}
-          {slide.body ? (
-            <p className="mb-3 text-base leading-relaxed text-foreground">{slide.body}</p>
-          ) : null}
+                {/* No todo es viñetas: `body` es una frase/idea central; los bullets, enumeraciones. */}
+                {slide.body ? (
+                  <p
+                    className={`font-serif ${
+                      layout === "statement"
+                        ? "slide-statement text-foreground-secondary"
+                        : "slide-body text-foreground"
+                    }`}
+                  >
+                    {slide.body}
+                  </p>
+                ) : null}
 
-          {slide.bullets.length > 0 ? (
-            <ul className="space-y-2">
-              {slide.bullets.map((b, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-foreground">
-                  <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
+                {slide.bullets.length > 0 ? (
+                  <ul className="slide-bullets font-serif text-foreground">
+                    {slide.bullets.map((b, i) => (
+                      <li key={i} className="flex items-baseline gap-[0.7em]">
+                        <span
+                          className="inline-block h-[0.3em] w-[0.3em] shrink-0 -translate-y-[0.2em] rounded-full bg-accent"
+                          aria-hidden
+                        />
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
 
-          {slide.illustration ? (
-            <figure className="mt-5 overflow-hidden rounded-md border border-dashed border-muted/60 bg-background">
-              <figcaption className="border-b border-dashed border-muted/60 bg-muted/10 px-3 py-1.5 text-xs font-medium text-muted">
-                {slide.illustration.label}
-              </figcaption>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={slide.illustration.image_url} alt={slide.illustration.alt} className="block w-full" />
-            </figure>
-          ) : null}
+              {slide.illustration ? (
+                <GeneratedFigure
+                  illustration={slide.illustration}
+                  className="min-w-0"
+                  maxHeightClass="slide-figure"
+                />
+              ) : null}
+            </div>
 
-          <footer className="mt-auto border-t border-border pt-3 text-xs">
-            {slide.is_synthesis ? (
-              <span className="text-muted">Síntesis del documento (sin cita exacta)</span>
-            ) : slide.source && slide.grounding !== "not_found" ? (
-              <button
-                type="button"
-                onClick={() => onOpenSource(slide.source!, slide.grounding)}
-                className="text-left text-muted underline-offset-2 transition-colors hover:text-foreground hover:underline"
-              >
-                Fuente: “{truncate(slide.source.quote)}” · ver en el documento
-              </button>
-            ) : (
-              <span className="flex items-center gap-1.5 text-warning">
-                <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-warning" aria-hidden />
-                No anclada a la fuente
-              </span>
-            )}
-          </footer>
+            <footer className="slide-footer shrink-0 border-t border-border text-xs">
+              {slide.is_synthesis ? (
+                <span className="text-muted">Síntesis del documento, sin cita exacta</span>
+              ) : slide.source && slide.grounding !== "not_found" ? (
+                <SourceCitation onOpen={() => openSource(slide.source!, slide.grounding)}>
+                  {truncate(slide.source.quote)}
+                </SourceCitation>
+              ) : (
+                <UnanchoredNotice>No anclada a la fuente</UnanchoredNotice>
+              )}
+            </footer>
+          </div>
         </article>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => go(-1)}
-          disabled={shown === 0}
-          className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground transition-colors hover:border-accent hover:text-accent active:scale-[0.98] disabled:opacity-40 disabled:hover:border-border disabled:hover:text-foreground"
-        >
-          ← Anterior
-        </button>
-        <span className="hidden text-xs text-muted sm:block">Usa ← → para navegar</span>
-        <button
-          type="button"
-          onClick={() => go(1)}
-          disabled={shown === total - 1}
-          className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground transition-colors hover:border-accent hover:text-accent active:scale-[0.98] disabled:opacity-40 disabled:hover:border-border disabled:hover:text-foreground"
-        >
-          Siguiente →
-        </button>
+      <div className="mt-4">
+        <SlideNav index={shown} total={total} onGo={goTo} />
       </div>
     </div>
   );
 }
 
-function truncate(text: string, max = 60): string {
+function truncate(text: string, max = 90): string {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }

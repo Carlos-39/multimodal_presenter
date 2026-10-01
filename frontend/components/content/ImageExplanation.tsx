@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { fetchImageExplanation } from "@/lib/imageExplanation";
+import { SkeletonText } from "./Skeleton";
 
 /**
  * "Explicar esta imagen" (Hito 5h Parte 3). Control OPCIONAL junto a una imagen REAL del documento
@@ -48,17 +49,23 @@ export function ImageExplanation({ file, page, context }: ImageExplanationProps)
         type="button"
         onClick={handleClick}
         disabled={status === "loading"}
-        className="text-xs text-accent underline-offset-2 transition-colors hover:underline disabled:opacity-50"
+        className="text-xs text-accent underline decoration-1 underline-offset-2 transition-colors hover:text-accent-hover disabled:opacity-50"
       >
         {status === "loading" ? "Explicando la imagen…" : label}
       </button>
 
+      {status === "loading" ? (
+        <div className="mt-2 rounded-md bg-surface-sunken px-3 py-3">
+          <SkeletonText lines={3} />
+        </div>
+      ) : null}
+
       {open && status !== "idle" && status !== "loading" ? (
-        <div className="section-enter mt-2 max-h-48 overflow-y-auto rounded-md border border-border bg-background px-3 py-2">
+        <div className="section-enter mt-2 max-h-48 overflow-y-auto rounded-md bg-surface-sunken px-3 py-2">
           {status === "error" ? (
             <p className="text-sm text-warning">No se pudo explicar la imagen.</p>
           ) : (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{text}</p>
+            <p className="whitespace-pre-wrap text-[0.8125rem] leading-5 text-foreground">{text}</p>
           )}
         </div>
       ) : null}

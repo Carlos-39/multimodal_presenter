@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampPanelWidth,
+  CONTENT_MIN_WIDTH,
+  PANEL_MAX_WIDTH,
+  PANEL_MIN_WIDTH,
   resolveWorkspace,
   WORKSPACE_MID,
   WORKSPACE_WIDE,
@@ -69,5 +73,25 @@ describe("resolveWorkspace", () => {
       source: "column",
       chat: "column",
     });
+  });
+});
+
+describe("clampPanelWidth", () => {
+  it("respeta el ancho pedido cuando está dentro de los topes", () => {
+    expect(clampPanelWidth("chat", 360, 1200)).toBe(360);
+  });
+
+  it("no baja del mínimo ni sube del máximo del panel", () => {
+    expect(clampPanelWidth("chat", 10, 1200)).toBe(PANEL_MIN_WIDTH.chat);
+    expect(clampPanelWidth("source", 5000, 3000)).toBe(PANEL_MAX_WIDTH.source);
+  });
+
+  it("deja al contenido su ancho mínimo aunque el panel pudiera crecer más", () => {
+    const available = 900;
+    expect(clampPanelWidth("source", 700, available)).toBe(available - CONTENT_MIN_WIDTH);
+  });
+
+  it("si no cabe ni el mínimo, conserva el mínimo del panel", () => {
+    expect(clampPanelWidth("source", 400, 500)).toBe(PANEL_MIN_WIDTH.source);
   });
 });

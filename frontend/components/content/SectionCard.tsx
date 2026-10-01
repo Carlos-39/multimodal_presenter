@@ -1,16 +1,8 @@
 import { isAnchored, UNANCHORED_NOTICE } from "@/lib/grounding";
 import type { ChartNote, GroundingStatus, Section, SemanticObservation } from "@/lib/types";
+import { GeneratedFigure } from "./GeneratedFigure";
 import { SectionRenderer } from "./SectionRenderer";
-
-/** Icono de "generada" para la banda de la ilustración de apoyo. */
-function GeneratedIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
-      <path d="M8 1.5 9.2 5.1 12.8 6.3 9.2 7.5 8 11.1 6.8 7.5 3.2 6.3 6.8 5.1 8 1.5Z" />
-      <path d="M12.7 10.2 13.3 12 15.1 12.6 13.3 13.2 12.7 15 12.1 13.2 10.3 12.6 12.1 12 12.7 10.2Z" />
-    </svg>
-  );
-}
+import { SourceCitation, UnanchoredNotice } from "./SourceCitation";
 
 /**
  * Tarjeta de UNA sección: cabecera (núcleo/satélite) + contenido (Generative UI) + notas +
@@ -28,6 +20,7 @@ interface SectionCardProps {
   activeSourceKey?: string | null;
   active?: boolean; // resalte de la sección activa (vista de scroll)
   anchorId?: boolean; // poner id=section-<id> para el scroll-into-view (solo scroll)
+  slide?: boolean; // vista de slides: proporción de diapositiva como mínimo (crece si hace falta)
 }
 
 export function SectionCard({
@@ -40,6 +33,7 @@ export function SectionCard({
   activeSourceKey = null,
   active = false,
   anchorId = false,
+  slide = false,
 }: SectionCardProps) {
   const degraded = chartNotes.find((n) => n.section_id === section.id && n.kind === "degraded");
   const observation = observations.find((o) => o.section_id === section.id);
@@ -50,17 +44,27 @@ export function SectionCard({
   return (
     <section
       id={anchorId ? `section-${section.id}` : undefined}
-      className={`section-enter scroll-mt-4 rounded-md border bg-surface p-5 ${
+      // Núcleo: hoja de papel sobre la mesa. Satélite: sin papel (queda al nivel de la mesa) y con
+      // título más liviano → se lee como profundidad adicional, no como otra pieza principal.
+      className={`section-enter scroll-mt-4 rounded-lg border p-6 ${
         active ? "border-accent" : "border-border"
-      } ${isSatellite ? "border-l-2 border-l-muted" : ""}`}
+      } ${isSatellite ? "bg-transparent [--table-bg:var(--background)]" : "bg-surface"} ${
+        // `aspect-video` da el 16:9 como alto MÍNIMO: una caja con proporción crece si su
+        // contenido es más alto, así que nada se recorta.
+        slide ? "flex aspect-video flex-col" : ""
+      }`}
     >
-      <header className="mb-3 flex items-center justify-between gap-2">
-        <h2 className={`text-base font-medium ${isSatellite ? "text-muted" : "text-foreground"}`}>
+      <header className="mb-3 flex items-baseline justify-between gap-3">
+        <h2
+          className={`text-balance font-serif font-semibold ${
+            isSatellite
+              ? "text-base leading-6 text-foreground-secondary"
+              : "text-lg leading-[1.625rem] text-foreground"
+          }`}
+        >
           {section.title ?? `Sección ${index + 1}`}
         </h2>
-        <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-muted">
-          {isSatellite ? "satélite · detalle" : "núcleo"}
-        </span>
+        <span className="shrink-0 text-xs text-muted">{isSatellite ? "detalle" : "núcleo"}</span>
       </header>
 
       <SectionRenderer section={section} />
@@ -68,50 +72,32 @@ export function SectionCard({
       {degraded ? <p className="mt-3 text-xs text-muted">{degraded.detail}</p> : null}
 
       {observation ? (
-        <p className="mt-3 flex items-start gap-1.5 text-xs text-warning">
-          <span
-            className="mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full bg-warning"
-            aria-hidden
-          />
-          <span>Posible discrepancia con la fuente: {observation.issue}</span>
-        </p>
+        <div className="mt-3">
+          <UnanchoredNotice>Posible discrepancia con la fuente: {observation.issue}</UnanchoredNotice>
+        </div>
       ) : null}
 
-      {/* Ilustración de apoyo GENERADA (Hito 5h Parte 1). Etiqueta permanente SIEMPRE visible (no
-          tooltip), borde punteado y banda propia → imposible confundirla con contenido verificado.
-          No tiene fuente ni grounding: es ayuda didáctica declarada. */}
+      {/* Ilustración de apoyo GENERADA (Hito 5h Parte 1): etiqueta permanente, borde punteado y
+          banda propia; sin fuente ni grounding. Ver `GeneratedFigure`. */}
       {section.illustration ? (
-        <figure className="mt-3 overflow-hidden rounded-md border border-dashed border-muted/60 bg-background">
-          <figcaption className="flex items-center gap-1.5 border-b border-dashed border-muted/60 bg-muted/10 px-3 py-1.5 text-xs font-medium text-muted">
-            <GeneratedIcon />
-            <span>{section.illustration.label}</span>
-          </figcaption>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={section.illustration.image_url} alt={section.illustration.alt} className="block w-full" />
-        </figure>
+        <GeneratedFigure illustration={section.illustration} className="mt-4" />
       ) : null}
 
-      <footer className="mt-4 border-t border-border pt-2">
+      {/* En diapositiva, la cita va al pie del lienzo aunque el contenido sea corto. */}
+      {slide ? <div className="flex-1" aria-hidden /> : null}
+
+      <footer className="mt-5 border-t border-border pt-3">
         {anchored ? (
-          <button
-            type="button"
-            onClick={() => onOpenSource?.(section)}
-            className={`text-left text-xs underline-offset-2 transition-colors hover:text-foreground hover:underline ${
-              section.id === activeSourceKey ? "text-foreground underline" : "text-muted"
-            }`}
+          <SourceCitation
+            onOpen={() => onOpenSource?.(section)}
+            active={section.id === activeSourceKey}
           >
-            Fuente: “{section.source.quote}” · ver en el documento
-          </button>
+            {section.source.quote}
+          </SourceCitation>
         ) : (
           // not_found (Hito 8): NO se ofrece "ver fuente" (sería fingir una cita que no ancla);
           // aviso honesto, como el chat. No se descarta la sección.
-          <p className="flex items-start gap-1.5 text-xs text-warning">
-            <span
-              className="mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full bg-warning"
-              aria-hidden
-            />
-            <span>{UNANCHORED_NOTICE}</span>
-          </p>
+          <UnanchoredNotice>{UNANCHORED_NOTICE}</UnanchoredNotice>
         )}
       </footer>
     </section>

@@ -8,6 +8,7 @@ import { ContentArea } from "@/components/content/ContentArea";
 import { DeckView } from "@/components/content/DeckView";
 import { SlideView } from "@/components/content/SlideView";
 import { SourcePanel } from "@/components/content/SourcePanel";
+import { StreamingStatus } from "@/components/content/StreamingStatus";
 import { SummaryBanner } from "@/components/content/SummaryBanner";
 import { TransformInput } from "@/components/TransformInput";
 import { postTransform } from "@/lib/api";
@@ -76,6 +77,10 @@ export default function Page() {
   // Adelanto inicial (Hito 5g): preview corto mientras corre la transformación completa.
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryStatus, setSummaryStatus] = useState<SummaryStatus>("idle");
+
+  // Ilustraciones de apoyo en camino (post-pase del 5h): solo para avisar en pantalla.
+  const [illustrationsPending, setIllustrationsPending] = useState(false);
+  const illustrationRunRef = useRef(0); // descarta el resultado de un documento anterior
 
   // Chat (Hito 6): historial de sesión + streaming + sugerencias, aislado en un hook.
   const chat = useChat(original);
@@ -193,6 +198,8 @@ export default function Page() {
     setActiveSource(null);
     setSummary(null);
     setSummaryStatus("idle");
+    illustrationRunRef.current += 1; // invalida ilustraciones en camino del documento anterior
+    setIllustrationsPending(false);
     setSlidesOpen(false); // documento nuevo → vuelve a la vista de scroll
     setDeckOpen(false);
     setDeck(null);
@@ -221,9 +228,12 @@ export default function Page() {
     isText: boolean,
   ) {
     if (!isText || pres.sections.length === 0) return;
+    const run = ++illustrationRunRef.current;
+    setIllustrationsPending(true);
     try {
       const items = await fetchIllustrations(pres);
-      if (items.length === 0) return;
+      // Si entretanto se transformó otro documento, este resultado ya no le corresponde.
+      if (run !== illustrationRunRef.current || items.length === 0) return;
       setSections((prev) =>
         prev.map((s) => {
           const item = items.find((i) => i.section_id === s.id);
@@ -232,6 +242,8 @@ export default function Page() {
       );
     } catch {
       // extra no crítico: sin ilustración, la presentación sigue intacta.
+    } finally {
+      if (run === illustrationRunRef.current) setIllustrationsPending(false);
     }
   }
 
@@ -384,13 +396,22 @@ export default function Page() {
   }
 
   const hasContent = sections.length > 0;
+  const streaming = status === "streaming";
+
+  // Elegir una sección en el rail siempre lleva a ella. Con la presentación generada abierta (que
+  // tiene sus propias diapositivas, no las secciones) se vuelve al contenido en esa sección, en
+  // vez de dejar el clic sin efecto.
+  function handleSelectSection(id: string) {
+    setActiveSectionId(id);
+    if (deckOpen) setDeckOpen(false);
+  }
 
   return (
     <AppShell
       sections={visible}
       grounding={displayGrounding}
       activeSectionId={effectiveActiveId}
-      onSelectSection={setActiveSectionId}
+      onSelectSection={handleSelectSection}
       detailLevel={detailLevel}
       onDetailLevelChange={handleDetailLevelChange}
       chatOpen={openOrder.includes("chat")}
@@ -399,6 +420,7 @@ export default function Page() {
       slidesAvailable={hasContent}
       onToggleSlides={toggleSlides}
       deckOpen={deckOpen}
+      deckReady={deck !== null}
       deckAvailable={hasContent && original !== null}
       deckLoading={deckStatus === "loading"}
       deckError={deckStatus === "error"}
@@ -453,20 +475,20 @@ export default function Page() {
             onOpenSource={handleOpenSectionSource}
             activeSourceKey={activeSource?.key ?? null}
             groundingBySection={groundingBySection}
+            activeSectionId={effectiveActiveId}
+            onSelectSection={setActiveSectionId}
+            streaming={streaming}
+            illustrationsPending={illustrationsPending}
           />
         ) : (
           <>
             <div className="mx-auto max-w-3xl space-y-4 p-6">
               <TransformInput status={status} onSubmit={handleTransform} />
 
-              {status === "streaming" ? (
-                <p className="text-sm text-muted">
-                  Generando… {sections.length} {sections.length === 1 ? "sección" : "secciones"}
-                </p>
-              ) : null}
+              {streaming ? <StreamingStatus count={sections.length} /> : null}
 
               {status === "error" ? (
-                <div className="rounded-md border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
+                <div className="rounded-md border border-warning/40 px-4 py-3 text-sm text-warning">
                   {error}
                 </div>
               ) : null}
@@ -474,7 +496,7 @@ export default function Page() {
 
             <SummaryBanner status={summaryStatus} summary={summary} />
 
-            {hasContent ? (
+            {hasContent || streaming ? (
               <ContentArea
                 title={presentation.title}
                 sections={visible}
@@ -485,6 +507,8 @@ export default function Page() {
                 onOpenSource={handleOpenSectionSource}
                 activeSourceKey={activeSource?.key ?? null}
                 groundingBySection={groundingBySection}
+                streaming={streaming}
+                illustrationsPending={illustrationsPending}
               />
             ) : null}
           </>

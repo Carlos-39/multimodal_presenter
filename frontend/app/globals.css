@@ -1,119 +1,108 @@
 @import "tailwindcss";
 
 /*
- * IDENTIDAD VISUAL (Hito 5a) — tokens de diseño en un solo lugar.
+ * IDENTIDAD VISUAL — tokens de diseño en un solo lugar (rediseño sobre la base del Hito 5a).
  *
- * Dirección: herramienta de trabajo, no "demo de IA". Neutros fríos (slate) como base,
- * un único acento "tinta" (azul-pizarra profundo, no el azul SaaS ni morado), semánticos
- * desaturados, y NÚMEROS en monoespaciada (Geist Mono) en tablas/ejes. La jerarquía la
- * hace la tipografía y el espaciado, no el color.
+ * Dirección: herramienta rigurosa de trabajo con información, no "demo de IA".
+ * - Neutros CÁLIDOS (papel sobre mesa, off-black cálido) con un acento FRÍO: la "tinta". El
+ *   contraste de temperatura es lo que da profundidad; el acento se reserva a lo interactivo o
+ *   activo (sección activa, control encendido, enlaces, foco).
+ * - "Resaltador": único color con licencia propia, y solo en el rastro de verificación (la cita
+ *   al pie de una sección y el pasaje marcado en el documento fuente comparten color).
+ * - Dos voces tipográficas: lo que viene del DOCUMENTO va en serif (`font-serif`); lo que es de
+ *   la HERRAMIENTA, en sans. Los NÚMEROS siguen en Geist Mono tabular (tablas, ejes).
+ * - Radios por jerarquía: 6px controles (`rounded-md`), 10px contenedores (`rounded-lg`),
+ *   píldora solo en sugerencias y etiquetas pequeñas.
  *
- * Paleta categórica de gráficos: paleta por defecto validada de la guía `dataviz`
- * (CVD-safe, verificada con su script). Confinada a las marcas de datos; el resto del UI
- * es neutro.
+ * Claro/oscuro: cada token declara sus dos valores con `light-dark()`. Sin preferencia guardada
+ * se sigue al sistema (`color-scheme: light dark`); `data-theme` en <html> la fija (ThemeToggle).
+ *
+ * Paleta categórica de gráficos: la validada de la guía `dataviz` (CVD-safe), sin cambios.
+ * Confinada a las marcas de datos; el resto del UI es neutro.
  */
 
 :root {
-  /* Neutros / chrome */
-  --background: #f7f8fa;
-  --surface: #ffffff;
-  --foreground: #0f172a;
-  --muted: #64748b;
-  --border: #e2e8f0;
+  color-scheme: light dark;
+
+  /* Superficies: mesa → papel → hundido (campos, pistas) */
+  --background: light-dark(#f4f3ef, #171512);
+  --surface: light-dark(#fdfcfa, #1f1d19);
+  --surface-sunken: light-dark(#eceae4, #110f0d);
+  --border: light-dark(#dedbd3, #35322c);
+  --border-strong: light-dark(#8c867a, #6e695f);
+
+  /* Texto */
+  --foreground: light-dark(#1c1a17, #ece8e0);
+  --foreground-secondary: light-dark(#46423b, #c9c4b9);
+  --muted: light-dark(#6b665d, #9c968a);
 
   /* Acento "tinta" */
-  --accent: #24344d;
-  --accent-hover: #1a2637;
-  --accent-foreground: #ffffff;
+  --accent: light-dark(#213f87, #9db2ec);
+  --accent-hover: light-dark(#18306b, #b8c7f3);
+  --accent-foreground: light-dark(#ffffff, #14171f);
+  --accent-subtle: light-dark(#e5eaf6, #252c42);
 
-  /* Semánticos desaturados */
-  --verified: #15803d;
-  --warning: #92600a;
+  /* Papel fijo (igual en claro y oscuro): marco de las ilustraciones generadas, que vienen con
+     fondo claro. */
+  --paper: #fdfcfa;
+
+  /* Rastro de verificación */
+  --highlight: light-dark(#f7e7a0, #6b5613);
+
+  /* Semánticos */
+  --verified: light-dark(#2f6b45, #74c08d);
+  --warning: light-dark(#9a4b14, #e09a62);
 
   /* Forma */
-  --radius: 0.5rem;
+  --radius: 0.375rem;
+  --radius-container: 0.625rem;
+  --elevation-float: 0 12px 32px -12px light-dark(rgb(40 34 22 / 0.28), rgb(0 0 0 / 0.7));
 
   /* Gráficos — chrome */
   --chart-ink: var(--foreground);
-  --chart-muted: #64748b;
-  --chart-grid: #eef1f5;
-  /* Gráficos — paleta categórica validada (light) */
-  --chart-1: #2a78d6;
-  --chart-2: #eb6834;
-  --chart-3: #1baf7a;
-  --chart-4: #eda100;
-  --chart-5: #e87ba4;
-  --chart-6: #008300;
-  --chart-7: #4a3aa7;
-  --chart-8: #e34948;
+  --chart-muted: var(--muted);
+  --chart-grid: light-dark(#eceae4, #2a2823);
+  /* Gráficos — paleta categórica validada */
+  --chart-1: light-dark(#2a78d6, #3987e5);
+  --chart-2: light-dark(#eb6834, #d95926);
+  --chart-3: light-dark(#1baf7a, #199e70);
+  --chart-4: light-dark(#eda100, #c98500);
+  --chart-5: light-dark(#e87ba4, #d55181);
+  --chart-6: light-dark(#008300, #008300);
+  --chart-7: light-dark(#4a3aa7, #9085e9);
+  --chart-8: light-dark(#e34948, #e66767);
 }
 
-/* Tema oscuro — mismos tokens, re-escalados para superficie oscura. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --background: #0b1120;
-    --surface: #111a2b;
-    --foreground: #e6edf5;
-    --muted: #94a3b8;
-    --border: #22304a;
-
-    --accent: #3b5170;
-    --accent-hover: #47618a;
-    --accent-foreground: #ffffff;
-
-    --verified: #22c55e;
-    --warning: #d1a054;
-
-    --chart-muted: #94a3b8;
-    --chart-grid: #1e293b;
-    --chart-1: #3987e5;
-    --chart-2: #d95926;
-    --chart-3: #199e70;
-    --chart-4: #c98500;
-    --chart-5: #d55181;
-    --chart-6: #008300;
-    --chart-7: #9085e9;
-    --chart-8: #e66767;
-  }
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --background: #0b1120;
-  --surface: #111a2b;
-  --foreground: #e6edf5;
-  --muted: #94a3b8;
-  --border: #22304a;
-  --accent: #3b5170;
-  --accent-hover: #47618a;
-  --accent-foreground: #ffffff;
-  --verified: #22c55e;
-  --warning: #d1a054;
-  --chart-muted: #94a3b8;
-  --chart-grid: #1e293b;
-  --chart-1: #3987e5;
-  --chart-2: #d95926;
-  --chart-3: #199e70;
-  --chart-4: #c98500;
-  --chart-5: #d55181;
-  --chart-6: #008300;
-  --chart-7: #9085e9;
-  --chart-8: #e66767;
+  color-scheme: dark;
 }
 
-/* Exponer tokens neutros como utilidades de Tailwind (bg-surface, text-foreground, …). */
+/* Exponer tokens como utilidades de Tailwind (bg-surface, text-foreground, …). */
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
   --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
   --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-highlight: var(--highlight);
   --color-verified: var(--verified);
   --color-warning: var(--warning);
   --radius-md: var(--radius);
+  --radius-lg: var(--radius-container);
+  --shadow-float: var(--elevation-float);
   --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-source-serif);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -121,6 +110,21 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  caret-color: var(--accent);
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+/* Superficies del navegador: también son parte de la identidad. La selección de texto usa el
+   resaltador (seleccionar = marcar un pasaje). */
+::selection {
+  background: var(--highlight);
+  color: var(--foreground);
+}
+
+/* Foco de teclado visible y uniforme en todos los controles. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* Números en monoespaciada tabular — señal de "herramienta de datos". */
@@ -131,15 +135,16 @@ body {
 
 /*
  * Entrada suave de cada sección al montarse durante el streaming (Hito 5d): fade-in + leve
- * desplazamiento hacia arriba, para que el "aparecer una por una" se sienta fluido y no como
- * un parpadeo instantáneo. La animación CSS corre una sola vez, al insertarse el nodo en el
- * DOM; las secciones ya montadas no se re-animan al llegar las siguientes (key = section.id).
+ * desplazamiento hacia arriba (corto: acompaña, no compite con el contenido), para que el
+ * "aparecer una por una" se sienta fluido y no como un parpadeo instantáneo. La animación CSS
+ * corre una sola vez, al insertarse el nodo en el DOM; las secciones ya montadas no se
+ * re-animan al llegar las siguientes (key = section.id).
  * Se desactiva por completo si el usuario prefiere menos movimiento.
  */
 @keyframes section-enter {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -148,11 +153,185 @@ body {
 }
 
 .section-enter {
-  animation: section-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: section-enter 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .section-enter {
     animation: none;
+  }
+}
+
+/*
+ * Estados de carga. Un esqueleto ocupa el lugar y la forma de lo que va a llegar (así el layout
+ * no salta cuando llega); el brillo que lo recorre indica que hay trabajo en curso. La barra
+ * indeterminada marca una generación larga sin duración conocida. Con "menos movimiento" quedan
+ * estáticos: siguen indicando la espera, sin animar.
+ */
+@keyframes skeleton-sweep {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  border-radius: 4px;
+  /* Tono de borde: se distingue tanto sobre papel como sobre una superficie hundida. */
+  background-color: var(--border);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--surface) 70%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-sweep 1.6s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(350%);
+  }
+}
+
+.progress-indeterminate {
+  position: relative;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 1px;
+  background: var(--border);
+}
+
+.progress-indeterminate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--accent);
+  animation: progress-slide 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background-image: none;
+  }
+
+  .progress-indeterminate::after {
+    animation: none;
+    width: 100%;
+    opacity: 0.5;
+  }
+}
+
+/*
+ * Pista de desplazamiento para contenedores con scroll propio (tablas anchas o largas): una
+ * sombra tenue en el borde hacia donde queda contenido por ver, que desaparece al llegar al
+ * final. Sin JS: capas "tapa" que se mueven con el contenido (local) sobre sombras fijas (scroll).
+ * `--table-bg` lo fija el contenedor cuando su fondo no es el papel (satélite, burbuja del chat).
+ */
+.scroll-hint {
+  --hint-bg: var(--table-bg, var(--surface));
+  --hint-shadow: color-mix(in srgb, var(--foreground) 16%, transparent);
+  background:
+    linear-gradient(to right, var(--hint-bg) 40%, transparent) left center / 28px 100% no-repeat local,
+    linear-gradient(to left, var(--hint-bg) 40%, transparent) right center / 28px 100% no-repeat local,
+    linear-gradient(to bottom, var(--hint-bg) 40%, transparent) center top / 100% 28px no-repeat local,
+    linear-gradient(to top, var(--hint-bg) 40%, transparent) center bottom / 100% 28px no-repeat local,
+    linear-gradient(to right, var(--hint-shadow), transparent) left center / 10px 100% no-repeat scroll,
+    linear-gradient(to left, var(--hint-shadow), transparent) right center / 10px 100% no-repeat scroll,
+    linear-gradient(to bottom, var(--hint-shadow), transparent) center top / 100% 10px no-repeat scroll,
+    linear-gradient(to top, var(--hint-shadow), transparent) center bottom / 100% 10px no-repeat scroll;
+}
+
+/*
+ * Lienzo de la presentación generada. El marco (`slide-frame`) mide el espacio disponible y el
+ * lienzo (`slide-stage`) toma el 16:9 más grande que quepa en él. Todo lo de adentro se mide en
+ * unidades del ancho del lienzo (cqw), así una diapositiva se compone igual en la app que
+ * proyectada a pantalla completa. Los `clamp` ponen piso (legible en angosto) y techo.
+ */
+.slide-frame {
+  container: slide-frame / size;
+}
+
+.slide-stage {
+  container: slide-stage / inline-size;
+  width: min(100cqw, calc(100cqh * 16 / 9));
+  aspect-ratio: 16 / 9;
+}
+
+/* En un marco angosto (móvil, columnas abiertas) un 16:9 sería demasiado bajo para leer:
+   el lienzo ocupa todo el alto disponible. */
+@container slide-frame (max-width: 640px) {
+  .slide-stage {
+    width: 100cqw;
+    height: 100cqh;
+    aspect-ratio: auto;
+  }
+}
+
+.slide-pad {
+  padding: clamp(1.25rem, 4.5cqw, 4.5rem);
+}
+
+.slide-title {
+  font-size: clamp(1.25rem, 3.3cqw, 3rem);
+  line-height: 1.15;
+  letter-spacing: -0.012em;
+}
+
+.slide-statement {
+  margin-top: 0.7em;
+  max-width: 30em;
+  font-size: clamp(1.0625rem, 2.4cqw, 2.25rem);
+  line-height: 1.4;
+}
+
+.slide-body {
+  margin-top: 0.9em;
+  max-width: 36em;
+  font-size: clamp(1rem, 1.9cqw, 1.75rem);
+  line-height: 1.5;
+}
+
+.slide-bullets {
+  display: grid;
+  gap: 0.55em;
+  margin-top: 1em;
+  max-width: 34em;
+  font-size: clamp(1rem, 2cqw, 1.875rem);
+  line-height: 1.4;
+}
+
+.slide-footer {
+  margin-top: clamp(0.75rem, 2.5cqw, 2rem);
+  padding-top: clamp(0.5rem, 1.2cqw, 1rem);
+}
+
+/* Slide con ilustración: apilada en angosto; texto e imagen lado a lado cuando hay ancho. */
+.slide-media {
+  display: grid;
+  align-content: center;
+  gap: clamp(1rem, 3cqw, 3rem);
+}
+
+.slide-figure {
+  max-height: 16rem;
+}
+
+@container slide-stage (min-width: 640px) {
+  .slide-media {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+    align-items: center;
+  }
+
+  .slide-figure {
+    max-height: 30cqw;
   }
 }
