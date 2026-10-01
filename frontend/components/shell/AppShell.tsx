@@ -27,6 +27,9 @@ interface AppShellProps {
   onDetailLevelChange: (level: DetailLevel) => void;
   chatOpen: boolean;
   onToggleChat: () => void;
+  slidesOpen: boolean;
+  slidesAvailable: boolean;
+  onToggleSlides: () => void;
   narrationStatus: NarrationStatus;
   narrationAvailable: boolean;
   onNarrationPlay: () => void;
@@ -44,6 +47,9 @@ export function AppShell({
   onDetailLevelChange,
   chatOpen,
   onToggleChat,
+  slidesOpen,
+  slidesAvailable,
+  onToggleSlides,
   narrationStatus,
   narrationAvailable,
   onNarrationPlay,
@@ -64,6 +70,19 @@ export function AppShell({
         <div className="flex items-center gap-4">
           <DetailLevelControl level={detailLevel} onChange={onDetailLevelChange} />
           <GroundingIndicator grounding={grounding} />
+          <button
+            type="button"
+            onClick={onToggleSlides}
+            aria-pressed={slidesOpen}
+            disabled={!slidesAvailable}
+            className={`rounded-md border px-2.5 py-1 text-xs transition-colors disabled:opacity-40 ${
+              slidesOpen
+                ? "border-accent bg-accent text-accent-foreground"
+                : "border-border text-muted hover:text-foreground"
+            }`}
+          >
+            Slides
+          </button>
           <button
             type="button"
             onClick={onToggleChat}
