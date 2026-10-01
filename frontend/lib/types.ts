@@ -88,6 +88,24 @@ export interface Section {
   illustration?: GeneratedIllustration | null;
 }
 
+/**
+ * Presentación GENERADA en diapositivas (guion propio, desde la fuente). Artefacto on-demand,
+ * separado de `Presentation`. Trazabilidad por slide: `source` anclada, o `is_synthesis` si es una
+ * simplificación declarada.
+ */
+export interface GeneratedSlide {
+  title: string;
+  bullets: string[];
+  source: SourceReference | null;
+  grounding: GroundingStatus;
+  is_synthesis: boolean;
+  illustration: GeneratedIllustration | null;
+}
+
+export interface GeneratedDeck {
+  slides: GeneratedSlide[];
+}
+
 export interface Presentation {
   title: string;
   sections: Section[];

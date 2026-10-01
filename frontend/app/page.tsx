@@ -5,11 +5,13 @@ import { AppShell } from "@/components/shell/AppShell";
 import { Workspace } from "@/components/shell/Workspace";
 import { ChatPanel } from "@/components/shell/ChatPanel";
 import { ContentArea } from "@/components/content/ContentArea";
+import { DeckView } from "@/components/content/DeckView";
 import { SlideView } from "@/components/content/SlideView";
 import { SourcePanel } from "@/components/content/SourcePanel";
 import { SummaryBanner } from "@/components/content/SummaryBanner";
 import { TransformInput } from "@/components/TransformInput";
 import { postTransform } from "@/lib/api";
+import { fetchDeck } from "@/lib/deck";
 import { fetchIllustrations } from "@/lib/illustrations";
 import { fetchSummary } from "@/lib/summary";
 import { streamTransform } from "@/lib/stream";
@@ -20,6 +22,7 @@ import { initTelemetry, track, flush } from "@/lib/telemetry";
 import type { PanelId } from "@/lib/workspace";
 import type {
   ChartNote,
+  GeneratedDeck,
   GroundingReport,
   GroundingStatus,
   Section,
@@ -94,7 +97,35 @@ export default function Page() {
 
   // Vista de slides (Hito 5h Parte 2): modo alterno de consumir el MISMO contenido ya generado.
   const [slidesOpen, setSlidesOpen] = useState(false);
-  const toggleSlides = useCallback(() => setSlidesOpen((v) => !v), []);
+
+  // Presentación GENERADA en diapositivas (guion propio desde la fuente): pieza nueva, bajo demanda.
+  const [deckOpen, setDeckOpen] = useState(false);
+  const [deck, setDeck] = useState<GeneratedDeck | null>(null);
+  const [deckStatus, setDeckStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+
+  const toggleSlides = useCallback(() => {
+    setSlidesOpen((v) => !v);
+    setDeckOpen(false); // vistas mutuamente excluyentes
+  }, []);
+
+  // "Presentación": genera el deck on-demand (si no está) y abre su vista. Falla visible.
+  const toggleDeck = useCallback(() => {
+    if (deckOpen) {
+      setDeckOpen(false);
+      return;
+    }
+    setDeckOpen(true);
+    setSlidesOpen(false); // vistas mutuamente excluyentes
+    if (!deck && deckStatus !== "loading" && original) {
+      setDeckStatus("loading");
+      fetchDeck(original.text, original.file)
+        .then((d) => {
+          setDeck(d);
+          setDeckStatus("ready");
+        })
+        .catch(() => setDeckStatus("error"));
+    }
+  }, [deckOpen, deck, deckStatus, original]);
 
   const openPanel = useCallback((id: PanelId) => {
     setOpenOrder((prev) => [...prev.filter((p) => p !== id), id]);
@@ -156,6 +187,9 @@ export default function Page() {
     setSummary(null);
     setSummaryStatus("idle");
     setSlidesOpen(false); // documento nuevo → vuelve a la vista de scroll
+    setDeckOpen(false);
+    setDeck(null);
+    setDeckStatus("idle");
     setOpenOrder((prev) => prev.filter((p) => p !== "source")); // cierra la fuente; conserva el chat
     setOriginal({ text, file });
     setSourceKind(file ? (file.type === "application/pdf" ? "pdf" : "image") : "text");
@@ -357,6 +391,10 @@ export default function Page() {
       slidesOpen={slidesOpen}
       slidesAvailable={hasContent}
       onToggleSlides={toggleSlides}
+      deckOpen={deckOpen}
+      deckAvailable={hasContent && original !== null}
+      deckLoading={deckStatus === "loading"}
+      onToggleDeck={toggleDeck}
       narrationStatus={narration.status}
       narrationAvailable={narration.available}
       onNarrationPlay={narration.play}
@@ -392,7 +430,24 @@ export default function Page() {
           />
         }
       >
-        {slidesOpen && hasContent ? (
+        {deckOpen ? (
+          // Presentación GENERADA (guion propio desde la fuente): pieza nueva, bajo demanda.
+          <div className="h-full">
+            {deckStatus === "loading" ? (
+              <div className="mx-auto max-w-3xl px-6 py-10 text-sm text-muted">
+                Generando la presentación… (lee el documento y arma las diapositivas)
+              </div>
+            ) : deckStatus === "error" || !deck ? (
+              <div className="mx-auto max-w-3xl px-6 py-10">
+                <p className="rounded-md border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
+                  No se pudo generar la presentación. Intenta de nuevo.
+                </p>
+              </div>
+            ) : (
+              <DeckView deck={deck} onOpenSource={openChatSource} />
+            )}
+          </div>
+        ) : slidesOpen && hasContent ? (
           // Modo slides (Hito 5h Parte 2): re-vista del MISMO contenido ya generado; el núcleo
           // fijo y las columnas (fuente/chat) siguen disponibles.
           <SlideView

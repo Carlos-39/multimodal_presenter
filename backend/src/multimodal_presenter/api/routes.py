@@ -18,6 +18,7 @@ from ..config import Settings, get_settings
 from ..model_provider import build_model, build_summary_model
 from ..pipeline import transform
 from ..pipeline.chat import chat_stream, generate_suggestions
+from ..pipeline.deck import generate_deck
 from ..pipeline.extraction import prepare_input
 from ..pipeline.illustration import illustrate
 from ..pipeline.image_explanation import explain_image
@@ -30,6 +31,7 @@ from ..schemas.chat import ChatStreamError, ChatTurn, SuggestionsResponse
 from ..schemas.presentation import Section
 from ..schemas.telemetry import TelemetryBatch
 from ..schemas.transform import (
+    GeneratedDeck,
     IllustrationItem,
     IllustrationsRequest,
     IllustrationsResponse,
@@ -301,6 +303,26 @@ async def transcribe_endpoint(
     except Exception as exc:  # error del proveedor / red → visible, no silencio
         raise HTTPException(status_code=502, detail="No se pudo transcribir el audio.") from exc
     return TranscriptionResponse(text=text)
+
+
+@router.post("/deck", response_model=GeneratedDeck)
+async def deck_endpoint(
+    text: str | None = Form(default=None),
+    file: UploadFile | None = File(default=None),
+    model: Model = Depends(get_model),
+    settings: Settings = Depends(get_settings),
+) -> GeneratedDeck:
+    """Presentación en diapositivas GENERADA (guion propio, desde la fuente). On-demand.
+
+    Relee el documento original (como el chat) y sintetiza un deck pensado para slides. Distinto de
+    la vista de slides del 5h (re-composición sin generación). Si no hay clave de OpenAI, el deck se
+    genera igual pero sin imágenes de apoyo (degradación honesta, no falla).
+    """
+    text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    extraction = prepare_input(
+        text=text_value, binary=binary, media_type=media_type, filename=filename
+    )
+    return await generate_deck(model, settings, extraction)
 
 
 @router.post("/illustrations", response_model=IllustrationsResponse)

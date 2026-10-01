@@ -1,0 +1,130 @@
+"""Presentación en diapositivas GENERADA (guion propio, desde la fuente).
+
+Herramienta de comprensión en paralelo al texto estructurado (transform) y al audio (narración):
+una síntesis NUEVA pensada para el formato diapositiva, generada releyendo el DOCUMENTO ORIGINAL
+(como el chat del Hito 6), no re-componiendo las `Section` ya generadas (eso es la vista de slides
+del 5h, que es otra cosa). On-demand y cacheada por documento.
+
+Trazabilidad por slide (mix honesto): se ancla a una cita exacta cuando es limpio; se marca como
+`is_synthesis` cuando simplifica contenido complejo sin cita exacta; `not_found` si el modelo diera
+una cita inexistente. Imágenes: reusa el pipeline de ilustraciones del 5h (gpt-image-1) con su
+etiqueta obligatoria — sin sistema de imágenes paralelo.
+"""
+
+from __future__ import annotations
+
+from pydantic import BaseModel, Field
+from pydantic_ai import Agent, BinaryContent, PromptedOutput
+from pydantic_ai.models import Model
+
+from ..config import Settings
+from ..schemas.presentation import GeneratedIllustration
+from ..schemas.transform import GeneratedDeck, GeneratedSlide
+from .illustration import _generate_image
+from .models import ExtractionResult
+from .validation import ground_quote
+
+_IMAGE_CAP = 4  # techo de imágenes por deck (acota el costo)
+
+_DECK_SYSTEM = (
+    "Genera una PRESENTACIÓN EN DIAPOSITIVAS a partir del documento que recibes. Es una síntesis "
+    "nueva pensada para leerse como slides, no un resumen corrido. Reglas OBLIGATORIAS:\n"
+    "- Máximo 6 bullets por slide y ~6 palabras por bullet. El texto es apoyo, no un párrafo.\n"
+    "- UNA idea central por slide. Si una parte tiene dos ideas separables, son DOS slides.\n"
+    "- Jerarquía: un título claro por slide; los bullets son soporte.\n"
+    "- Consistencia de redacción y estilo entre todas las slides.\n"
+    "- Prioriza legibilidad; nada de texto redundante ni frases largas.\n"
+    "Trazabilidad por slide: cuando el contenido venga claramente de una frase del documento, "
+    "copia esa frase EXACTA en `source_quote` (sin parafrasear) y pon `synthesis` en false. Si "
+    "la slide SIMPLIFICA algo complejo y ninguna frase exacta la respalda, deja `source_quote` "
+    "en null y `synthesis` en true (simplificación honesta). Nunca inventes una cita. En PDF, "
+    "indica la página en `source_page`.\n"
+    "Apoyo visual: si una slide describe un proceso físico, un mecanismo o estructura espacial, o "
+    "una secuencia visual que se entiende mejor con un diagrama, da un `image_prompt` breve que "
+    "describa un DIAGRAMA DIDÁCTICO simple; si no, deja `image_prompt` en null.\n"
+    "Responde en el idioma del documento."
+)
+
+
+class _SlidePlan(BaseModel):
+    title: str = Field(min_length=1)
+    bullets: list[str] = Field(default_factory=list)
+    source_quote: str | None = None
+    source_page: int | None = None
+    synthesis: bool = False
+    image_prompt: str | None = None
+
+
+class _DeckPlan(BaseModel):
+    slides: list[_SlidePlan] = Field(default_factory=list)
+
+
+deck_agent = Agent(output_type=PromptedOutput(_DeckPlan), system_prompt=_DECK_SYSTEM)
+
+_cache: dict[str, GeneratedDeck] = {}
+
+
+def _doc_parts(extraction: ExtractionResult) -> list[str | BinaryContent]:
+    if extraction.source_kind == "text":
+        assert extraction.text is not None
+        return [f"--- DOCUMENTO ---\n{extraction.text}\n--- FIN DEL DOCUMENTO ---"]
+    assert extraction.binary is not None and extraction.media_type is not None
+    return [
+        "--- DOCUMENTO (adjunto) ---",
+        BinaryContent(data=extraction.binary, media_type=extraction.media_type),
+    ]
+
+
+async def generate_deck(
+    model: Model, settings: Settings, extraction: ExtractionResult
+) -> GeneratedDeck:
+    """Genera (o recupera de caché) el deck de diapositivas desde la fuente."""
+    key = extraction.document_id
+    if key in _cache:
+        return _cache[key]
+
+    parts: list = [*_doc_parts(extraction), "Genera la presentación en diapositivas."]
+    result = await deck_agent.run(parts, model=model)
+    plans = result.output.slides or []
+
+    images_made = 0
+    can_make_images = bool(settings.openai_api_key)
+    slides: list[GeneratedSlide] = []
+    for plan in plans:
+        # Trazabilidad por slide (mix honesto).
+        source = None
+        grounding = "not_found"
+        is_synthesis = False
+        if plan.synthesis or not plan.source_quote:
+            is_synthesis = True
+        else:
+            source, grounding = ground_quote(plan.source_quote, plan.source_page, extraction)
+
+        # Apoyo visual: reusa el generador de ilustraciones (con etiqueta obligatoria), acotado.
+        illustration = None
+        if plan.image_prompt and can_make_images and images_made < _IMAGE_CAP:
+            try:
+                data_uri = await _generate_image(settings, plan.image_prompt)
+                illustration = GeneratedIllustration(
+                    image_url=data_uri, alt=f"Apoyo visual: {plan.title}"
+                )
+                images_made += 1
+            except Exception:  # noqa: BLE001 — la imagen es un extra; sin ella la slide sigue
+                illustration = None
+
+        slides.append(
+            GeneratedSlide(
+                title=plan.title,
+                bullets=plan.bullets[:6],
+                source=source,
+                grounding=grounding,
+                is_synthesis=is_synthesis,
+                illustration=illustration,
+            )
+        )
+
+    if not slides:  # nunca un deck vacío: una slide con el título del documento
+        slides = [GeneratedSlide(title="Presentación", bullets=[], is_synthesis=True)]
+    deck = GeneratedDeck(slides=slides)
+    _cache[key] = deck
+    return deck
