@@ -20,7 +20,7 @@ from pydantic_ai.models import Model
 from ..config import Settings
 from ..schemas.presentation import GeneratedIllustration
 from ..schemas.transform import GeneratedDeck, GeneratedSlide
-from .illustration import _generate_image
+from .illustration import _generate_image, has_image_provider
 from .models import ExtractionResult
 from .validation import ground_quote
 
@@ -44,9 +44,10 @@ _DECK_SYSTEM = (
     "indica la página en `source_page`.\n"
     "Apoyo visual (sé SELECTIVO: solo si un diagrama aclara de verdad, no por rellenar): si una "
     "slide describe un proceso físico, un mecanismo o estructura espacial, o una secuencia visual, "
-    "da un `image_prompt` DETALLADO que describa un diagrama que EXPLIQUE el concepto (elementos, "
-    "relaciones, etiquetas), de modo que la imagen clarifique por sí sola; si no, `image_prompt` "
-    "en null.\n"
+    "da un `image_prompt` DETALLADO que describa un diagrama que EXPLIQUE el concepto SOLO con "
+    "elementos visuales: nombra los objetos a dibujar y cómo se relacionan o fluyen (flechas, "
+    "posición, color). NO pidas texto ni etiquetas dentro de la imagen (eso va en la slide). Si no "
+    "aporta un diagrama, `image_prompt` en null.\n"
     "Responde en el idioma del documento."
 )
 
@@ -94,7 +95,7 @@ async def generate_deck(
     plans = result.output.slides or []
 
     images_made = 0
-    can_make_images = bool(settings.openai_api_key)
+    can_make_images = has_image_provider(settings)
     slides: list[GeneratedSlide] = []
     for plan in plans:
         # Trazabilidad por slide (mix honesto).

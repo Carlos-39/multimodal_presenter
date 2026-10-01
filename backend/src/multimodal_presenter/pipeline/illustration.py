@@ -7,15 +7,22 @@ espacial o secuencia visual — rúbrica fija, no juicio libre), y (3) es ayuda 
 prueba (estructuralmente: `GeneratedIllustration` no tiene `source`). Etiqueta obligatoria siempre.
 
 Flujo: un clasificador barato (Haiku) decide qué núcleos califican y da un prompt de imagen; luego
-se genera la imagen con OpenAI gpt-image-1 (calidad media). Cacheado por documento. Techo de
-seguridad para acotar el costo. La condición 1 (solo texto) la aplica el frontend al decidir si
-llama a este flujo.
+se genera la imagen. Cacheado por documento. Techo de seguridad para acotar el costo. La condición 1
+(solo texto) la aplica el frontend al decidir si llama a este flujo.
+
+Generación de imagen (compartida con el deck 5j): proveedor PRIMARIO Ideogram (mejores dibujos), con
+FALLBACK a OpenAI gpt-image-1 si falla (patrón como el FallbackModel del LLM). Las imágenes se
+generan **SIN texto** (las etiquetas van en el HTML de la slide): así se evitan los typos que los
+modelos de imagen cometen al "dibujar" palabras, y el texto que ve el usuario es siempre correcto.
 """
 
 from __future__ import annotations
 
+import base64
 import hashlib
 
+import httpx
+import logfire
 import truststore
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, PromptedOutput
@@ -34,14 +41,19 @@ from ..schemas.presentation import (
 truststore.inject_into_ssl()  # SSL del sistema (Windows)
 
 _SAFETY_CAP = 4  # techo por documento: la rúbrica suele dar 1-2; esto acota el peor caso de costo
-# El estilo busca imágenes que EXPLIQUEN, no íconos vagos: detalladas, con etiquetas de texto y
-# relaciones visibles, de modo que se entienda qué representan sin leer el texto de la slide.
+# Opción 2: la imagen NO lleva texto (las etiquetas/explicación van en la slide). El dibujo debe
+# explicar por sí mismo con formas, colores, flechas y composición — sin palabras dentro.
 _IMAGE_STYLE = (
-    " Estilo: diagrama educativo claro y DETALLADO que EXPLIQUE el concepto. Incluye ETIQUETAS de "
-    "texto cortas y correctas (en español) sobre los elementos clave, y flechas que muestren el "
-    "flujo o las relaciones. Composición ordenada, fondo claro, alta legibilidad. NO un ícono "
-    "abstracto ni meramente decorativo: al verlo debe quedar claro qué representa y por qué."
+    " Estilo: ilustración educativa clara y DETALLADA que explique el concepto mediante formas, "
+    "colores, flechas y composición. SIN NINGÚN TEXTO, palabra, número ni etiqueta dentro de la "
+    "imagen (las explicaciones van aparte). Fondo claro, limpio, alta legibilidad visual; no un "
+    "ícono abstracto ni meramente decorativo."
 )
+
+
+def has_image_provider(settings: Settings) -> bool:
+    """¿Hay con qué generar imágenes? (Ideogram primario u OpenAI de fallback)."""
+    return bool(settings.ideogram_api_key or settings.openai_api_key)
 
 
 class _Plan(BaseModel):
@@ -59,9 +71,9 @@ _CLASSIFY_SYSTEM = (
     "un MECANISMO o estructura ESPACIAL, o una SECUENCIA visual. NO marques texto conceptual, "
     "definicional, narrativo, argumentativo, de datos/cifras ni resúmenes. Para cada sección "
     "marcada, da un `image_prompt` en español DETALLADO que describa un diagrama que EXPLIQUE el "
-    "concepto: nombra los elementos a dibujar, cómo se relacionan o fluyen, y qué etiquetas poner, "
-    "de modo que la imagen clarifique por sí sola (nunca un ícono vago). Devuelve SOLO las "
-    "secciones que califican (puede ser ninguna)."
+    "concepto SOLO con elementos visuales: nombra los objetos a dibujar y cómo se relacionan o "
+    "fluyen (flechas, posición, color). NO pidas texto ni etiquetas dentro de la imagen (eso va en "
+    "la slide). Devuelve SOLO las secciones que califican (puede ser ninguna)."
 )
 
 classify_agent = Agent(output_type=PromptedOutput(_PlanList), system_prompt=_CLASSIFY_SYSTEM)
@@ -109,20 +121,57 @@ async def _classify(model: Model, presentation: Presentation) -> list[_Plan]:
     return plans[:_SAFETY_CAP]
 
 
-async def _generate_image(settings: Settings, image_prompt: str) -> str:
-    """Genera la imagen con gpt-image-1 (calidad media) y la devuelve como data URI."""
+_IDEOGRAM_URL = "https://api.ideogram.ai/v1/ideogram-v3/generate"
+
+
+async def _ideogram_image(settings: Settings, prompt: str) -> str:
+    """Genera con Ideogram v3 (primario). Devuelve data URI. Lanza si falla."""
+    async with httpx.AsyncClient(timeout=120) as client:
+        resp = await client.post(
+            _IDEOGRAM_URL,
+            headers={"Api-Key": settings.ideogram_api_key or ""},
+            files={
+                "prompt": (None, prompt),
+                "rendering_speed": (None, settings.ideogram_rendering_speed),
+                "aspect_ratio": (None, "1x1"),
+                "magic_prompt": (None, "OFF"),
+            },
+        )
+        resp.raise_for_status()
+        url = resp.json()["data"][0]["url"]
+        img = await client.get(url)
+        img.raise_for_status()
+        ctype = img.headers.get("content-type", "image/png").split(";")[0]
+        b64 = base64.b64encode(img.content).decode("ascii")
+        return f"data:{ctype};base64,{b64}"
+
+
+async def _openai_image(settings: Settings, prompt: str) -> str:
+    """Genera con OpenAI gpt-image-1 (fallback). Devuelve data URI."""
     from openai import AsyncOpenAI
 
     client = AsyncOpenAI(api_key=settings.openai_api_key)
     response = await client.images.generate(
         model=settings.openai_image_model,
-        prompt=image_prompt + _IMAGE_STYLE,
+        prompt=prompt,
         size="1024x1024",
         quality=settings.openai_image_quality,
         n=1,
     )
-    b64 = response.data[0].b64_json
-    return f"data:image/png;base64,{b64}"
+    return f"data:image/png;base64,{response.data[0].b64_json}"
+
+
+async def _generate_image(settings: Settings, image_prompt: str) -> str:
+    """Genera la imagen (sin texto) como data URI: Ideogram primario, gpt-image-1 de fallback."""
+    prompt = image_prompt + _IMAGE_STYLE
+    if settings.ideogram_api_key:
+        try:
+            return await _ideogram_image(settings, prompt)
+        except Exception as exc:  # noqa: BLE001 — el fallback es justamente para esto
+            logfire.warning("Ideogram falló, usando gpt-image-1: {error}", error=str(exc))
+    if settings.openai_api_key:
+        return await _openai_image(settings, prompt)
+    raise RuntimeError("No hay proveedor de imagen configurado (Ideogram u OpenAI).")
 
 
 async def illustrate(
@@ -132,8 +181,11 @@ async def illustrate(
     _text, key = _cores_digest(presentation)
     if key in _cache:
         return _cache[key]
-    if not settings.openai_api_key:
-        raise RuntimeError("OPENAI_API_KEY no configurada: las ilustraciones no están disponibles.")
+    if not has_image_provider(settings):
+        raise RuntimeError(
+            "Sin proveedor de imagen (IDEOGRAM_API_KEY u OPENAI_API_KEY): ilustraciones "
+            "no disponibles."
+        )
 
     plans = await _classify(model, presentation)
     by_id = {s.id: s for s in presentation.sections}

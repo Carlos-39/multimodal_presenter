@@ -20,7 +20,7 @@ from ..pipeline import transform
 from ..pipeline.chat import chat_stream, generate_suggestions
 from ..pipeline.deck import generate_deck
 from ..pipeline.extraction import prepare_input
-from ..pipeline.illustration import illustrate
+from ..pipeline.illustration import has_image_provider, illustrate
 from ..pipeline.image_explanation import explain_image
 from ..pipeline.narration import narrate
 from ..pipeline.streaming import transform_stream
@@ -334,11 +334,12 @@ async def illustrations_endpoint(
     """Ilustraciones de apoyo generadas (Hito 5h Parte 1). On-demand tras la transformación.
 
     El frontend solo lo llama para documentos de fuente TEXTO (condición 1: un texto no trae
-    imágenes). Clasifica los núcleos (Haiku) y genera imagen (gpt-image-1) solo para los que
-    califican, hasta un techo de seguridad. Cacheado por documento. `503` si falta la clave;
-    si falla la generación, `502` (falla visible; el frontend simplemente no muestra ilustración).
+    imágenes). Clasifica los núcleos (Haiku) y genera imagen (Ideogram primario, gpt-image-1 de
+    fallback) solo para los que califican, hasta un techo de seguridad. Cacheado por documento.
+    `503` si no hay proveedor de imagen; si falla la generación, `502` (falla visible; el frontend
+    simplemente no muestra ilustración).
     """
-    if not settings.openai_api_key:
+    if not has_image_provider(settings):
         raise HTTPException(
             status_code=503, detail="Las ilustraciones generadas no están configuradas."
         )
