@@ -12,6 +12,7 @@ import { postTransform } from "@/lib/api";
 import { fetchSummary } from "@/lib/summary";
 import { streamTransform } from "@/lib/stream";
 import { useChat, type OriginalSource } from "@/hooks/useChat";
+import { useNarration } from "@/hooks/useNarration";
 import { DEFAULT_DETAIL_LEVEL, visibleSections, type DetailLevel } from "@/lib/detail";
 import { initTelemetry, track, flush } from "@/lib/telemetry";
 import type { PanelId } from "@/lib/workspace";
@@ -74,6 +75,12 @@ export default function Page() {
   // Chat (Hito 6): historial de sesión + streaming + sugerencias, aislado en un hook.
   const chat = useChat(original);
 
+  // Presentación actual (título + secciones completas) y narración (Hito 5g Parte 3). La narración
+  // es independiente del toggle resumen/detallado y de la sección activa; solo se reinicia con un
+  // documento nuevo (lo hace `resetForRun`, desde el manejador de transformación — no en efecto).
+  const presentation = useMemo(() => ({ title, sections }), [title, sections]);
+  const narration = useNarration(presentation);
+
   // Telemetría (Hito 8): relojes de interacción. Los refs se mutan SOLO en manejadores de evento
   // (nunca en render/efecto), coherente con la regla de hooks del proyecto.
   const modeEnteredAtRef = useRef<number | null>(null); // cuándo entró al modo actual (se fija al montar)
@@ -130,6 +137,7 @@ export default function Page() {
 
   function resetForRun(text: string | null, file: File | null) {
     chat.reset(); // nuevo documento → nuevo chat (historial de sesión limpio)
+    narration.reset(); // nuevo documento → se descarta la narración cacheada
     setError(null);
     setTitle("");
     setSections([]);
@@ -215,7 +223,6 @@ export default function Page() {
     }
   }
 
-  const presentation = useMemo(() => ({ title, sections }), [title, sections]);
   const visible = useMemo(() => visibleSections(sections, detailLevel), [sections, detailLevel]);
   const effectiveActiveId = visible.some((s) => s.id === activeSectionId)
     ? activeSectionId
@@ -312,6 +319,11 @@ export default function Page() {
       onDetailLevelChange={handleDetailLevelChange}
       chatOpen={openOrder.includes("chat")}
       onToggleChat={toggleChat}
+      narrationStatus={narration.status}
+      narrationAvailable={narration.available}
+      onNarrationPlay={narration.play}
+      onNarrationPause={narration.pause}
+      onNarrationStop={narration.stop}
     >
       {/* Escala 2 (Hito 5e): Workspace arbitra contenido + columnas opcionales (fuente, chat).
           El contenido es el slot fijo; las columnas solo cambian al abrir/cerrar un panel. */}
