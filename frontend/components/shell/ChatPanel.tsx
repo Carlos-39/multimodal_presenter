@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ContentRenderer } from "@/components/content/ContentRenderer";
 import type { ChatMessage } from "@/hooks/useChat";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { track } from "@/lib/telemetry";
 import type { GroundingStatus, SourceReference } from "@/lib/types";
 
@@ -38,6 +39,12 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+
+  // Entrada por voz: la transcripción LLENA la caja (editable), nunca se envía sola.
+  const handleTranscribed = useCallback((text: string) => {
+    setInput((prev) => (prev ? `${prev} ${text}` : text));
+  }, []);
+  const voice = useVoiceInput(handleTranscribed);
 
   // Autoscroll al último mensaje.
   useEffect(() => {
@@ -113,7 +120,41 @@ export function ChatPanel({
         }}
         className="border-t border-border p-3"
       >
+        {/* Estado/errores de la voz: siempre visibles (honestidad), nunca falla en silencio. */}
+        {voice.status === "recording" ? (
+          <p className="mb-2 flex items-center gap-1.5 text-xs text-warning">
+            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-warning" aria-hidden />
+            Grabando… pulsa el micrófono para detener.
+          </p>
+        ) : voice.status === "transcribing" ? (
+          <p className="mb-2 text-xs text-muted">Transcribiendo…</p>
+        ) : voice.status === "error" && voice.error ? (
+          <p className="mb-2 text-xs text-warning">{voice.error}</p>
+        ) : null}
+
         <div className="flex items-end gap-2">
+          <button
+            type="button"
+            onClick={voice.toggle}
+            disabled={disabled || voice.status === "transcribing"}
+            aria-label={voice.status === "recording" ? "Detener grabación" : "Grabar pregunta por voz"}
+            aria-pressed={voice.status === "recording"}
+            title="Preguntar por voz"
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border transition-colors active:scale-95 disabled:opacity-40 ${
+              voice.status === "recording"
+                ? "animate-pulse border-warning text-warning"
+                : "border-border text-muted hover:border-accent hover:text-accent"
+            }`}
+          >
+            {voice.status === "transcribing" ? (
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted border-t-accent" />
+            ) : voice.status === "recording" ? (
+              <StopDot />
+            ) : (
+              <MicIcon />
+            )}
+          </button>
+
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -125,7 +166,7 @@ export function ChatPanel({
             }}
             rows={1}
             disabled={disabled}
-            placeholder={disabled ? "Sin documento…" : "Escribe una pregunta…"}
+            placeholder={disabled ? "Sin documento…" : "Escribe o dicta una pregunta…"}
             className="max-h-28 min-h-9 flex-1 resize-none rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent disabled:opacity-50"
           />
           <button
@@ -224,4 +265,21 @@ function SourceChip({
 
 function truncate(text: string, max = 60): string {
   return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+function MicIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+      <path d="M8 1.5a2 2 0 0 0-2 2v4a2 2 0 1 0 4 0v-4a2 2 0 0 0-2-2Z" />
+      <path d="M4 7a.6.6 0 0 1 1.2 0 2.8 2.8 0 0 0 5.6 0A.6.6 0 0 1 12 7a4 4 0 0 1-3.4 3.96V13h1.6a.6.6 0 0 1 0 1.2H5.8a.6.6 0 0 1 0-1.2h1.6v-2.04A4 4 0 0 1 4 7Z" />
+    </svg>
+  );
+}
+
+function StopDot() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+      <rect x="3.5" y="3.5" width="9" height="9" rx="1.5" />
+    </svg>
+  );
 }

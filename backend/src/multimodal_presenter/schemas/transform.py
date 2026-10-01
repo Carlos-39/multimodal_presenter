@@ -110,6 +110,18 @@ class NarrationRequest(_Strict):
     presentation: Presentation
 
 
+class ImageExplanationResponse(_Strict):
+    """Explicación bajo demanda de una imagen real del documento (Hito 5h Parte 3)."""
+
+    explanation: str
+
+
+class TranscriptionResponse(_Strict):
+    """Texto transcrito de una pregunta hablada al chat (entrada por voz)."""
+
+    text: str
+
+
 # --- Eventos SSE del endpoint /transform/stream (Hito 5d) ---
 # Cada `Section` streameada es indistinguible en forma de una del contrato no-streaming.
 

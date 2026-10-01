@@ -5,6 +5,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { Workspace } from "@/components/shell/Workspace";
 import { ChatPanel } from "@/components/shell/ChatPanel";
 import { ContentArea } from "@/components/content/ContentArea";
+import { SlideView } from "@/components/content/SlideView";
 import { SourcePanel } from "@/components/content/SourcePanel";
 import { SummaryBanner } from "@/components/content/SummaryBanner";
 import { TransformInput } from "@/components/TransformInput";
@@ -90,6 +91,10 @@ export default function Page() {
   // Escala 2 (Hito 5e): paneles opcionales abiertos, el más reciente al final (recencia).
   const [openOrder, setOpenOrder] = useState<PanelId[]>([]);
 
+  // Vista de slides (Hito 5h Parte 2): modo alterno de consumir el MISMO contenido ya generado.
+  const [slidesOpen, setSlidesOpen] = useState(false);
+  const toggleSlides = useCallback(() => setSlidesOpen((v) => !v), []);
+
   const openPanel = useCallback((id: PanelId) => {
     setOpenOrder((prev) => [...prev.filter((p) => p !== id), id]);
   }, []);
@@ -149,6 +154,7 @@ export default function Page() {
     setActiveSource(null);
     setSummary(null);
     setSummaryStatus("idle");
+    setSlidesOpen(false); // documento nuevo → vuelve a la vista de scroll
     setOpenOrder((prev) => prev.filter((p) => p !== "source")); // cierra la fuente; conserva el chat
     setOriginal({ text, file });
     setSourceKind(file ? (file.type === "application/pdf" ? "pdf" : "image") : "text");
@@ -319,6 +325,9 @@ export default function Page() {
       onDetailLevelChange={handleDetailLevelChange}
       chatOpen={openOrder.includes("chat")}
       onToggleChat={toggleChat}
+      slidesOpen={slidesOpen}
+      slidesAvailable={hasContent}
+      onToggleSlides={toggleSlides}
       narrationStatus={narration.status}
       narrationAvailable={narration.available}
       onNarrationPlay={narration.play}
@@ -354,37 +363,53 @@ export default function Page() {
           />
         }
       >
-        <div className="mx-auto max-w-3xl space-y-4 p-6">
-          <TransformInput status={status} onSubmit={handleTransform} />
-
-          {status === "streaming" ? (
-            <p className="text-sm text-muted">
-              Generando… {sections.length} {sections.length === 1 ? "sección" : "secciones"}
-            </p>
-          ) : null}
-
-          {status === "error" ? (
-            <div className="rounded-md border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
-              {error}
-            </div>
-          ) : null}
-        </div>
-
-        <SummaryBanner status={summaryStatus} summary={summary} />
-
-        {hasContent ? (
-          <ContentArea
+        {slidesOpen && hasContent ? (
+          // Modo slides (Hito 5h Parte 2): re-vista del MISMO contenido ya generado; el núcleo
+          // fijo y las columnas (fuente/chat) siguen disponibles.
+          <SlideView
             title={presentation.title}
             sections={visible}
-            level={detailLevel}
-            activeSectionId={effectiveActiveId}
             chartNotes={chartNotes}
             observations={observations}
             onOpenSource={handleOpenSectionSource}
             activeSourceKey={activeSource?.key ?? null}
             groundingBySection={groundingBySection}
           />
-        ) : null}
+        ) : (
+          <>
+            <div className="mx-auto max-w-3xl space-y-4 p-6">
+              <TransformInput status={status} onSubmit={handleTransform} />
+
+              {status === "streaming" ? (
+                <p className="text-sm text-muted">
+                  Generando… {sections.length} {sections.length === 1 ? "sección" : "secciones"}
+                </p>
+              ) : null}
+
+              {status === "error" ? (
+                <div className="rounded-md border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
+                  {error}
+                </div>
+              ) : null}
+            </div>
+
+            <SummaryBanner status={summaryStatus} summary={summary} />
+
+            {hasContent ? (
+              <ContentArea
+                title={presentation.title}
+                sections={visible}
+                level={detailLevel}
+                activeSectionId={effectiveActiveId}
+                chartNotes={chartNotes}
+                observations={observations}
+                onOpenSource={handleOpenSectionSource}
+                activeSourceKey={activeSource?.key ?? null}
+                groundingBySection={groundingBySection}
+              />
+            ) : null}
+          </>
+        )}
       </Workspace>
     </AppShell>
   );

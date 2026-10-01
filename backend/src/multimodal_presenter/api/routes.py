@@ -19,17 +19,21 @@ from ..model_provider import build_model, build_summary_model
 from ..pipeline import transform
 from ..pipeline.chat import chat_stream, generate_suggestions
 from ..pipeline.extraction import prepare_input
+from ..pipeline.image_explanation import explain_image
 from ..pipeline.narration import narrate
 from ..pipeline.streaming import transform_stream
 from ..pipeline.summary import summarize
+from ..pipeline.transcribe import transcribe_audio
 from ..pipeline.uploads import read_and_validate_upload
 from ..schemas.chat import ChatStreamError, ChatTurn, SuggestionsResponse
 from ..schemas.presentation import Section
 from ..schemas.telemetry import TelemetryBatch
 from ..schemas.transform import (
+    ImageExplanationResponse,
     NarrationRequest,
     StreamError,
     SummaryResponse,
+    TranscriptionResponse,
     TransformResponse,
 )
 from ..telemetry import record_ux_event, resolve_telemetry_dir
@@ -242,6 +246,57 @@ async def narration_endpoint(
     except Exception as exc:  # fallo del proveedor TTS / red → error visible, no silencio
         raise HTTPException(status_code=502, detail="No se pudo generar la narración.") from exc
     return Response(content=audio, media_type="audio/mpeg")
+
+
+@router.post("/explain-image", response_model=ImageExplanationResponse)
+async def explain_image_endpoint(
+    text: str | None = Form(default=None),
+    file: UploadFile | None = File(default=None),
+    page: int | None = Form(default=None),
+    context: str | None = Form(default=None),
+    model: Model = Depends(get_model),
+    settings: Settings = Depends(get_settings),
+) -> ImageExplanationResponse:
+    """Explica bajo demanda una imagen REAL del documento (Hito 5h Parte 3, extensión de 4+6).
+
+    Solo para fuentes binarias (PDF/imagen): el modelo relee el binario nativo y explica la imagen
+    en lenguaje accesible. La atribución es la propia imagen (se muestra junto a ella en el
+    `SourcePanel`). En fuentes de texto no hay imagen real que explicar → 400.
+    """
+    text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    extraction = prepare_input(
+        text=text_value, binary=binary, media_type=media_type, filename=filename
+    )
+    if extraction.source_kind == "text":
+        raise HTTPException(
+            status_code=400, detail="Una fuente de texto no tiene imagen que explicar."
+        )
+    explanation = await explain_image(model, extraction, page=page, context=context)
+    return ImageExplanationResponse(explanation=explanation)
+
+
+@router.post("/transcribe", response_model=TranscriptionResponse)
+async def transcribe_endpoint(
+    file: UploadFile = File(),
+    settings: Settings = Depends(get_settings),
+) -> TranscriptionResponse:
+    """Transcribe una pregunta hablada a texto (entrada por voz del chat).
+
+    Solo audio→texto; el usuario revisa y envía manualmente (nunca se envía ni se interpreta como
+    comando). `503` si falta la clave de OpenAI, `502` si falla el proveedor — falla visible.
+    """
+    if not settings.openai_api_key:
+        raise HTTPException(status_code=503, detail="La transcripción de voz no está configurada.")
+    audio = await file.read()
+    if not audio:
+        raise HTTPException(status_code=400, detail="Audio vacío.")
+    if len(audio) > 25 * 1024 * 1024:  # límite de OpenAI; una pregunta hablada es muchísimo menor
+        raise HTTPException(status_code=413, detail="El audio es demasiado largo.")
+    try:
+        text = await transcribe_audio(settings, audio, file.filename or "audio.webm")
+    except Exception as exc:  # error del proveedor / red → visible, no silencio
+        raise HTTPException(status_code=502, detail="No se pudo transcribir el audio.") from exc
+    return TranscriptionResponse(text=text)
 
 
 @router.post("/telemetry", status_code=204)
