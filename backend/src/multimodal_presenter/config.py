@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     openai_tts_voice: str = "nova"
     # Entrada por voz en el chat: transcripción audio→texto (misma clave OpenAI).
     openai_transcribe_model: str = "gpt-4o-mini-transcribe"
+    # Ilustraciones de apoyo generadas (Hito 5h Parte 1): generación de imagen (calidad media).
+    openai_image_model: str = "gpt-image-1"
 
     # Entrada multimodal (Hito 4): tope de tamaño de archivo subido, en MB.
     max_upload_mb: int = 20

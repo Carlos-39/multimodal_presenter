@@ -16,7 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .presentation import Presentation, Section
+from .presentation import GeneratedIllustration, Presentation, Section
 
 
 class _Strict(BaseModel):
@@ -120,6 +120,25 @@ class TranscriptionResponse(_Strict):
     """Texto transcrito de una pregunta hablada al chat (entrada por voz)."""
 
     text: str
+
+
+class IllustrationsRequest(_Strict):
+    """Petición de ilustraciones de apoyo (Hito 5h Parte 1): la presentación ya generada."""
+
+    presentation: Presentation
+
+
+class IllustrationItem(_Strict):
+    """Una ilustración generada, atada a su sección por id."""
+
+    section_id: str
+    illustration: GeneratedIllustration
+
+
+class IllustrationsResponse(_Strict):
+    """Ilustraciones generadas para las secciones que calificaron (puede ser vacía)."""
+
+    illustrations: list[IllustrationItem] = Field(default_factory=list)
 
 
 # --- Eventos SSE del endpoint /transform/stream (Hito 5d) ---

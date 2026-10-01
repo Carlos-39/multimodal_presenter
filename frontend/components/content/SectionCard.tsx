@@ -2,6 +2,16 @@ import { isAnchored, UNANCHORED_NOTICE } from "@/lib/grounding";
 import type { ChartNote, GroundingStatus, Section, SemanticObservation } from "@/lib/types";
 import { SectionRenderer } from "./SectionRenderer";
 
+/** Icono de "generada" para la banda de la ilustración de apoyo. */
+function GeneratedIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+      <path d="M8 1.5 9.2 5.1 12.8 6.3 9.2 7.5 8 11.1 6.8 7.5 3.2 6.3 6.8 5.1 8 1.5Z" />
+      <path d="M12.7 10.2 13.3 12 15.1 12.6 13.3 13.2 12.7 15 12.1 13.2 10.3 12.6 12.1 12 12.7 10.2Z" />
+    </svg>
+  );
+}
+
 /**
  * Tarjeta de UNA sección: cabecera (núcleo/satélite) + contenido (Generative UI) + notas +
  * atribución de fuente. Fuente ÚNICA de este render: la comparten la vista de scroll
@@ -65,6 +75,20 @@ export function SectionCard({
           />
           <span>Posible discrepancia con la fuente: {observation.issue}</span>
         </p>
+      ) : null}
+
+      {/* Ilustración de apoyo GENERADA (Hito 5h Parte 1). Etiqueta permanente SIEMPRE visible (no
+          tooltip), borde punteado y banda propia → imposible confundirla con contenido verificado.
+          No tiene fuente ni grounding: es ayuda didáctica declarada. */}
+      {section.illustration ? (
+        <figure className="mt-3 overflow-hidden rounded-md border border-dashed border-muted/60 bg-background">
+          <figcaption className="flex items-center gap-1.5 border-b border-dashed border-muted/60 bg-muted/10 px-3 py-1.5 text-xs font-medium text-muted">
+            <GeneratedIcon />
+            <span>{section.illustration.label}</span>
+          </figcaption>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={section.illustration.image_url} alt={section.illustration.alt} className="block w-full" />
+        </figure>
       ) : null}
 
       <footer className="mt-4 border-t border-border pt-2">
