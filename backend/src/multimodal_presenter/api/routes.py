@@ -160,6 +160,7 @@ async def transform_endpoint(
         grounding=result.grounding,
         semantic=result.semantic,
         chart_notes=result.chart_notes,
+        transcript=result.transcript,
     )
 
 

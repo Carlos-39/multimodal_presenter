@@ -36,6 +36,7 @@ interface SourcePanelProps {
   status: GroundingStatus;
   sourceKey: string; // reancla el resaltado al cambiar de fuente (sección o chat)
   startS?: number | null; // solo audio: segundo en el que arranca la cita
+  transcript?: string | null; // solo audio: lo que oyó la fase de percepción
   onClose: () => void;
 }
 
@@ -46,6 +47,7 @@ export function SourcePanel({
   status,
   sourceKey,
   startS = null,
+  transcript = null,
   onClose,
 }: SourcePanelProps) {
   // El object URL se crea y se revoca en el MISMO efecto, para que cada montaje tenga el suyo.
@@ -102,7 +104,13 @@ export function SourcePanel({
         ) : sourceKind === "pdf" ? (
           <PdfSource url={fileUrl} page={source.page} />
         ) : sourceKind === "audio" ? (
-          <AudioSource url={fileUrl} quote={source.quote} startS={startS} />
+          <AudioSource
+            url={fileUrl}
+            quote={source.quote}
+            startS={startS}
+            transcript={transcript}
+            sourceKey={sourceKey}
+          />
         ) : (
           <ImageSource url={fileUrl} />
         )}
@@ -204,12 +212,29 @@ function AudioSource({
   url,
   quote,
   startS,
+  transcript,
+  sourceKey,
 }: {
   url: string | null;
   quote: string;
   startS: number | null;
+  transcript: string | null;
+  sourceKey: string;
 }) {
   const playerRef = useRef<HTMLAudioElement | null>(null);
+  const markRef = useRef<HTMLElement>(null);
+
+  // La cita se LOCALIZA dentro de la transcripción (mismo helper que el caso de texto), pero
+  // eso NO la verifica: la transcripción es lo que el modelo oyó, no la señal. Por eso el
+  // grounding sigue en `unverified` y el pie lo dice. Si no se encuentra, no se resalta nada
+  // en vez de resaltar algo aproximado.
+  const idx = transcript ? transcript.indexOf(quote) : -1;
+  const segmentos =
+    transcript && idx !== -1 ? highlightSegments(transcript, idx, idx + quote.length) : null;
+
+  useEffect(() => {
+    markRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [sourceKey]);
 
   // Arranca en el momento de la cita. Hay que esperar a que los metadatos carguen: antes de eso
   // `currentTime` no se puede fijar (la duración aún no se conoce).
@@ -239,13 +264,33 @@ function AudioSource({
 
       <audio ref={playerRef} src={url} controls className="w-full" />
 
-      <figure className="border-l-2 border-border pl-3">
-        <blockquote className="text-sm leading-relaxed text-foreground">“{quote}”</blockquote>
-        <figcaption className="mt-2 text-xs leading-relaxed text-muted">
-          Transcrito por el modelo que escuchó el audio. No se puede verificar contra la señal
-          palabra por palabra: escucha el fragmento para confirmarlo.
-        </figcaption>
-      </figure>
+      {segmentos ? (
+        // Transcripción completa con la cita resaltada: el equivalente honesto de lo que el
+        // panel hace con un documento de texto, para poder leer el contexto de la cita.
+        <div>
+          <p className="mb-2 text-xs text-muted">Transcripción</p>
+          <p className="whitespace-pre-wrap font-serif text-[0.9375rem] leading-[1.65] text-foreground-secondary">
+            {segmentos.before}
+            {segmentos.mark ? (
+              <mark ref={markRef} className="rounded-[2px] bg-highlight px-0.5 text-foreground">
+                {segmentos.mark}
+              </mark>
+            ) : null}
+            {segmentos.after}
+          </p>
+        </div>
+      ) : (
+        // Sin transcripción (o con una cita que no aparece en ella): se muestra la cita sola,
+        // sin fingir un contexto que no se tiene.
+        <figure className="border-l-2 border-border pl-3">
+          <blockquote className="text-sm leading-relaxed text-foreground">“{quote}”</blockquote>
+        </figure>
+      )}
+
+      <p className="text-xs leading-relaxed text-muted">
+        Esto es lo que el modelo <strong className="font-medium">oyó</strong> en el audio, no una
+        transcripción verificada. Puede tener errores: escucha el fragmento para confirmarlo.
+      </p>
     </div>
   );
 }

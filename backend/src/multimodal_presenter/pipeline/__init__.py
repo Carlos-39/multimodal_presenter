@@ -82,4 +82,5 @@ async def transform(
             grounding=grounding,
             semantic=semantic,
             chart_notes=chart_notes,
+            transcript=evidence.verbal_text if evidence is not None else None,
         )

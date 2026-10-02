@@ -105,6 +105,9 @@ class TransformResponse(_Strict):
     grounding: GroundingReport
     semantic: SemanticCoherenceReport
     chart_notes: list[ChartNote] = Field(default_factory=list)
+    transcript: str | None = None
+    """Solo fuentes de audio: lo que la Fase 0 oyó. `None` para texto, PDF e imagen, que no
+    pasan por la percepción. Ver `StreamTranscript` para el razonamiento."""
 
 
 class SummaryResponse(_Strict):
@@ -180,6 +183,27 @@ class GeneratedDeck(_Strict):
 
 # --- Eventos SSE del endpoint /transform/stream (Hito 5d) ---
 # Cada `Section` streameada es indistinguible en forma de una del contrato no-streaming.
+
+
+class StreamTranscript(_Strict):
+    """Lo que la Fase 0 oyó en el audio, emitido ANTES de que empiece la estructuración.
+
+    Dos razones para que viaje al frontend, y ninguna contradice el principio de no aplanar
+    (ese principio rige lo que entra al MODELO para que lo interprete, no lo que se le muestra
+    al lector para que verifique — esto último aumenta la trazabilidad):
+
+    1. La percepción añade varios segundos antes de la primera sección; con la transcripción en
+       la mano, el adelanto del audio deja de ser un hueco y pasa a decir qué se dijo.
+    2. El panel de fuente puede mostrar la transcripción completa con la cita resaltada, que es
+       el equivalente honesto de lo que ya hace con un documento de texto.
+
+    Sigue sin ser verificable contra la señal: es lo que el modelo de percepción OYÓ. La UI lo
+    dice, y el grounding de las secciones sigue siendo `unverified`.
+    """
+
+    type: Literal["transcript"] = "transcript"
+    text: str
+    speaker_count: int = Field(ge=1)
 
 
 class StreamStart(_Strict):

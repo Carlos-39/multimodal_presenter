@@ -24,6 +24,7 @@ from ..schemas.transform import (
     StreamError,
     StreamSection,
     StreamStart,
+    StreamTranscript,
 )
 from .extraction import prepare_input
 from .isomorphism import isomorphize_section
@@ -31,7 +32,7 @@ from .perception import run_perception
 from .structuring import build_model_input, structuring_agent
 from .validation import build_grounding_report, ground_section, verify_semantic_coherence
 
-StreamEvent = StreamStart | StreamSection | StreamDone | StreamError
+StreamEvent = StreamTranscript | StreamStart | StreamSection | StreamDone | StreamError
 
 
 def _section_is_complete(section: Section) -> bool:
@@ -100,6 +101,10 @@ async def transform_stream(
         # indicador de carga hasta que la percepción termina y después las secciones llegan
         # una por una como siempre. No se emite nada a medias.
         evidence = await run_perception(binary, media_type, perception_model)
+        if evidence is not None:
+            # Antes de estructurar: así el frontend tiene algo que mostrar durante los segundos
+            # que la percepción acaba de consumir, en vez de un hueco.
+            yield StreamTranscript(text=evidence.verbal_text, speaker_count=evidence.speaker_count)
 
         extraction = prepare_input(
             text=text,

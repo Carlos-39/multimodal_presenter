@@ -66,3 +66,4 @@ class PipelineResult(BaseModel):
     grounding: GroundingReport
     semantic: SemanticCoherenceReport
     chart_notes: list[ChartNote] = Field(default_factory=list)
+    transcript: str | None = None  # solo audio: lo que oyó la Fase 0

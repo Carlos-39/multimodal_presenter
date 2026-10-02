@@ -160,10 +160,20 @@ export interface TransformResponse {
   grounding: GroundingReport;
   semantic: SemanticCoherenceReport;
   chart_notes: ChartNote[];
+  /** Solo audio: lo que oyó la fase de percepción. `null` para texto, PDF e imagen. */
+  transcript: string | null;
 }
 
 /** Eventos SSE de POST /transform/stream (Hito 5d). */
 export type StreamEvent =
+  /**
+   * Solo audio: lo que la fase de percepción oyó, emitido ANTES del título. Llega durante los
+   * segundos que esa fase consume, así que es lo que llena el adelanto del audio; y alimenta la
+   * transcripción con la cita resaltada del panel de fuente.
+   *
+   * No es verificable contra la señal: es lo que el modelo oyó, y la UI lo dice.
+   */
+  | { type: "transcript"; text: string; speaker_count: number }
   | { type: "start"; title: string }
   | {
       type: "section";

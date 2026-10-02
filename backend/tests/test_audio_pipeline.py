@@ -204,11 +204,60 @@ def test_streaming_con_audio_emite_las_secciones_igual(wav_bytes: bytes) -> None
 
     events = asyncio.run(run())
     types = [event.type for event in events]
-    assert types[0] == "start" and types[-1] == "done"
+    # La transcripción va PRIMERO, antes incluso del título: es lo que el frontend muestra
+    # durante los segundos que la percepción acaba de consumir.
+    assert types[0] == "transcript"
+    assert types[1] == "start" and types[-1] == "done"
     assert "section" in types
+
+    transcripcion = events[0]
+    assert QUOTE in transcripcion.text and DUDA in transcripcion.text
+    assert transcripcion.speaker_count == 2
+
     section_event = next(e for e in events if e.type == "section")
     assert section_event.grounding.status == "unverified"
     assert section_event.grounding.start_s == 1.5
+
+
+def test_el_texto_no_emite_evento_de_transcripcion(
+    input_text: str, mock_presentation: dict
+) -> None:
+    """La transcripción es exclusiva del audio: con texto no hay Fase 0 que la produzca."""
+
+    async def run() -> list:
+        return [
+            event
+            async for event in transform_stream(
+                _structuring_model(mock_presentation),
+                text=input_text,
+                semantic_enabled=False,
+            )
+        ]
+
+    types = [event.type for event in asyncio.run(run())]
+    assert "transcript" not in types
+    assert types[0] == "start"
+
+
+def test_transform_no_streaming_devuelve_la_transcripcion(wav_bytes: bytes) -> None:
+    result = asyncio.run(
+        transform(
+            _structuring_model(),
+            binary=wav_bytes,
+            media_type="audio/wav",
+            semantic_enabled=False,
+            perception_model=_perception_model(),
+        )
+    )
+    assert result.transcript is not None
+    assert QUOTE in result.transcript
+
+
+def test_transform_de_texto_no_trae_transcripcion(input_text: str, mock_presentation: dict) -> None:
+    result = asyncio.run(
+        transform(_structuring_model(mock_presentation), text=input_text, semantic_enabled=False)
+    )
+    assert result.transcript is None
 
 
 def test_la_percepcion_no_se_ejecuta_para_texto(input_text: str, mock_presentation: dict) -> None:

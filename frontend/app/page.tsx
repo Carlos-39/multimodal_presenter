@@ -79,6 +79,8 @@ export default function Page() {
   // Adelanto inicial (Hito 5g): preview corto mientras corre la transformación completa.
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryStatus, setSummaryStatus] = useState<SummaryStatus>("idle");
+  // Solo audio: lo que oyó la fase de percepción (ver StreamEvent "transcript").
+  const [transcript, setTranscript] = useState<string | null>(null);
 
   // Ilustraciones de apoyo en camino (post-pase del 5h): solo para avisar en pantalla.
   const [illustrationsPending, setIllustrationsPending] = useState(false);
@@ -205,6 +207,7 @@ export default function Page() {
     setActiveSource(null);
     setSummary(null);
     setSummaryStatus("idle");
+    setTranscript(null);
     illustrationRunRef.current += 1; // invalida ilustraciones en camino del documento anterior
     setIllustrationsPending(false);
     setSlidesOpen(false); // documento nuevo → vuelve a la vista de scroll
@@ -217,6 +220,7 @@ export default function Page() {
   }
 
   function applyNonStreaming(data: TransformResponse) {
+    setTranscript(data.transcript);
     setTitle(data.presentation.title);
     setSections(data.presentation.sections);
     setEntries(data.grounding.sections);
@@ -264,20 +268,38 @@ export default function Page() {
 
     // Adelanto en PARALELO (Hito 5g): no se espera (no bloquea el streaming). Latencia real del
     // LLM liviano, sin sleep. Si falla, se marca como error y se muestra como tal (honestidad).
+    //
+    // El AUDIO es el único caso que no puede lanzarlo aquí: el modelo del adelanto no admite
+    // audio como entrada. Se dispara más abajo, al llegar la transcripción de la fase de
+    // percepción — que además es justo el momento en que hay algo que resumir. Para el usuario
+    // la diferencia es que el adelanto del audio tarda un poco más, no que no exista.
     setSummaryStatus("loading");
-    fetchSummary(text, file)
-      .then((s) => {
-        setSummary(s);
-        setSummaryStatus("done");
-      })
-      .catch(() => setSummaryStatus("error"));
+    if (sk !== "audio") {
+      fetchSummary(text, file)
+        .then((s) => {
+          setSummary(s);
+          setSummaryStatus("done");
+        })
+        .catch(() => setSummaryStatus("error"));
+    }
 
     let received = 0;
     let docTitle = "";
     const collected: Section[] = []; // copia local de las secciones (para el post-pase de ilustraciones)
     try {
       await streamTransform(text, file, (event) => {
-        if (event.type === "start") {
+        if (event.type === "transcript") {
+          // Lo que la fase de percepción oyó. Alimenta el panel de fuente (transcripción con
+          // la cita resaltada) y, de paso, el adelanto: ya es TEXTO, así que el modelo liviano
+          // sí lo admite.
+          setTranscript(event.text);
+          fetchSummary(event.text, null)
+            .then((s) => {
+              setSummary(s);
+              setSummaryStatus("done");
+            })
+            .catch(() => setSummaryStatus("error"));
+        } else if (event.type === "start") {
           docTitle = event.title;
           setTitle(event.title);
         } else if (event.type === "section") {
@@ -453,6 +475,7 @@ export default function Page() {
               status={activeSource!.status}
               sourceKey={activeSource!.key}
               startS={activeSource!.startS}
+              transcript={transcript}
               onClose={() => closePanel("source")}
             />
           ) : null
