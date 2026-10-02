@@ -11,6 +11,8 @@ Las claves se validan AQUÍ (en runtime), no al importar la app, para que el CI 
 el LLM inyectando un modelo de prueba— no necesite claves reales.
 """
 
+from typing import Literal
+
 import truststore
 from pydantic_ai.models import Model
 from pydantic_ai.models.anthropic import AnthropicModel
@@ -58,6 +60,28 @@ def build_model(settings: Settings) -> Model:
     return FallbackModel(primary, fallback)
 
 
+PerceptionRoute = Literal["google", "openrouter"]
+
+# Formatos de audio que la ruta de CONTINGENCIA (OpenRouter) no puede transportar: PydanticAI
+# no los tiene en su mapa de formatos y `BinaryContent.format` lanza `Unknown media type`. La
+# ruta primaria (Google) sí los admite, porque `GoogleModel` pasa el media_type tal cual a
+# `inline_data` sin consultar ese mapa. Verificado contra PydanticAI 2.46.
+OPENROUTER_UNSUPPORTED_AUDIO: frozenset[str] = frozenset({"audio/m4a"})
+
+
+def perception_route(settings: Settings) -> PerceptionRoute | None:
+    """Qué ruta de percepción está activa, sin construir el modelo. None si no hay ninguna.
+
+    Permite avisar ANTES de llamar al proveedor cuando el formato no viaja por la ruta activa
+    (ver `OPENROUTER_UNSUPPORTED_AUDIO`), en vez de dejar que falle adentro.
+    """
+    if settings.google_api_key:
+        return "google"
+    if settings.openrouter_api_key:
+        return "openrouter"
+    return None
+
+
 def build_perception_model(settings: Settings) -> Model:
     """Modelo de la Fase 0 (percepción de audio): Gemini, con entrada acústica nativa.
 
@@ -74,12 +98,15 @@ def build_perception_model(settings: Settings) -> Model:
     Sin ninguna de las dos claves lanza: el endpoint lo traduce a un 503 con mensaje claro
     (mismo patrón que la narración y la transcripción). Nunca falla en silencio.
     """
-    if settings.google_api_key:
+    route = perception_route(settings)
+    if route == "google":
+        assert settings.google_api_key is not None
         return GoogleModel(
             settings.google_perception_model,
             provider=GoogleProvider(api_key=settings.google_api_key),
         )
-    if settings.openrouter_api_key:
+    if route == "openrouter":
+        assert settings.openrouter_api_key is not None
         return OpenAIChatModel(
             settings.openrouter_perception_model,
             provider=OpenRouterProvider(api_key=settings.openrouter_api_key),

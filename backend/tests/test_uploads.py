@@ -85,9 +85,18 @@ def test_rejects_audio_with_unreadable_header(wav_bytes: bytes) -> None:
     assert "corrupto" in exc.value.detail
 
 
-def test_rejects_m4a_explicitly(wav_bytes: bytes) -> None:
-    """M4A queda fuera de la allowlist a propósito (no está documentado para Gemini ni
-    mapeado por PydanticAI). Se comprueba que `audio/mp4` no es admisible."""
-    from multimodal_presenter.pipeline.uploads import ALLOWED_MIME
+def test_m4a_se_admite_con_su_nombre_canonico() -> None:
+    """M4A es el formato por defecto de las grabadoras de celular y de muchos podcasts.
 
-    assert "audio/mp4" not in ALLOWED_MIME
+    `filetype` reporta el contenedor como `audio/mp4` (y algunos navegadores como
+    `audio/x-m4a`), pero Gemini lo admite SOLO con el nombre `audio/m4a`: era un problema de
+    nombre, no de capacidad. Se comprueba el mapa, porque generar un M4A válido en un test
+    exigiría ffmpeg; el camino completo se verificó a mano con una grabación real.
+    """
+    from multimodal_presenter.pipeline.uploads import _CANONICAL_MIME, ALLOWED_MIME
+
+    assert _CANONICAL_MIME["audio/mp4"] == "audio/m4a"
+    assert _CANONICAL_MIME["audio/x-m4a"] == "audio/m4a"
+    assert ALLOWED_MIME["audio/m4a"] == "audio"
+    # El video NO se procesa: `video/mp4` sigue fuera (el contenedor es el mismo, el uso no).
+    assert "video/mp4" not in ALLOWED_MIME

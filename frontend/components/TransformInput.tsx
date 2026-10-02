@@ -6,9 +6,13 @@ import { CircleNotch } from "@phosphor-icons/react";
 type Status = "idle" | "loading" | "streaming" | "error" | "done";
 
 // Audio incluido: lo procesa la fase de percepción del backend (entrada acústica nativa).
-// M4A queda fuera a propósito (no está en los formatos que acepta el modelo de audio).
+// M4A va con sus tres nombres (los navegadores no se ponen de acuerdo) más la extensión, porque
+// es el formato por defecto de las grabadoras de celular y de muchos podcasts descargables.
+// `video/mp4` NO se incluye: el sistema no procesa video, y el backend lo rechazaría.
 const ACCEPT =
-  "application/pdf,image/png,image/jpeg,image/webp,audio/mpeg,audio/wav,audio/flac,audio/ogg,audio/aac,audio/aiff";
+  "application/pdf,image/png,image/jpeg,image/webp," +
+  "audio/mpeg,audio/wav,audio/flac,audio/ogg,audio/aac,audio/aiff," +
+  "audio/mp4,audio/m4a,audio/x-m4a,.m4a";
 
 /**
  * Entrada de la transformación: texto y/o archivo (PDF/imagen). Debe haber al menos uno.

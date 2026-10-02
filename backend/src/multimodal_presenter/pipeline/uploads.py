@@ -21,25 +21,33 @@ ALLOWED_MIME: dict[str, str] = {
     "image/png": "image",
     "image/jpeg": "image",
     "image/webp": "image",
-    # Audio (Fase 0): la intersección entre los formatos que Gemini documenta como entrada
-    # acústica y los que PydanticAI sabe mapear a `BinaryContent` (messages.py). M4A queda
-    # FUERA a propósito: `audio/mp4` no está en ninguna de las dos listas, así que soportarlo
-    # a medias sería peor que no ofrecerlo.
+    # Audio (Fase 0): los formatos que Gemini documenta como entrada acústica nativa.
     "audio/mpeg": "audio",  # MP3
     "audio/wav": "audio",
     "audio/flac": "audio",
     "audio/ogg": "audio",
     "audio/aac": "audio",
     "audio/aiff": "audio",
+    # M4A: el formato por defecto de las grabadoras de celular y de buena parte de los
+    # podcasts y audiolibros descargables, así que en el uso real es de los más probables.
+    # Gemini lo admite, pero SOLO con el nombre `audio/m4a` (ver `_CANONICAL_MIME`).
+    # Salvedad declarada: la ruta de CONTINGENCIA (OpenRouter) no lo soporta — PydanticAI no
+    # tiene M4A en su mapa de formatos de audio y lanza `Unknown media type`. Con la ruta
+    # primaria (Google) no hay problema: `GoogleModel` pasa el media_type tal cual a
+    # `inline_data`, sin consultar ese mapa. `perception_route` permite avisar antes de fallar.
+    "audio/m4a": "audio",
 }
 
-# `filetype` reporta variantes `x-` para tres de los formatos de audio, pero los modelos
-# (y el mapa de formatos de PydanticAI) esperan la forma canónica. El camino PDF/imagen no
-# necesitaba esto porque ahí los nombres ya coinciden.
+# `filetype` reporta nombres que los modelos no reconocen: las variantes `x-` de tres
+# formatos, y `audio/mp4` para el contenedor M4A (Gemini lo quiere como `audio/m4a`). Se
+# normalizan ANTES de decidir si el tipo es admisible. El camino PDF/imagen no necesitaba
+# esto porque ahí los nombres ya coinciden.
 _CANONICAL_MIME: dict[str, str] = {
     "audio/x-wav": "audio/wav",
     "audio/x-flac": "audio/flac",
     "audio/x-aiff": "audio/aiff",
+    "audio/mp4": "audio/m4a",
+    "audio/x-m4a": "audio/m4a",
 }
 
 _CHUNK = 1024 * 1024  # 1 MB

@@ -272,6 +272,51 @@ def test_audio_sin_proveedor_de_percepcion_da_503_claro(
     assert "GOOGLE_API_KEY" in response.json()["detail"]
 
 
+def test_la_guarda_de_m4a_no_se_dispara_con_un_formato_que_si_viaja(wav_bytes: bytes) -> None:
+    """Un archivo con nombre `.m4a` y content-type `audio/m4a` pero que ES un WAV se acepta.
+
+    Dos cosas a la vez: que la detección por magic bytes manda sobre lo que declara el cliente
+    (guarda del Hito 4, intacta), y que la guarda de M4A de la ruta de contingencia es por
+    TIPO REAL, así que no castiga a un formato que sí puede viajar por OpenRouter.
+    """
+    from multimodal_presenter.config import Settings, get_settings
+
+    app.dependency_overrides[get_model] = _structuring_model
+    app.dependency_overrides[get_perception_model] = _perception_model
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        anthropic_api_key="x", openrouter_api_key="y", google_api_key=None
+    )
+    try:
+        client = TestClient(app)
+        response = client.post("/transform", files={"file": ("clip.m4a", wav_bytes, "audio/m4a")})
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["grounding"]["source_kind"] == "audio"
+
+
+def test_la_ruta_de_contingencia_rechaza_m4a_con_mensaje_accionable() -> None:
+    """La guarda misma, a nivel de unidad (sin depender de tener un M4A real a mano)."""
+    from fastapi import HTTPException
+
+    from multimodal_presenter.api.routes import _need_audio_provider
+    from multimodal_presenter.config import Settings
+
+    solo_openrouter = Settings(anthropic_api_key="x", openrouter_api_key="y", google_api_key=None)
+    with pytest.raises(HTTPException) as exc:
+        _need_audio_provider("audio/m4a", _perception_model(), solo_openrouter)
+    assert exc.value.status_code == 415
+    assert "MP3" in exc.value.detail and "GOOGLE_API_KEY" in exc.value.detail
+
+    # Con la ruta primaria (Google) el M4A pasa sin problema.
+    con_google = Settings(anthropic_api_key="x", google_api_key="z")
+    _need_audio_provider("audio/m4a", _perception_model(), con_google)
+
+    # Y un MP3 pasa por cualquiera de las dos rutas.
+    _need_audio_provider("audio/mpeg", _perception_model(), solo_openrouter)
+
+
 def test_texto_sigue_funcionando_sin_proveedor_de_audio(
     client_sin_percepcion, input_text: str
 ) -> None:

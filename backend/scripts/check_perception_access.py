@@ -35,6 +35,8 @@ from multimodal_presenter.pipeline.uploads import (
     audio_duration_seconds,
 )
 
+# Extensión → media_type canónico (el que esperan los modelos). `.m4a` y `.mp4` son el mismo
+# contenedor y van a `audio/m4a`: es el formato por defecto de las grabadoras de celular.
 MEDIA_TYPES = {
     ".wav": "audio/wav",
     ".mp3": "audio/mpeg",
@@ -42,6 +44,8 @@ MEDIA_TYPES = {
     ".ogg": "audio/ogg",
     ".aac": "audio/aac",
     ".aiff": "audio/aiff",
+    ".m4a": "audio/m4a",
+    ".mp4": "audio/m4a",
 }
 
 
@@ -118,7 +122,9 @@ async def main() -> int:
         return 1
 
     evidence = result.output
-    usage = result.usage()
+    # OJO: `usage` es una PROPIEDAD en pydantic-ai 2.46 (RunUsage), no un método — el mismo
+    # detalle que ya estaba anotado en el arnés del 5f.
+    usage = result.usage
     entrada = _usage_int(usage, "input_tokens", "request_tokens")
     salida = _usage_int(usage, "output_tokens", "response_tokens")
 

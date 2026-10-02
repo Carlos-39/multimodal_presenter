@@ -57,6 +57,8 @@ OUTPUT_DIR = HERE / "outputs"
 MANIFEST = HERE / "audio_clips_manifest.json"
 CLIPS_DIR = HERE.parent / "tests" / "fixtures" / "local" / "audio"
 
+# Extensión → media_type canónico. `.m4a`/`.mp4` (mismo contenedor) van a `audio/m4a`: es el
+# formato por defecto de las grabadoras de celular y de muchos podcasts descargables.
 MEDIA_TYPES = {
     ".wav": "audio/wav",
     ".mp3": "audio/mpeg",
@@ -64,6 +66,8 @@ MEDIA_TYPES = {
     ".ogg": "audio/ogg",
     ".aac": "audio/aac",
     ".aiff": "audio/aiff",
+    ".m4a": "audio/m4a",
+    ".mp4": "audio/m4a",
 }
 
 # Marcas de incertidumbre. Lista fija y revisable: la medida tiene que ser reproducible, así
