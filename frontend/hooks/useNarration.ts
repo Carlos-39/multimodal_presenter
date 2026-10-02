@@ -20,8 +20,16 @@ interface NarrationInput {
   sections: Section[];
 }
 
+/** Salto de los botones de adelantar/retroceder, en segundos (convención de audiolibro). */
+export const NARRATION_SKIP_S = 15;
+
 export function useNarration(presentation: NarrationInput) {
   const [status, setStatus] = useState<NarrationStatus>("idle");
+  // Posición y duración, para que el control pueda mostrar el tiempo y permitir saltar a un
+  // punto concreto. Sin esto la narración solo se podía reproducir y pausar: si el oyente se
+  // perdía algo, no tenía forma de volver atrás.
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cacheRef = useRef<{ key: string; url: string } | null>(null);
 
@@ -38,7 +46,42 @@ export function useNarration(presentation: NarrationInput) {
       cacheRef.current = null;
     }
     setStatus("idle");
+    setCurrentTime(0);
+    setDuration(0);
   }, []);
+
+  /** Engancha los eventos de posición al <audio> recién creado. */
+  const seguirPosicion = useCallback((audio: HTMLAudioElement) => {
+    const sincronizar = () => setCurrentTime(audio.currentTime);
+    audio.addEventListener("timeupdate", sincronizar);
+    audio.addEventListener("seeked", sincronizar);
+    audio.addEventListener("loadedmetadata", () => {
+      // Un mp3 de TTS puede no traer duración hasta tener metadatos; `Infinity` no sirve
+      // para pintar una barra, así que solo se acepta un número finito.
+      if (Number.isFinite(audio.duration)) setDuration(audio.duration);
+    });
+    audio.addEventListener("durationchange", () => {
+      if (Number.isFinite(audio.duration)) setDuration(audio.duration);
+    });
+  }, []);
+
+  /** Mueve la reproducción a un segundo concreto (barra de progreso y saltos). */
+  const seek = useCallback((segundos: number) => {
+    const audio = audioRef.current;
+    if (!audio || !Number.isFinite(audio.duration)) return;
+    const destino = Math.min(Math.max(segundos, 0), audio.duration);
+    audio.currentTime = destino;
+    setCurrentTime(destino);
+  }, []);
+
+  /** Adelanta o retrocede desde donde esté (negativo = atrás). */
+  const skip = useCallback(
+    (delta: number) => {
+      const audio = audioRef.current;
+      if (audio) seek(audio.currentTime + delta);
+    },
+    [seek],
+  );
 
   const play = useCallback(async () => {
     if (status === "playing" || !available) return;
@@ -72,13 +115,14 @@ export function useNarration(presentation: NarrationInput) {
       const audio = new Audio(url);
       audio.onended = () => setStatus("paused");
       audio.onerror = () => setStatus("error");
+      seguirPosicion(audio);
       audioRef.current = audio;
       await audio.play();
       setStatus("playing");
     } catch {
       setStatus("error");
     }
-  }, [presentation, key, status, available]);
+  }, [presentation, key, status, available, seguirPosicion]);
 
   const pause = useCallback(() => {
     if (audioRef.current && status === "playing") {
@@ -92,8 +136,9 @@ export function useNarration(presentation: NarrationInput) {
     if (!audio) return;
     audio.pause();
     audio.currentTime = 0;
+    setCurrentTime(0);
     setStatus("paused");
   }, []);
 
-  return { status, available, play, pause, stop, reset };
+  return { status, available, currentTime, duration, play, pause, stop, seek, skip, reset };
 }

@@ -25,6 +25,10 @@ interface GeneratePanelProps {
   onNarrationPlay: () => void;
   onNarrationPause: () => void;
   onNarrationStop: () => void;
+  narrationCurrentTime: number;
+  narrationDuration: number;
+  onNarrationSeek: (segundos: number) => void;
+  onNarrationSkip: (delta: number) => void;
 }
 
 export function GeneratePanel({
@@ -39,6 +43,10 @@ export function GeneratePanel({
   onNarrationPlay,
   onNarrationPause,
   onNarrationStop,
+  narrationCurrentTime,
+  narrationDuration,
+  onNarrationSeek,
+  onNarrationSkip,
 }: GeneratePanelProps) {
   const hasDocument = deckAvailable || narrationAvailable;
 
@@ -102,9 +110,13 @@ export function GeneratePanel({
           <AudioControls
             status={narrationStatus}
             available={narrationAvailable}
+            currentTime={narrationCurrentTime}
+            duration={narrationDuration}
             onPlay={onNarrationPlay}
             onPause={onNarrationPause}
             onStop={onNarrationStop}
+            onSeek={onNarrationSeek}
+            onSkip={onNarrationSkip}
           />
         </div>
       </div>
