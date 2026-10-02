@@ -2,6 +2,8 @@
 
 Primario: Anthropic (claude-sonnet-5).
 Fallback: Gemini vía OpenRouter (gateway OpenAI-compatible).
+Aparte (no en el `FallbackModel`): el modelo de PERCEPCIÓN de audio (Fase 0), que necesita
+entrada acústica nativa — ver `build_perception_model`.
 Ambos envueltos en un `FallbackModel`: si el primario falla (error de API, rate limit,
 indisponibilidad), PydanticAI reintenta automáticamente con el fallback.
 
@@ -13,8 +15,10 @@ import truststore
 from pydantic_ai.models import Model
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.models.fallback import FallbackModel
+from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.anthropic import AnthropicProvider
+from pydantic_ai.providers.google import GoogleProvider
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 
 from .config import Settings
@@ -52,6 +56,40 @@ def build_model(settings: Settings) -> Model:
         provider=OpenRouterProvider(api_key=settings.openrouter_api_key),
     )
     return FallbackModel(primary, fallback)
+
+
+def build_perception_model(settings: Settings) -> Model:
+    """Modelo de la Fase 0 (percepción de audio): Gemini, con entrada acústica nativa.
+
+    Es un paso NUEVO y ANTERIOR al pipeline, no un reemplazo de nada: el `FallbackModel` de
+    la estructuración (Anthropic → Gemini/OpenRouter) queda intacto y sigue siendo el único
+    que decide la Fase 2. Se construye aparte a propósito, para que un problema de acceso a
+    Gemini no pueda afectar al motor principal.
+
+    Dos rutas, en orden de preferencia:
+    1. **Google AI Studio directo** (`GoogleModel`) si hay `GOOGLE_API_KEY`.
+    2. **OpenRouter** (gateway OpenAI-compatible) si hay `OPENROUTER_API_KEY`, apuntando al
+       mismo Gemini. Es contingencia por el historial de bloqueos de acceso con Google.
+
+    Sin ninguna de las dos claves lanza: el endpoint lo traduce a un 503 con mensaje claro
+    (mismo patrón que la narración y la transcripción). Nunca falla en silencio.
+    """
+    if settings.google_api_key:
+        return GoogleModel(
+            settings.google_perception_model,
+            provider=GoogleProvider(api_key=settings.google_api_key),
+        )
+    if settings.openrouter_api_key:
+        return OpenAIChatModel(
+            settings.openrouter_perception_model,
+            provider=OpenRouterProvider(api_key=settings.openrouter_api_key),
+        )
+    raise RuntimeError(
+        "La entrada de audio necesita un modelo con entrada acústica nativa. "
+        "Define GOOGLE_API_KEY (Google AI Studio) o, como alternativa, "
+        "OPENROUTER_API_KEY en backend/.env (ver .env.example). "
+        "El resto del pipeline (texto, PDF, imagen) no la necesita."
+    )
 
 
 def build_summary_model(settings: Settings) -> Model:

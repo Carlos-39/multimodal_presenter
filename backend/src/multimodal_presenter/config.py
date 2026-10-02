@@ -44,6 +44,16 @@ class Settings(BaseSettings):
     openrouter_api_key: str | None = None
     openrouter_gemini_model: str = "google/gemini-3-pro-preview"
 
+    # Percepción de audio (Fase 0) — modelo con ENTRADA ACÚSTICA NATIVA. Es un paso nuevo y
+    # anterior al pipeline, aislado del motor de estructuración: Sonnet no admite audio como
+    # modalidad de entrada en su API, así que la percepción se delega a Gemini y lo que entra
+    # a la Fase 2 es un `AudioEvidence` tipado (no una transcripción plana).
+    # Ruta primaria: Google AI Studio directo. Contingencia: el mismo Gemini vía OpenRouter
+    # (reusa `openrouter_api_key`). Sin ninguna de las dos, /transform con audio da 503 claro.
+    google_api_key: str | None = None
+    google_perception_model: str = "gemini-3.8-flash"
+    openrouter_perception_model: str = "google/gemini-3.8-flash"
+
     # Verificación semántica de gráficos (Fase 3, 2ª llamada al LLM). Ponla en false durante
     # el desarrollo para NO gastar esa llamada extra en documentos con gráficos.
     semantic_verification_enabled: bool = True
@@ -65,6 +75,10 @@ class Settings(BaseSettings):
 
     # Entrada multimodal (Hito 4): tope de tamaño de archivo subido, en MB.
     max_upload_mb: int = 20
+    # Tope de DURACIÓN para entradas de audio. Los modelos de audio pierden fiabilidad en
+    # grabaciones largas, así que el prototipo se acota explícitamente: si se excede, el
+    # endpoint responde 413 con la duración real y el límite (nunca un fallo silencioso).
+    max_audio_minutes: int = 15
 
     # Observabilidad (Logfire)
     logfire_token: str | None = None
