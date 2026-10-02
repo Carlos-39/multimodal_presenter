@@ -4,81 +4,154 @@
   "clips": [
     {
       "id": "c1_enfasis_cifra",
-      "archivo": "c1_enfasis_cifra.wav",
+      "archivo": "c1_enfasis_cifra.mp4",
       "hablantes": 1,
       "con_ruido": false,
-      "enfasis_en": [["cuarenta y dos por ciento", "42 %", "42%", "42 por ciento"]],
+      "enfasis_en": [
+        [
+          "cuarenta y dos por ciento",
+          "42 %",
+          "42%",
+          "42 por ciento"
+        ]
+      ],
       "cifra_dudosa": null,
-      "cifra_firme": [["mil doscientos millones", "1.200", "1200"]],
+      "cifra_firme": [
+        [
+          "mil doscientos millones",
+          "1.200",
+          "1200"
+        ]
+      ],
       "esperado": "La cifra remarcada (margen 42%) queda en una sección núcleo o en el título, no diluida entre las otras dos cifras."
     },
     {
       "id": "c2_enfasis_juicio",
-      "archivo": "c2_enfasis_juicio.wav",
+      "archivo": "c2_enfasis_juicio.mp4",
       "hablantes": 1,
       "con_ruido": false,
-      "enfasis_en": [["retención", "retencion"]],
+      "enfasis_en": [
+        [
+          "retención",
+          "retencion"
+        ]
+      ],
       "cifra_dudosa": null,
-      "cifra_firme": [["dieciocho por ciento", "18 %", "18%"]],
+      "cifra_firme": [
+        [
+          "dieciocho por ciento",
+          "18 %",
+          "18%"
+        ]
+      ],
       "esperado": "La idea central es la retención, no el 18% de crecimiento. Caso donde la prosodia contradice lo que la frecuencia léxica sugeriría."
     },
     {
       "id": "c3_duda_cifra",
-      "archivo": "c3_duda_cifra.wav",
+      "archivo": "c3_duda_cifra.mp4",
       "hablantes": 1,
       "con_ruido": false,
       "enfasis_en": [],
-      "cifra_dudosa": ["ochocientos mil", "800.000", "800000", "800 mil"],
-      "cifra_firme": [["un millón doscientos mil", "1.200.000", "1200000"]],
+      "cifra_dudosa": [
+        "ochocientos mil",
+        "800.000",
+        "800000",
+        "800 mil"
+      ],
+      "cifra_firme": [
+        [
+          "un millón doscientos mil",
+          "1.200.000",
+          "1200000"
+        ]
+      ],
       "esperado": "Los 800 mil aparecen matizados (aproximadamente / sin confirmar / según el hablante) y el millón doscientos mil NO."
     },
     {
       "id": "c4_dos_hablantes",
-      "archivo": "c4_dos_hablantes.wav",
+      "archivo": "c4_dos_hablantes.mp4",
       "hablantes": 2,
       "con_ruido": false,
       "enfasis_en": [],
       "cifra_dudosa": null,
       "cifra_firme": [
-        ["doce por ciento", "12 %", "12%"],
-        ["quince por ciento", "15 %", "15%"]
+        [
+          "doce por ciento",
+          "12 %",
+          "12%"
+        ],
+        [
+          "quince por ciento",
+          "15 %",
+          "15%"
+        ]
       ],
       "esperado": "Cada cifra de rotación se atribuye a quien la dijo. NO se promedia, ni se elige una, ni se funden en una sola afirmación."
     },
     {
       "id": "c5_dos_hablantes_enfasis",
-      "archivo": "c5_dos_hablantes_enfasis.wav",
+      "archivo": "c5_dos_hablantes_enfasis.mp4",
       "hablantes": 2,
       "con_ruido": false,
-      "enfasis_en": [["ocho usuarios", "8 usuarios", "ocho"]],
+      "enfasis_en": [
+        [
+          "ocho usuarios",
+          "8 usuarios",
+          "ocho"
+        ]
+      ],
       "cifra_dudosa": null,
-      "cifra_firme": [["dos segundos", "2 segundos"]],
+      "cifra_firme": [
+        [
+          "dos segundos",
+          "2 segundos"
+        ]
+      ],
       "esperado": "La objeción (solo 8 usuarios) queda visible y atribuida a su hablante, no fundida en un resumen optimista del piloto."
     },
     {
       "id": "c6_ruido",
-      "archivo": "c6_ruido.wav",
+      "archivo": "c6_ruido.mp4",
       "hablantes": 1,
       "con_ruido": true,
       "enfasis_en": [],
-      "cifra_dudosa": ["cuatrocientos", "400"],
-      "cifra_firme": [["siete departamentos", "7 departamentos"], ["cuatro meses", "4 meses"]],
-      "esperado": "El sistema declara que la cifra tapada por el ruido no se oyó bien, en vez de escribir un número con plena autoridad."
+      "cifra_dudosa": [
+        "cuatrocientos",
+        "400"
+      ],
+      "cifra_firme": [
+        [
+          "siete departamentos",
+          "7 departamentos"
+        ],
+        [
+          "cuatro meses",
+          "4 meses"
+        ]
+      ],
+      "esperado": "El sistema declara que la cifra tapada por el ruido no se oyó bien, en vez de escribir un número con plena autoridad.",
+      "invalido": true,
+      "motivo_invalido": "La grabacion no logro el diseno: el ruido fueron aplausos entre los segundos 2 y 7, no un ruido continuo, y la cifra quedo perfectamente inteligible. Las dos condiciones transcribieron \"cuatrocientos municipios\" con claridad y Gemini reporto intelligibility_risk=false correctamente. No matizar era la respuesta correcta: no habia nada dudoso. PENDIENTE RE-GRABAR con ruido continuo (trafico, ventilador, cafeteria) que de verdad tape la cifra."
     },
     {
       "id": "c7_control_plano",
-      "archivo": "c7_control_plano.wav",
+      "archivo": "c7_control_plano.mp4",
       "hablantes": 1,
       "con_ruido": false,
       "enfasis_en": [],
       "cifra_dudosa": null,
-      "cifra_firme": [["quinientos millones", "500"]],
+      "cifra_firme": [
+        [
+          "quinientos millones",
+          "500"
+        ]
+      ],
       "es_control": true,
       "esperado": "CONTROL: las dos condiciones deben dar prácticamente lo mismo. Si la percepción inventa énfasis o matices donde no hay ninguno, es anotación alucinada y este clip lo delata. Un empate es el resultado correcto."
     },
     {
       "id": "c8_no_verbal",
-      "archivo": "c8_no_verbal.wav",
+      "archivo": "c8_no_verbal.mp4",
       "hablantes": 1,
       "con_ruido": false,
       "enfasis_en": [],

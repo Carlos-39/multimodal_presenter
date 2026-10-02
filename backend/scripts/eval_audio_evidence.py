@@ -46,7 +46,7 @@ from multimodal_presenter.config import Settings, get_settings
 from multimodal_presenter.model_provider import build_model, build_perception_model
 from multimodal_presenter.pipeline.extraction import prepare_input
 from multimodal_presenter.pipeline.perception import perceive_audio
-from multimodal_presenter.pipeline.structuring import structure_document
+from multimodal_presenter.pipeline.structuring import build_model_input, structuring_agent
 from multimodal_presenter.pipeline.transcribe import transcribe_audio
 from multimodal_presenter.pipeline.uploads import audio_duration_seconds
 from multimodal_presenter.schemas import Presentation
@@ -235,9 +235,12 @@ async def run_baseline(
     t0 = time.monotonic()
     transcript = await transcribe_audio(settings, audio, clip["archivo"])
     extraction = prepare_input(text=transcript)
-    presentation = await structure_document(extraction, model)
-    out = measure(clip, "transcripcion", presentation, audio_s)
+    result = await structuring_agent.run(build_model_input(extraction), model=model)
+    out = measure(clip, "transcripcion", result.output, audio_s)
     out.latencia_s = round(time.monotonic() - t0, 2)
+    # Solo el lado de la estructuración: el costo del STT se reporta aparte (tarifa por minuto).
+    out.input_tokens = _usage_int(result.usage, "input_tokens", "request_tokens")
+    out.output_tokens = _usage_int(result.usage, "output_tokens", "response_tokens")
     return out, transcript
 
 
@@ -250,9 +253,13 @@ async def run_perception(
     extraction = prepare_input(
         binary=audio, media_type=media_type, filename=clip["archivo"], audio_evidence=evidence
     )
-    presentation = await structure_document(extraction, model)
-    out = measure(clip, "percepcion", presentation, audio_s)
+    result = await structuring_agent.run(build_model_input(extraction), model=model)
+    out = measure(clip, "percepcion", result.output, audio_s)
     out.latencia_s = round(time.monotonic() - t0, 2)
+    # Solo el lado de la estructuración; el de la percepción se mide con la sonda
+    # (check_perception_access.py) porque ahí la llamada está aislada.
+    out.input_tokens = _usage_int(result.usage, "input_tokens", "request_tokens")
+    out.output_tokens = _usage_int(result.usage, "output_tokens", "response_tokens")
     return out, evidence
 
 
@@ -370,9 +377,30 @@ async def main() -> None:
     print("\n" + table)
     print(render_summary(rows))
 
+    # Un clip puede fallar como INSTRUMENTO (la grabación no logró el rasgo que pretendía
+    # probar). Eso no se detecta en automático: se marca a mano en el manifiesto al revisar la
+    # corrida, y desde entonces el reporte lo avisa para que sus medidas no se cuenten como
+    # casos válidos. Es la lección de la auditoría del dataset del Hito 7.
+    invalidos = [c["id"] for c in clips if c.get("invalido")]
+    if invalidos:
+        print(
+            f"\nAVISO: clips marcados INVÁLIDOS en el manifiesto: {', '.join(invalidos)}. "
+            "Sus medidas NO cuentan como casos válidos (ver `motivo_invalido`); el resumen de "
+            "arriba sí los incluye, así que descuéntalos a mano al interpretarlo."
+        )
+
     total_audio_min = sum(r.audio_s for r in rows if r.condicion == "percepcion") / 60
     print(f"\nAudio procesado: {total_audio_min:.2f} min en {len(clips)} clips.")
-    print("Costo: tómalo del dashboard de cada proveedor (Logfire traza las llamadas por fase).")
+    for condicion in ("transcripcion", "percepcion"):
+        sub = [r for r in rows if r.condicion == condicion]
+        ent = sum(r.input_tokens for r in sub)
+        sal = sum(r.output_tokens for r in sub)
+        print(f"Estructuración ({condicion}): {ent} tok entrada / {sal} tok salida")
+    print(
+        "El costo de la percepción (Gemini) y del STT se miden aparte: la sonda "
+        "check_perception_access.py aísla una llamada de percepción, y el STT se tarifa "
+        "por minuto de audio."
+    )
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     csv_path = OUTPUT_DIR / "eval_audio_evidence.csv"
