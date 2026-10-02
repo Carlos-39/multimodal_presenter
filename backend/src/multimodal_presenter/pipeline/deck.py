@@ -75,6 +75,16 @@ def _doc_parts(extraction: ExtractionResult) -> list[str | BinaryContent]:
     if extraction.source_kind == "text":
         assert extraction.text is not None
         return [f"--- DOCUMENTO ---\n{extraction.text}\n--- FIN DEL DOCUMENTO ---"]
+    if extraction.source_kind == "audio":
+        # Igual que el chat: el audio entra como la evidencia de la Fase 0, nunca como binario.
+        assert extraction.audio_evidence is not None
+        return [
+            "--- EVIDENCIA ACÚSTICA DEL AUDIO (JSON) ---\n"
+            f"{extraction.audio_evidence.model_dump_json(indent=2)}\n"
+            "--- FIN DE LA EVIDENCIA ---\n"
+            "Atribuye cada idea a su hablante si hay más de uno, y matiza las cifras dichas con "
+            'duda (`delivery: "dubitativo"`). Las citas deben ser literales de `segments[].text`.'
+        ]
     assert extraction.binary is not None and extraction.media_type is not None
     return [
         "--- DOCUMENTO (adjunto) ---",
@@ -105,7 +115,8 @@ async def generate_deck(
         if plan.synthesis or not plan.source_quote:
             is_synthesis = True
         else:
-            source, grounding = ground_quote(plan.source_quote, plan.source_page, extraction)
+            # El deck no transporta el momento (sus slides no tienen reproductor propio).
+            source, grounding, _ = ground_quote(plan.source_quote, plan.source_page, extraction)
 
         # Apoyo visual: reusa el generador de ilustraciones (con etiqueta obligatoria), acotado.
         illustration = None

@@ -109,6 +109,10 @@ class TransformResponse(_Strict):
     """Solo fuentes de audio: lo que la Fase 0 oyó. `None` para texto, PDF e imagen, que no
     pasan por la percepción. Ver `StreamTranscript` para el razonamiento."""
 
+    audio_evidence: str | None = None
+    """Solo audio: la `AudioEvidence` serializada, para que las funciones derivadas relean el
+    mismo documento (ver `StreamTranscript.evidence`)."""
+
 
 class SummaryResponse(_Strict):
     """Adelanto inicial del contenido (Hito 5g), separado de la presentación completa."""
@@ -204,6 +208,12 @@ class StreamTranscript(_Strict):
     type: Literal["transcript"] = "transcript"
     text: str
     speaker_count: int = Field(ge=1)
+    evidence: str
+    """La `AudioEvidence` completa serializada. El frontend la guarda como un bloque OPACO (no
+    la interpreta) y la reenvía al chat, a las sugeridas y al deck, que así releen el mismo
+    documento sin volver a percibir el audio — ni pagar, ni arriesgarse a que la anotación
+    cambie entre turnos. Lleva los hablantes y el énfasis, no solo el texto: sin eso el chat no
+    podría responder "¿quién dijo el 15%?", que es justo donde el audio aporta algo."""
 
 
 class StreamStart(_Strict):

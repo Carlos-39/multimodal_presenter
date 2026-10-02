@@ -82,8 +82,12 @@ class ChatResponse(_Strict):
 
     content: SectionContent
     source: SourceReference | None  # None = no se pudo anclar (no se inventa una fuente falsa)
-    grounding: GroundingStatus  # verified | unverified (PDF) | not_found (no anclado)
+    grounding: GroundingStatus  # verified | unverified (PDF/audio) | not_found (no anclado)
     clarification: ClarificationNeeded | None = None  # presente = pide aclaración, no responde
+    start_s: float | None = None
+    """Solo audio: momento del que viene la cita, para que el reproductor del panel salte ahí.
+    Análogo a `SourceReference.page` en PDF. Localiza, NO verifica: el estado sigue siendo
+    `unverified`."""
 
 
 class SuggestionsResponse(_Strict):

@@ -133,7 +133,7 @@ export default function Page() {
     }
     if (deckStatus === "loading" || !original) return;
     setDeckStatus("loading");
-    fetchDeck(original.text, original.file)
+    fetchDeck(original.text, original.file, original.audioEvidence)
       .then((d) => {
         setDeck(d);
         setDeckStatus("ready");
@@ -184,8 +184,8 @@ export default function Page() {
     [openPanel],
   );
   const openChatSource = useCallback(
-    (source: SourceReference, gstatus: GroundingStatus) => {
-      setActiveSource({ source, status: gstatus, key: `chat-${source.quote}`, startS: null });
+    (source: SourceReference, gstatus: GroundingStatus, startS: number | null = null) => {
+      setActiveSource({ source, status: gstatus, key: `chat-${source.quote}`, startS });
       sourceOpenedAtRef.current = Date.now();
       track("source_open", { origin: "chat", grounding_status: gstatus });
       openPanel("source");
@@ -215,12 +215,13 @@ export default function Page() {
     setDeck(null);
     setDeckStatus("idle");
     setOpenOrder((prev) => prev.filter((p) => p !== "source")); // cierra la fuente; conserva el chat
-    setOriginal({ text, file });
+    setOriginal({ text, file, audioEvidence: null }); // la evidencia llega con el stream
     setSourceKind(sourceKindOf(file));
   }
 
   function applyNonStreaming(data: TransformResponse) {
     setTranscript(data.transcript);
+    setOriginal((prev) => (prev ? { ...prev, audioEvidence: data.audio_evidence } : prev));
     setTitle(data.presentation.title);
     setSections(data.presentation.sections);
     setEntries(data.grounding.sections);
@@ -293,6 +294,9 @@ export default function Page() {
           // la cita resaltada) y, de paso, el adelanto: ya es TEXTO, así que el modelo liviano
           // sí lo admite.
           setTranscript(event.text);
+          // La evidencia se adjunta al DOCUMENTO: desde aquí el chat, las sugeridas y el deck
+          // la reenvían solas, sin que ningún componente tenga que saber que existe.
+          setOriginal((prev) => (prev ? { ...prev, audioEvidence: event.evidence } : prev));
           fetchSummary(event.text, null)
             .then((s) => {
               setSummary(s);

@@ -364,19 +364,90 @@ def test_audio_demasiado_largo_da_413_antes_de_llamar_al_modelo(client) -> None:
 @pytest.mark.parametrize(
     ("ruta", "campos"),
     [
-        ("/summary", {}),
         ("/deck", {}),
         ("/chat/stream", {"question": "¿cuánto subieron las ventas?"}),
         ("/chat/suggestions", {"section": "{}"}),
     ],
 )
-def test_las_funciones_derivadas_rechazan_audio_con_mensaje_visible(
+def test_las_derivadas_piden_la_evidencia_si_no_viene(
     client, wav_bytes: bytes, ruta: str, campos: dict
 ) -> None:
-    """Releen la fuente y la pasarían a Sonnet, que no oye: 415 explícito, no error opaco."""
+    """Sin la evidencia reenviada no hay documento que releer: 415 que dice qué falta.
+
+    No se re-percibe el audio por su cuenta: eso costaría de más y, peor, haría que el
+    documento cambiara entre turnos.
+    """
     response = client.post(ruta, data=campos, files={"file": ("clip.wav", wav_bytes, "audio/wav")})
     assert response.status_code == 415
-    assert "audio" in response.json()["detail"]
+    assert "evidencia" in response.json()["detail"].lower()
+
+
+@pytest.mark.parametrize(
+    ("ruta", "campos"),
+    [
+        ("/deck", {}),
+        ("/chat/suggestions", {"section": json.dumps(_PRESENTATION["sections"][0])}),
+    ],
+)
+def test_las_derivadas_rechazan_una_evidencia_corrupta(
+    client, wav_bytes: bytes, ruta: str, campos: dict
+) -> None:
+    """La evidencia viene del cliente, así que se valida como cualquier otra entrada."""
+    response = client.post(
+        ruta,
+        data={**campos, "audio_evidence": '{"segments": "esto no es una lista"}'},
+        files={"file": ("clip.wav", wav_bytes, "audio/wav")},
+    )
+    assert response.status_code == 422
+
+
+def test_el_adelanto_de_audio_explica_que_va_por_la_transcripcion(client, wav_bytes: bytes) -> None:
+    """El adelanto no recibe evidencia: el frontend le manda la transcripción como texto."""
+    response = client.post("/summary", files={"file": ("clip.wav", wav_bytes, "audio/wav")})
+    assert response.status_code == 415
+    assert "transcripción" in response.json()["detail"]
+
+
+def test_el_chat_sobre_audio_lee_la_evidencia_y_ancla_al_momento(wav_bytes: bytes) -> None:
+    """El chat relee la MISMA evidencia: ni re-percibe, ni cambia de documento entre turnos.
+
+    Y su respuesta queda `unverified` con el momento — nunca `verified`, porque la cita se
+    localiza en la transcripción (un derivado) y no en la señal.
+    """
+    from multimodal_presenter.pipeline.chat import _doc_parts, chat_stream
+
+    extraction = prepare_input(binary=wav_bytes, media_type="audio/wav", audio_evidence=_evidence())
+
+    # El audio NO viaja como binario al chat: viaja su evidencia, con hablantes y énfasis.
+    partes = _doc_parts(extraction)
+    assert all(isinstance(parte, str) for parte in partes)
+    texto = "".join(partes)
+    assert "EVIDENCIA ACÚSTICA" in texto
+    assert "ATRIBUYE cada afirmación a su hablante" in texto
+    assert "hablante 2" in texto  # los turnos llegan: puede responder "¿quién dijo X?"
+
+    respuesta = {
+        "content": {"content_type": "text", "text": "Subieron un 20%."},
+        "source_quote": QUOTE,
+        "source_page": None,
+        "clarification": None,
+    }
+
+    async def run() -> list:
+        return [
+            e
+            async for e in chat_stream(
+                TestModel(custom_output_text=json.dumps(respuesta)),
+                extraction=extraction,
+                history=[],
+                question="¿cuánto subieron las ventas?",
+            )
+        ]
+
+    done = [e for e in asyncio.run(run()) if e.type == "done"][0]
+    assert done.response.grounding == "unverified"
+    assert done.response.start_s == 1.5
+    assert done.response.source is not None and done.response.source.page is None
 
 
 def test_explain_image_rechaza_audio(client, wav_bytes: bytes) -> None:

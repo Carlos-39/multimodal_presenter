@@ -162,6 +162,8 @@ export interface TransformResponse {
   chart_notes: ChartNote[];
   /** Solo audio: lo que oyó la fase de percepción. `null` para texto, PDF e imagen. */
   transcript: string | null;
+  /** Solo audio: la evidencia acústica serializada, bloque opaco que se reenvía. */
+  audio_evidence: string | null;
 }
 
 /** Eventos SSE de POST /transform/stream (Hito 5d). */
@@ -173,7 +175,7 @@ export type StreamEvent =
    *
    * No es verificable contra la señal: es lo que el modelo oyó, y la UI lo dice.
    */
-  | { type: "transcript"; text: string; speaker_count: number }
+  | { type: "transcript"; text: string; speaker_count: number; evidence: string }
   | { type: "start"; title: string }
   | {
       type: "section";
@@ -211,6 +213,8 @@ export interface ChatResponse {
   source: SourceReference | null; // null = no se pudo anclar
   grounding: GroundingStatus;
   clarification?: ClarificationNeeded | null;
+  /** Solo audio: momento de la cita, para que el reproductor del panel salte ahí. */
+  start_s?: number | null;
 }
 
 /** Eventos SSE de POST /chat/stream. Texto en vivo; el ancla llega en `done`. */

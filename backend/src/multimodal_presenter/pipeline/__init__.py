@@ -83,4 +83,5 @@ async def transform(
             semantic=semantic,
             chart_notes=chart_notes,
             transcript=evidence.verbal_text if evidence is not None else None,
+            audio_evidence=evidence.model_dump_json() if evidence is not None else None,
         )

@@ -9,6 +9,7 @@ import type { ChatStreamEvent, ChatTurn, Section } from "./types";
 export async function streamChat(
   text: string | null,
   file: File | null,
+  audioEvidence: string | null,
   question: string,
   history: ChatTurn[],
   onEvent: (event: ChatStreamEvent) => void,
@@ -16,6 +17,7 @@ export async function streamChat(
   const form = new FormData();
   if (text && text.trim().length > 0) form.append("text", text.trim());
   if (file) form.append("file", file);
+  if (audioEvidence) form.append("audio_evidence", audioEvidence);
   form.append("question", question);
   form.append("history", JSON.stringify(history));
 
@@ -53,11 +55,13 @@ export async function streamChat(
 export async function fetchSuggestions(
   text: string | null,
   file: File | null,
+  audioEvidence: string | null,
   section: Section,
 ): Promise<string[]> {
   const form = new FormData();
   if (text && text.trim().length > 0) form.append("text", text.trim());
   if (file) form.append("file", file);
+  if (audioEvidence) form.append("audio_evidence", audioEvidence);
   form.append("section", JSON.stringify(section));
 
   try {

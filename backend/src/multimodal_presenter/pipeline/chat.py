@@ -68,11 +68,39 @@ suggestions_agent = Agent(
 )
 
 
+_AUDIO_NOTE = """\
+El documento es un AUDIO. No recibes la señal: recibes la anotación estructurada que un modelo \
+con entrada acústica produjo al escucharla (el motor que responde no admite audio). Para \
+responder:
+- `segments[].text` es lo que se dijo: ahí está el contenido.
+- Si `speaker_count > 1`, ATRIBUYE cada afirmación a su hablante y usa las etiquetas tal cual \
+("hablante 1"). Si preguntan quién dijo algo, la respuesta está en el `speaker` del segmento.
+- `emphasis` es lo que se remarcó al hablar, y `delivery: "dubitativo"` o `confidence: "baja"` \
+señalan algo dicho con duda: si de ahí sale una cifra, preséntala matizada, nunca como firme.
+- `acoustic_context.at_risk_items` enumera lo que el audio no dejó claro: dilo si es relevante.
+- `source_quote` debe ser un fragmento LITERAL de algún `segments[].text`. No cites la anotación \
+ni inventes texto. Deja `source_page` en null (el audio no tiene páginas).\
+"""
+
+
 def _doc_parts(extraction: ExtractionResult) -> list[str | BinaryContent]:
-    """El documento como partes de prompt: texto plano o binario nativo (PDF/imagen)."""
+    """El documento como partes de prompt: texto, binario nativo (PDF/imagen) o evidencia (audio).
+
+    El audio NO viaja como binario aquí: el motor del chat es el mismo de la estructuración y
+    tampoco admite audio. Relee la MISMA `AudioEvidence` que produjo la Fase 0 (la reenvía el
+    frontend), así que el documento es idéntico en todos los turnos y no se vuelve a percibir
+    nada — ni se paga de nuevo, ni la anotación cambia entre preguntas.
+    """
     if extraction.source_kind == "text":
         assert extraction.text is not None
         return [f"--- DOCUMENTO ---\n{extraction.text}\n--- FIN DEL DOCUMENTO ---"]
+    if extraction.source_kind == "audio":
+        assert extraction.audio_evidence is not None
+        evidencia = extraction.audio_evidence.model_dump_json(indent=2)
+        return [
+            f"{_AUDIO_NOTE}\n\n--- EVIDENCIA ACÚSTICA (JSON) ---\n{evidencia}\n"
+            "--- FIN DE LA EVIDENCIA ---"
+        ]
     assert extraction.binary is not None and extraction.media_type is not None
     return [
         "--- DOCUMENTO (adjunto) ---",
@@ -141,9 +169,16 @@ async def chat_stream(
             return
 
         # Fase 3 determinista: el código valida la cita, no el LLM.
-        source, grounding = ground_quote(answer.source_quote, answer.source_page, extraction)
+        source, grounding, start_s = ground_quote(
+            answer.source_quote, answer.source_page, extraction
+        )
         yield ChatStreamDone(
-            response=ChatResponse(content=answer.content, source=source, grounding=grounding)
+            response=ChatResponse(
+                content=answer.content,
+                source=source,
+                grounding=grounding,
+                start_s=start_s,
+            )
         )
 
 

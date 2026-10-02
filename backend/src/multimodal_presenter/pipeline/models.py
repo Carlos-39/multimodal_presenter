@@ -67,3 +67,4 @@ class PipelineResult(BaseModel):
     semantic: SemanticCoherenceReport
     chart_notes: list[ChartNote] = Field(default_factory=list)
     transcript: str | None = None  # solo audio: lo que oyó la Fase 0
+    audio_evidence: str | None = None  # solo audio: la evidencia serializada (bloque opaco)

@@ -27,6 +27,7 @@ import { ImageExplanation } from "./ImageExplanation";
 interface OriginalSource {
   text: string | null;
   file: File | null;
+  audioEvidence: string | null; // opaca aquí: el panel no la usa, viaja con el documento
 }
 
 interface SourcePanelProps {

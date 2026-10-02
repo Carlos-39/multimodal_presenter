@@ -104,7 +104,11 @@ async def transform_stream(
         if evidence is not None:
             # Antes de estructurar: así el frontend tiene algo que mostrar durante los segundos
             # que la percepción acaba de consumir, en vez de un hueco.
-            yield StreamTranscript(text=evidence.verbal_text, speaker_count=evidence.speaker_count)
+            yield StreamTranscript(
+                text=evidence.verbal_text,
+                speaker_count=evidence.speaker_count,
+                evidence=evidence.model_dump_json(),
+            )
 
         extraction = prepare_input(
             text=text,

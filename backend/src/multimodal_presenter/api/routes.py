@@ -28,6 +28,7 @@ from ..pipeline.streaming import transform_stream
 from ..pipeline.summary import summarize
 from ..pipeline.transcribe import transcribe_audio
 from ..pipeline.uploads import read_and_validate_upload
+from ..schemas.audio import AudioEvidence
 from ..schemas.chat import ChatStreamError, ChatTurn, SuggestionsResponse
 from ..schemas.presentation import Section
 from ..schemas.telemetry import TelemetryBatch
@@ -86,23 +87,36 @@ def _need_audio_provider(media_type: str | None, model: Model | None) -> None:
         )
 
 
-def _reject_audio_source(media_type: str | None, feature: str) -> None:
-    """415 explícito en las funciones derivadas que RELEEN la fuente original.
+def _parse_audio_evidence(
+    media_type: str | None, evidence: str | None, feature: str
+) -> AudioEvidence | None:
+    """Evidencia acústica reenviada por el frontend, para las funciones que RELEEN la fuente.
 
-    El adelanto, el chat y el deck vuelven a pasar el documento al motor de estructuración
-    (Anthropic), que no admite audio: sin esta guarda el usuario vería un error opaco del
-    proveedor. Habilitarlos para audio exigiría re-percibir el audio en cada petición, lo que
-    además haría que el "documento" que relee el chat cambiara entre turnos — justo lo que un
-    sistema cuya propuesta es la trazabilidad no debe hacer. Queda fuera de alcance, declarado.
+    El chat, las preguntas sugeridas y el deck vuelven a pasar el documento al motor de
+    estructuración, que no admite audio. En vez de re-percibir el audio en cada petición —que
+    costaría de más y, peor, haría que el "documento" cambiara entre turnos porque la percepción
+    es probabilística— el frontend **reenvía la MISMA evidencia** que produjo la Fase 0 durante
+    la transformación. Así el documento es idéntico en todos los turnos y no se paga dos veces.
+
+    Devuelve None para texto, PDF e imagen: esas rutas no cambian en absoluto.
     """
-    if is_audio(media_type):
+    if not is_audio(media_type):
+        return None
+    if not evidence:
         raise HTTPException(
             status_code=415,
             detail=(
-                f"{feature} todavía no está disponible para documentos de audio. "
-                "La transformación del audio en presentación sí funciona."
+                f"{feature} sobre un audio necesita la evidencia acústica de la transformación. "
+                "Transforma el audio primero; el sistema la reenvía automáticamente."
             ),
         )
+    try:
+        return AudioEvidence.model_validate_json(evidence)
+    except ValidationError as exc:
+        # Viene del cliente: se valida igual que cualquier otra entrada, no se confía.
+        raise HTTPException(
+            status_code=422, detail="La evidencia acústica enviada no es válida."
+        ) from exc
 
 
 async def _parse_inputs(
@@ -161,6 +175,7 @@ async def transform_endpoint(
         semantic=result.semantic,
         chart_notes=result.chart_notes,
         transcript=result.transcript,
+        audio_evidence=result.audio_evidence,
     )
 
 
@@ -216,6 +231,7 @@ async def chat_stream_endpoint(
     file: UploadFile | None = File(default=None),
     question: str = Form(),
     history: str = Form(default="[]"),
+    audio_evidence: str | None = Form(default=None),
     model: Model = Depends(get_model),
     settings: Settings = Depends(get_settings),
 ) -> StreamingResponse:
@@ -229,9 +245,13 @@ async def chat_stream_endpoint(
     if not question_value:
         raise HTTPException(status_code=400, detail="La pregunta no puede estar vacía.")
     turns = _parse_history(history)
-    _reject_audio_source(media_type, "El chat sobre el documento")
+    evidencia = _parse_audio_evidence(media_type, audio_evidence, "El chat")
     extraction = prepare_input(
-        text=text_value, binary=binary, media_type=media_type, filename=filename
+        text=text_value,
+        binary=binary,
+        media_type=media_type,
+        filename=filename,
+        audio_evidence=evidencia,
     )
 
     async def event_source():
@@ -252,18 +272,23 @@ async def chat_suggestions_endpoint(
     section: str = Form(),
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
+    audio_evidence: str | None = Form(default=None),
     model: Model = Depends(get_model),
     settings: Settings = Depends(get_settings),
 ) -> SuggestionsResponse:
     """Preguntas sugeridas específicas a una sección (Punto 9). Relee el documento (cacheado)."""
     text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
-    _reject_audio_source(media_type, "Las preguntas sugeridas")
+    evidencia = _parse_audio_evidence(media_type, audio_evidence, "Las preguntas sugeridas")
     try:
         section_obj = Section.model_validate_json(section)
     except ValidationError as exc:
         raise HTTPException(status_code=400, detail="Sección inválida.") from exc
     extraction = prepare_input(
-        text=text_value, binary=binary, media_type=media_type, filename=filename
+        text=text_value,
+        binary=binary,
+        media_type=media_type,
+        filename=filename,
+        audio_evidence=evidencia,
     )
     questions = await generate_suggestions(model, extraction=extraction, section=section_obj)
     return SuggestionsResponse(questions=questions)
@@ -283,7 +308,14 @@ async def summary_endpoint(
     lo muestra como tal y la transformación sigue su curso.
     """
     text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
-    _reject_audio_source(media_type, "El adelanto inicial")
+    if is_audio(media_type):
+        raise HTTPException(
+            status_code=415,
+            detail=(
+                "El adelanto de un audio se genera desde su transcripción, no desde el "
+                "archivo: el modelo del adelanto no admite audio. El frontend lo hace solo."
+            ),
+        )
     extraction = prepare_input(
         text=text_value, binary=binary, media_type=media_type, filename=filename
     )
@@ -373,6 +405,7 @@ async def transcribe_endpoint(
 async def deck_endpoint(
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
+    audio_evidence: str | None = Form(default=None),
     model: Model = Depends(get_model),
     settings: Settings = Depends(get_settings),
 ) -> GeneratedDeck:
@@ -383,9 +416,13 @@ async def deck_endpoint(
     genera igual pero sin imágenes de apoyo (degradación honesta, no falla).
     """
     text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
-    _reject_audio_source(media_type, "La presentación en diapositivas")
+    evidencia = _parse_audio_evidence(media_type, audio_evidence, "La presentación")
     extraction = prepare_input(
-        text=text_value, binary=binary, media_type=media_type, filename=filename
+        text=text_value,
+        binary=binary,
+        media_type=media_type,
+        filename=filename,
+        audio_evidence=evidencia,
     )
     return await generate_deck(model, settings, extraction)
 
