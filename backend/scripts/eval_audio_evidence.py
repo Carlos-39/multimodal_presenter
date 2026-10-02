@@ -339,6 +339,21 @@ async def main() -> None:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     clips = manifest["clips"]
 
+    # Re-corrida ACOTADA: con ids por argumento se corren solo esos clips y los resultados se
+    # FUSIONAN con los de la corrida anterior, en vez de regenerar los 16 registros. Es la
+    # misma disciplina del re-juicio acotado del Hito 7: con 1 repetición y modelos
+    # probabilísticos, re-correr lo que ya era válido solo cambiaría cifras sin añadir
+    # información. Se usa cuando un clip se re-graba porque falló como instrumento.
+    pedidos = [a for a in sys.argv[1:] if not a.startswith("-")]
+    if pedidos:
+        conocidos = {c["id"] for c in clips}
+        desconocidos = [i for i in pedidos if i not in conocidos]
+        if desconocidos:
+            print(f"Ids que no están en el manifiesto: {', '.join(desconocidos)}")
+            return
+        clips = [c for c in clips if c["id"] in pedidos]
+        print(f"Re-corrida acotada: {', '.join(c['id'] for c in clips)}\n")
+
     faltantes = [c["archivo"] for c in clips if not (CLIPS_DIR / c["archivo"]).exists()]
     if faltantes:
         print(f"Faltan clips en {CLIPS_DIR}:")
@@ -404,14 +419,30 @@ async def main() -> None:
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     csv_path = OUTPUT_DIR / "eval_audio_evidence.csv"
+    filas = [asdict(r) for r in rows]
+    if pedidos and csv_path.exists():
+        # Conserva los registros de los clips que NO se re-corrieron (siguen siendo válidos) y
+        # reemplaza solo los de esta pasada. El CSV queda completo y trazable.
+        rehechos = {r.clip for r in rows}
+        with csv_path.open(encoding="utf-8", newline="") as fh:
+            previas = [f for f in csv.DictReader(fh) if f["clip"] not in rehechos]
+        filas = previas + filas
+        print(f"\nCSV fusionado: {len(previas)} registro(s) previo(s) + {len(rows)} re-corrido(s).")
     with csv_path.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=list(asdict(rows[0]).keys()))
         writer.writeheader()
-        for r in rows:
-            writer.writerow(asdict(r))
+        for fila in filas:
+            writer.writerow(fila)
     jsonl_path = OUTPUT_DIR / "eval_audio_evidence.jsonl"
+    items = list(traza)
+    if pedidos and jsonl_path.exists():
+        # Igual que con el CSV: conserva la traza de los clips que no se re-corrieron.
+        rehechos = {t["clip"] for t in traza}
+        with jsonl_path.open(encoding="utf-8") as fh:
+            previos = [json.loads(ln) for ln in fh if json.loads(ln)["clip"] not in rehechos]
+        items = previos + items
     with jsonl_path.open("w", encoding="utf-8") as fh:
-        for item in traza:
+        for item in items:
             fh.write(json.dumps(item, ensure_ascii=False) + "\n")
     print(f"CSV   -> {csv_path}\nJSONL -> {jsonl_path}  (transcripción y evidencia completas)")
 

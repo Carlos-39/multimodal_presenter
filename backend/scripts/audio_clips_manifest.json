@@ -130,8 +130,9 @@
         ]
       ],
       "esperado": "El sistema declara que la cifra tapada por el ruido no se oyó bien, en vez de escribir un número con plena autoridad.",
-      "invalido": true,
-      "motivo_invalido": "La grabacion no logro el diseno: el ruido fueron aplausos entre los segundos 2 y 7, no un ruido continuo, y la cifra quedo perfectamente inteligible. Las dos condiciones transcribieron \"cuatrocientos municipios\" con claridad y Gemini reporto intelligibility_risk=false correctamente. No matizar era la respuesta correcta: no habia nada dudoso. PENDIENTE RE-GRABAR con ruido continuo (trafico, ventilador, cafeteria) que de verdad tape la cifra."
+      "motivo_invalido": "Dos grabaciones. La 1a tenia aplausos en rafaga (no ruido continuo). La 2a si logro ruido continuo y Gemini lo describio bien, bajando la calidad a aceptable, pero NI Whisper NI Gemini perdieron la cifra: ambos transcribieron cuatrocientos con confianza alta e intelligibility_risk=false. Conclusion: a niveles de ruido realistas los modelos no pierden la cifra, asi que at_risk_items / intelligibility_risk quedan SIN EJERCITAR (no fallidos). NO se intento una 3a toma: repetir hasta obtener el resultado esperado seria perseguir un resultado. Hallazgo colateral: en la 2a toma Gemini reporto speaker_count=2 sobre UNA sola voz, con confianza alta.",
+      "medida_valida": false,
+      "nota_medida": "No cuenta como caso valido de \"duda matizada\": no hubo nada dudoso que matizar."
     },
     {
       "id": "c7_control_plano",
