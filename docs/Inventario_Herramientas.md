@@ -1,5 +1,20 @@
 # Inventario curado de herramientas para un sistema de IA multimodal (2026)
 
+> **Nota de vigencia (2026-10-02).** Este documento es el **diagnóstico de la Fase 1**: una foto
+> del mercado de herramientas en su momento, no una descripción de lo que el sistema usa. Se
+> conserva tal cual porque es la evidencia de que la elección fue informada. Lo finalmente
+> adoptado está en `README.md` y en `docs/Registro_de_Hitos.md`, y **diverge a propósito** en
+> varios puntos:
+>
+> | Recomendación de la Fase 1 | Qué se hizo | Por qué |
+> |---|---|---|
+> | **Logfire** (observabilidad) | **Adoptado** desde el Hito 0 | Tal cual se recomendó |
+> | **Docling / anydoc** (parseo) | **Descartado** | Convierten el documento a Markdown/texto: eso **aplana** justo la información (tablas, diagramas, layout) que un modelo multimodal sabe leer. El PDF llega al modelo como binario nativo (Hito 4) |
+> | **OpenRouter / LiteLLM** (gateway) | **Usado y luego retirado** | Sirvió como fallback mientras no había clave propia de Google; al haberla, el intermediario dejó de aportar (2026-10-02) |
+> | **pgvector / Qdrant** (RAG) | **No adoptado en producción** | El experimento del Hito 7 concluyó que a escala de documento el baseline con *prompt caching* gana en exactitud. El RAG vectorial del experimento se hizo con coseno en NumPy, sin base de datos vectorial |
+> | **LightRAG** (GraphRAG) | **Usado solo en el experimento** | Como estaba previsto: estudio aparte, no producto |
+> | **Vercel AI SDK / Thesys C1 / CopilotKit-AG-UI** (Generative UI) | **Descartado** | Se hizo SSE propio con grano por `Section` (Hito 5d). La Generative UI se renderiza desde el contrato tipado, sin librería intermedia |
+
 ## TL;DR
 - **AnyDoc y OmniRoute SON reales y vigentes**, pero cuidado con los homónimos: "anydoc" es la librería open source de Firecrawl (Rust, release inicial agosto 2026) para convertir Office/PDF a Markdown, y "OmniRoute" es un gateway LLM open source MIT (diegosouzapw) local-first. Ambos nombres tienen clones/homónimos comerciales que NO son lo mismo (verifica los repos oficiales).
 - Para tu stack (FastAPI + PydanticAI + Next.js Generative UI) las apuestas más fuertes con capa gratuita generosa son: **Docling** (parseo), **Pydantic Logfire** (observabilidad, integración nativa con PydanticAI), **OpenRouter/LiteLLM** (gateway), **pgvector + Qdrant** (RAG vectorial) y **Vercel AI SDK / Thesys C1 / CopilotKit-AG-UI** (Generative UI).

@@ -17,17 +17,26 @@ cada afirmación presentada puede rastrearse a su origen en el documento fuente.
 
 Construcción **por hitos** (ver `PROYECTO.md` §7 y `docs/Registro_de_Hitos.md`). Estado:
 
-- **Hitos 0–5 ✅ completos:** andamiaje del repo (0), contrato de datos tipado (1), pipeline
-  de 3 fases con LLM real (2), frontend con Stable Core Pattern (3), entrada multimodal binaria
-  (4), e identidad visual + isomorfismo de gráficos + modos resumen/detallado + atribución
-  interactiva + streaming + layout compositivo (5a–5e).
+- **Hitos 0–7 ✅ completos:** andamiaje (0), contrato de datos tipado (1), pipeline de 3 fases
+  (2), frontend con Stable Core Pattern (3), entrada multimodal binaria (4), identidad visual +
+  isomorfismo + modos resumen/detallado + atribución interactiva + streaming + layout (5a–5e),
+  consolidación con modelo real (5f), **chat anclado a fuentes** (6) y el experimento
+  **RAG vectorial vs GraphRAG** (7, estudio aparte del producto).
+- **Capa de dinamismo (5g–5k):** adelanto al cargar, narración por voz, ilustraciones generadas,
+  vista y generación de diapositivas, entrada por voz en el chat y rediseño visual completo.
+- **Audio como formato de ENTRADA ✅:** un audio se transforma en presentación igual que un PDF.
+  Como el motor de estructuración no admite audio, una **fase de percepción** previa (Gemini) lo
+  convierte en una representación estructurada con hablantes, énfasis, pausas y condiciones
+  acústicas — **no** una transcripción plana. El chat, el adelanto, las preguntas sugeridas y las
+  diapositivas funcionan también sobre audio.
 - **Verificado con el modelo real (Hito 5f):** el PDF multimodal nativo recupera datos de
   gráficos **rasterizados** que un extractor de texto pierde; el juez de coherencia semántica
   marca cifras alteradas y afirmaciones no respaldadas; los fallos surfacean un error visible
-  (nunca una presentación que parezca terminada). El **fallback** (Gemini vía OpenRouter) está
+  (nunca una presentación que parezca terminada). El **fallback** del modelo (Gemini) está
   implementado pero **no** ejercitado de punta a punta; las afirmaciones sobre él son de diseño.
 
-Pendiente: chat anclado a fuentes (Hito 6), audio, y la evaluación cuantitativa (Hito 8).
+**Pendiente:** la evaluación con usuarios (Hito 8 Parte B). La telemetría de comportamiento
+(Parte A) y el endurecimiento del grounding (A.1) ya están hechos.
 
 ## Estructura del repositorio
 
@@ -39,7 +48,7 @@ multimodal_presenter/
 │   ├── src/multimodal_presenter/
 │   │   ├── main.py        #   app FastAPI + health check
 │   │   ├── config.py      #   settings tipadas (lee .env)
-│   │   ├── model_provider.py  # Anthropic primario + fallback OpenRouter (FallbackModel)
+│   │   ├── model_provider.py  # Anthropic primario + fallback Gemini + percepción de audio
 │   │   ├── schemas/       #   contrato de datos tipado (Hito 1)
 │   │   ├── pipeline/      #   Fase 1 extracción · Fase 2 estructuración · Fase 3 validación + streaming
 │   │   └── api/routes.py  #   POST /transform y /transform/stream (SSE)
@@ -60,8 +69,12 @@ multimodal_presenter/
 
 - **Backend:** Python 3.12 · FastAPI · PydanticAI · gestionado con [uv](https://docs.astral.sh/uv/)
 - **Modelo:** Anthropic **claude-sonnet-5** (primario, multimodal nativo, salida estructurada por
-  `PromptedOutput`) + **Gemini vía OpenRouter** como fallback opcional (`FallbackModel`). El
-  pipeline es agnóstico al modelo (se inyecta); no se usa una clave de Gemini directa.
+  `PromptedOutput`) + **Gemini directo** como fallback opcional (`FallbackModel`). El pipeline es
+  agnóstico al modelo (se inyecta). *(Hasta 2026-10-02 el fallback se alcanzaba a través de
+  OpenRouter; al haber clave propia de Google, el intermediario sobraba y salió del proyecto.)*
+- **Percepción de audio:** Gemini con entrada acústica nativa, en una fase previa y **aislada**
+  del motor de estructuración, y **sin fallback** a propósito: un cambio silencioso de modelo
+  alteraría la calidad de la anotación, que es justo lo que mide la evaluación de esa pieza.
 - **Observabilidad:** [Pydantic Logfire](https://logfire.pydantic.dev/)
 - **Frontend:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Recharts
 
