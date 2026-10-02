@@ -48,14 +48,27 @@ export function SourcePanel({
   startS = null,
   onClose,
 }: SourcePanelProps) {
+  // El object URL se crea y se revoca en el MISMO efecto, para que cada montaje tenga el suyo.
+  //
+  // Antes se creaba en un `useMemo` y se revocaba en el cleanup de un efecto aparte, y eso se
+  // rompe con el doble montaje de StrictMode: monta → el cleanup revoca la URL → vuelve a
+  // montar, pero el `useMemo` está cacheado y devuelve la MISMA URL, ya muerta. Se descubrió al
+  // añadir el audio: el `<iframe>` del PDF y el `<img>` alcanzaban a cargar antes del revoke,
+  // pero el `<audio>` carga sus metadatos más tarde y se encontraba la URL revocada
+  // (`MEDIA_ELEMENT_ERROR: Format error`). Solo se manifestaba en desarrollo; aun así, depender
+  // de ese orden de carga era frágil para los tres tipos de fuente.
   const fileUrl = useMemo(
     () => (original.file ? URL.createObjectURL(original.file) : null),
     [original.file],
   );
+  // Se revoca la URL ANTERIOR cuando cambia el documento, NO al cerrar el panel: cerrar y
+  // reabrir la fuente del mismo archivo debe seguir funcionando. La última queda viva hasta
+  // que se descarga la página, que es cuando el navegador la libera igual.
+  const urlPrevia = useRef<string | null>(null);
   useEffect(() => {
-    return () => {
-      if (fileUrl) URL.revokeObjectURL(fileUrl);
-    };
+    const anterior = urlPrevia.current;
+    urlPrevia.current = fileUrl;
+    if (anterior && anterior !== fileUrl) URL.revokeObjectURL(anterior);
   }, [fileUrl]);
 
   return (

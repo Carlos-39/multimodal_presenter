@@ -64,7 +64,7 @@ export function TransformInput({ status, onSubmit }: TransformInputProps) {
       </div>
 
       <div className="space-y-2">
-        <span className="block text-sm font-medium text-foreground">Documento (PDF o imagen)</span>
+        <span className="block text-sm font-medium text-foreground">Documento (PDF, imagen o audio)</span>
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -93,7 +93,7 @@ export function TransformInput({ status, onSubmit }: TransformInputProps) {
               onClick={() => inputRef.current?.click()}
               className="w-full text-left text-muted hover:text-foreground"
             >
-              Arrastra un PDF o imagen aquí, o haz clic para seleccionar.
+              Arrastra un PDF, una imagen o un audio aquí, o haz clic para seleccionar.
             </button>
           )}
           <input
