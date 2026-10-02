@@ -27,6 +27,7 @@ from ..schemas.transform import (
 )
 from .extraction import prepare_input
 from .isomorphism import isomorphize_section
+from .perception import run_perception
 from .structuring import build_model_input, structuring_agent
 from .validation import build_grounding_report, ground_section, verify_semantic_coherence
 
@@ -71,8 +72,12 @@ async def transform_stream(
     filename: str | None = None,
     semantic_model: Model | None = None,
     semantic_enabled: bool = True,
+    perception_model: Model | None = None,
 ) -> AsyncIterator[StreamEvent]:
-    """Ejecuta el pipeline en streaming, emitiendo eventos SSE tipados."""
+    """Ejecuta el pipeline en streaming, emitiendo eventos SSE tipados.
+
+    `perception_model` solo se usa si la fuente es audio (Fase 0, antes de la Fase 1).
+    """
     semantic_model = semantic_model or model
     sections: list[Section] = []
     entries: list[SectionGrounding] = []
@@ -91,8 +96,17 @@ async def transform_stream(
         return StreamSection(section=iso, grounding=entry, chart_note=note)
 
     with logfire.span("pipeline.transform_stream"):
+        # Fase 0 (solo audio): ocurre ANTES de abrir el stream, así que el usuario ve el
+        # indicador de carga hasta que la percepción termina y después las secciones llegan
+        # una por una como siempre. No se emite nada a medias.
+        evidence = await run_perception(binary, media_type, perception_model)
+
         extraction = prepare_input(
-            text=text, binary=binary, media_type=media_type, filename=filename
+            text=text,
+            binary=binary,
+            media_type=media_type,
+            filename=filename,
+            audio_evidence=evidence,
         )
         emitter = SectionEmitter()
 

@@ -8,8 +8,16 @@ interactiva (Punto 4) y el anclaje del chat (Hito 6).
 Hito 4: el grounding distingue tres estados honestos según la fuente:
 - `verified`   → texto: la cita se encontró en el documento (offsets calculados).
 - `not_found`  → texto: se verificó y la cita NO está (warning real de fabricación).
-- `unverified` → PDF/imagen: no se puede verificar por substring sin aplanar el binario
+- `unverified` → PDF/imagen/audio: no se puede verificar por substring sin aplanar la fuente
   (contra el principio rector); queda pendiente la verificación por página/región (Hito 5).
+
+Audio (A1): el estado honesto es `unverified`, el MISMO de PDF/imagen, y a propósito no se
+añade un cuarto estado. La cita de una sección generada desde audio proviene de la
+transcripción que hizo el modelo de percepción (Fase 0) — un derivado aplanado de la señal —,
+así que encontrarla ahí no verifica nada contra el audio: sería verificar contra el derivado y
+presentarlo como verificación de la fuente, justo la sobre-afirmación que eliminó el Hito 8A.1.
+Lo que sí se aporta es `SectionGrounding.start_s`, el análogo de `page`: lleva al momento del
+audio, sin afirmar que el contenido quedó verificado.
 """
 
 from typing import Literal
@@ -24,7 +32,7 @@ class _Strict(BaseModel):
 
 
 GroundingStatus = Literal["verified", "unverified", "not_found"]
-SourceKind = Literal["text", "pdf", "image"]
+SourceKind = Literal["text", "pdf", "image", "audio"]
 
 
 class SectionGrounding(_Strict):
@@ -35,6 +43,10 @@ class SectionGrounding(_Strict):
     char_start: int | None = Field(default=None, ge=0)  # solo fuentes de texto
     char_end: int | None = Field(default=None, ge=0)
     page: int | None = Field(default=None, ge=1)  # solo PDF
+    start_s: float | None = Field(default=None, ge=0)  # solo audio: segundo aproximado
+    """Momento del audio del que viene la cita, para que el reproductor salte ahí — el
+    análogo exacto de `page` en PDF. Se obtiene LOCALIZANDO la cita en la transcripción de la
+    Fase 0, no verificándola contra la señal: el estado sigue siendo `unverified`."""
 
 
 class GroundingReport(_Strict):

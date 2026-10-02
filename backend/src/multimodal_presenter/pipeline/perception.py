@@ -69,6 +69,30 @@ perception_agent = Agent(
 )
 
 
+def is_audio(media_type: str | None) -> bool:
+    """True si la fuente subida es audio (el único disparador de la Fase 0)."""
+    return bool(media_type and media_type.startswith("audio/"))
+
+
+async def run_perception(
+    binary: bytes | None,
+    media_type: str | None,
+    perception_model: Model | None,
+) -> AudioEvidence | None:
+    """Ejecuta la Fase 0 si corresponde. Devuelve None para texto/PDF/imagen.
+
+    Punto ÚNICO de decisión "¿esto es audio?" dentro del pipeline, compartido por el camino
+    completo y el de streaming para que ambos entren a la Fase 1 con la misma evidencia
+    (misma disciplina con la que el 5d refactorizó la Fase 3 a helpers por sección).
+    """
+    if not is_audio(media_type) or binary is None:
+        return None
+    if perception_model is None:
+        raise RuntimeError("una fuente de audio exige el modelo de percepción (Fase 0)")
+    assert media_type is not None
+    return await perceive_audio(binary, media_type, perception_model)
+
+
 async def perceive_audio(audio: bytes, media_type: str, model: Model) -> AudioEvidence:
     """Fase 0: pide al modelo acústico la anotación estructurada del audio.
 

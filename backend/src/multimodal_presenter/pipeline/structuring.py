@@ -45,11 +45,49 @@ enfoque y el énfasis, sin inventar información que no esté en el documento.
 """
 
 
+# Instrucciones de uso de la evidencia acústica. Van en el PROMPT DE USUARIO, no en el
+# SYSTEM_PROMPT: así la Fase 2 es exactamente la de siempre para texto/PDF/imagen (el system
+# prompt compartido no cambia ni una palabra) y el audio solo añade contexto a su propia
+# llamada. Lo que estas reglas hacen es convertir los rasgos paralingüísticos en decisiones de
+# presentación concretas: qué destacar, qué cifras matizar y a quién atribuir cada idea.
+_AUDIO_GUIDE = """\
+La fuente de este documento es un AUDIO. No recibes la señal: recibes una anotación \
+estructurada que un modelo con entrada acústica produjo al escucharla. Úsala así:
+- `segments[].text` es lo que se dijo: ese es tu contenido.
+- `segments[].emphasis` es lo que el hablante REMARCÓ al hablar → candidato a sección `core`, \
+a título, o a ir primero.
+- `delivery == "dubitativo"`, `pause_before == "larga"` o `confidence == "baja"` señalan algo \
+dicho con duda: si de ahí sale una cifra, preséntala matizada ("alrededor de", "según el \
+hablante, aproximadamente") y NUNCA como dato firme.
+- `acoustic_context.at_risk_items` enumera cifras o nombres que el audio no dejó claros: \
+matízalos explícitamente, o no los uses como el dato central de una sección.
+- Si `speaker_count > 1`, ATRIBUYE cada idea a su hablante (usa las etiquetas tal cual). No \
+fundas en una sola voz lo que dijeron dos.
+- `perceived_structure` sugiere dónde cortar secciones: es pista, no obligación.
+- `non_verbal_events` es contexto; rara vez es el contenido de una sección.
+- `source.quote` debe ser un fragmento LITERAL de algún `segments[].text`. No cites la \
+anotación ni inventes texto. Deja `source.page` en null (el audio no tiene páginas).\
+"""
+
+
 def _text_prompt(text: str, document_id: str) -> str:
     return (
         f"document_id: {document_id}\n\n"
         f"--- DOCUMENTO ---\n{text}\n--- FIN DEL DOCUMENTO ---\n\n"
         "Genera la presentación estructurada de este documento."
+    )
+
+
+def _audio_prompt(extraction: ExtractionResult) -> str:
+    assert extraction.audio_evidence is not None
+    evidence = extraction.audio_evidence.model_dump_json(indent=2)
+    instruction = extraction.instruction
+    extra = f"\n\nInstrucción del usuario: {instruction}" if instruction else ""
+    return (
+        f"document_id: {extraction.document_id}\n\n"
+        f"{_AUDIO_GUIDE}\n\n"
+        f"--- EVIDENCIA ACÚSTICA (JSON) ---\n{evidence}\n--- FIN DE LA EVIDENCIA ---\n\n"
+        f"Genera la presentación estructurada de este audio.{extra}"
     )
 
 
@@ -61,6 +99,12 @@ def build_model_input(extraction: ExtractionResult) -> str | list[str | BinaryCo
     if extraction.source_kind == "text":
         assert extraction.text is not None
         return _text_prompt(extraction.text, extraction.document_id)
+
+    if extraction.source_kind == "audio":
+        # El audio NO llega como binario a esta fase: Sonnet no admite audio como modalidad
+        # de entrada. Entra la `AudioEvidence` de la Fase 0, que conserva hablantes, énfasis,
+        # pausas y condiciones acústicas — no una transcripción plana.
+        return _audio_prompt(extraction)
 
     assert extraction.binary is not None and extraction.media_type is not None
     instruction = extraction.instruction or "Genera la presentación estructurada de este documento."

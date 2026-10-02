@@ -15,7 +15,7 @@ from pydantic import ValidationError
 from pydantic_ai.models import Model
 
 from ..config import Settings, get_settings
-from ..model_provider import build_model, build_summary_model
+from ..model_provider import build_model, build_perception_model, build_summary_model
 from ..pipeline import transform
 from ..pipeline.chat import chat_stream, generate_suggestions
 from ..pipeline.deck import generate_deck
@@ -23,6 +23,7 @@ from ..pipeline.extraction import prepare_input
 from ..pipeline.illustration import has_image_provider, illustrate
 from ..pipeline.image_explanation import explain_image
 from ..pipeline.narration import narrate
+from ..pipeline.perception import is_audio
 from ..pipeline.streaming import transform_stream
 from ..pipeline.summary import summarize
 from ..pipeline.transcribe import transcribe_audio
@@ -59,6 +60,51 @@ def get_summary_model(settings: Settings = Depends(get_settings)) -> Model:
     return build_summary_model(settings)
 
 
+def get_perception_model(settings: Settings = Depends(get_settings)) -> Model | None:
+    """Provee el modelo de la Fase 0 (percepción de audio). Sobreescribible en tests.
+
+    Devuelve None si no hay proveedor configurado, en vez de lanzar: así subir texto, PDF o
+    imagen sigue funcionando sin ninguna clave de Gemini (la Fase 0 no se ejecuta para esas
+    fuentes). El 503 se emite solo cuando alguien sube AUDIO sin proveedor — ver `_need_audio`.
+    """
+    try:
+        return build_perception_model(settings)
+    except RuntimeError:
+        return None
+
+
+def _need_audio_provider(media_type: str | None, model: Model | None) -> None:
+    """503 claro si se subió audio y no hay modelo de percepción configurado."""
+    if is_audio(media_type) and model is None:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "La entrada de audio necesita un modelo con entrada acústica nativa, que no "
+                "está configurado. Define GOOGLE_API_KEY (o OPENROUTER_API_KEY) en el backend. "
+                "El texto, el PDF y la imagen funcionan sin esa clave."
+            ),
+        )
+
+
+def _reject_audio_source(media_type: str | None, feature: str) -> None:
+    """415 explícito en las funciones derivadas que RELEEN la fuente original.
+
+    El adelanto, el chat y el deck vuelven a pasar el documento al motor de estructuración
+    (Anthropic), que no admite audio: sin esta guarda el usuario vería un error opaco del
+    proveedor. Habilitarlos para audio exigiría re-percibir el audio en cada petición, lo que
+    además haría que el "documento" que relee el chat cambiara entre turnos — justo lo que un
+    sistema cuya propuesta es la trazabilidad no debe hacer. Queda fuera de alcance, declarado.
+    """
+    if is_audio(media_type):
+        raise HTTPException(
+            status_code=415,
+            detail=(
+                f"{feature} todavía no está disponible para documentos de audio. "
+                "La transformación del audio en presentación sí funciona."
+            ),
+        )
+
+
 async def _parse_inputs(
     text: str | None, file: UploadFile | None, settings: Settings
 ) -> tuple[str | None, bytes | None, str | None, str | None]:
@@ -74,7 +120,9 @@ async def _parse_inputs(
     if has_file:
         assert file is not None
         max_bytes = settings.max_upload_mb * 1024 * 1024
-        binary, media_type = await read_and_validate_upload(file, max_bytes)
+        binary, media_type = await read_and_validate_upload(
+            file, max_bytes, max_audio_seconds=settings.max_audio_minutes * 60
+        )
         filename = file.filename
     return text_value, binary, media_type, filename
 
@@ -85,10 +133,16 @@ async def transform_endpoint(
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
     model: Model = Depends(get_model),
+    perception_model: Model | None = Depends(get_perception_model),
     settings: Settings = Depends(get_settings),
 ) -> TransformResponse:
-    """Recibe texto y/o un archivo y devuelve la presentación + el reporte de grounding."""
+    """Recibe texto y/o un archivo y devuelve la presentación + el reporte de grounding.
+
+    Si el archivo es audio, pasa primero por la Fase 0 (percepción) y lo que entra al
+    pipeline de estructuración es la `AudioEvidence`. Para texto/PDF/imagen no cambia nada.
+    """
     text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    _need_audio_provider(media_type, perception_model)
 
     result = await transform(
         model,
@@ -97,6 +151,7 @@ async def transform_endpoint(
         media_type=media_type,
         filename=filename,
         semantic_enabled=settings.semantic_verification_enabled,
+        perception_model=perception_model,
     )
 
     response.headers["X-Grounding-Warnings"] = str(result.grounding.not_found_sections)
@@ -113,6 +168,7 @@ async def transform_stream_endpoint(
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
     model: Model = Depends(get_model),
+    perception_model: Model | None = Depends(get_perception_model),
     settings: Settings = Depends(get_settings),
 ) -> StreamingResponse:
     """Igual que /transform pero emite las secciones por Server-Sent Events (SSE).
@@ -122,6 +178,7 @@ async def transform_stream_endpoint(
     silenciosamente incompleta).
     """
     text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    _need_audio_provider(media_type, perception_model)
 
     async def event_source():
         try:
@@ -132,6 +189,7 @@ async def transform_stream_endpoint(
                 media_type=media_type,
                 filename=filename,
                 semantic_enabled=settings.semantic_verification_enabled,
+                perception_model=perception_model,
             ):
                 yield f"data: {event.model_dump_json()}\n\n"
         except Exception:
@@ -170,6 +228,7 @@ async def chat_stream_endpoint(
     if not question_value:
         raise HTTPException(status_code=400, detail="La pregunta no puede estar vacía.")
     turns = _parse_history(history)
+    _reject_audio_source(media_type, "El chat sobre el documento")
     extraction = prepare_input(
         text=text_value, binary=binary, media_type=media_type, filename=filename
     )
@@ -197,6 +256,7 @@ async def chat_suggestions_endpoint(
 ) -> SuggestionsResponse:
     """Preguntas sugeridas específicas a una sección (Punto 9). Relee el documento (cacheado)."""
     text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    _reject_audio_source(media_type, "Las preguntas sugeridas")
     try:
         section_obj = Section.model_validate_json(section)
     except ValidationError as exc:
@@ -222,6 +282,7 @@ async def summary_endpoint(
     lo muestra como tal y la transformación sigue su curso.
     """
     text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    _reject_audio_source(media_type, "El adelanto inicial")
     extraction = prepare_input(
         text=text_value, binary=binary, media_type=media_type, filename=filename
     )
@@ -267,9 +328,11 @@ async def explain_image_endpoint(
 
     Solo para fuentes binarias (PDF/imagen): el modelo relee el binario nativo y explica la imagen
     en lenguaje accesible. La atribución es la propia imagen (se muestra junto a ella en el
-    `SourcePanel`). En fuentes de texto no hay imagen real que explicar → 400.
+    `SourcePanel`). En fuentes de texto o de audio no hay imagen real que explicar → 400.
     """
     text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    if is_audio(media_type):
+        raise HTTPException(status_code=400, detail="Un audio no tiene imagen que explicar.")
     extraction = prepare_input(
         text=text_value, binary=binary, media_type=media_type, filename=filename
     )
@@ -319,6 +382,7 @@ async def deck_endpoint(
     genera igual pero sin imágenes de apoyo (degradación honesta, no falla).
     """
     text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    _reject_audio_source(media_type, "La presentación en diapositivas")
     extraction = prepare_input(
         text=text_value, binary=binary, media_type=media_type, filename=filename
     )
