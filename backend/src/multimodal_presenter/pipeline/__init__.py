@@ -1,7 +1,11 @@
-"""Pipeline de transformación — las tres fases como pasos separados.
+"""Pipeline de transformación — las fases como pasos separados.
 
-Fase 1 (determinista) → Fase 2 (LLM) → Fase 3 (determinista + interfaz semántica).
-Acepta texto, binario (PDF/imagen), o ambos. Cada fase queda trazada en Logfire.
+Fase 0 (percepción de audio, solo si la fuente es audio) → Fase 1 (determinista) →
+Fase 2 (LLM) → Fase 3 (determinista + interfaz semántica).
+Acepta texto, binario (PDF/imagen), audio, o texto+archivo. Cada fase queda trazada en Logfire.
+
+La Fase 0 es nueva y AISLADA: para texto, PDF e imagen no se ejecuta y el flujo de las Fases
+1-3 es exactamente el de siempre. Ver `perception.py` para el por qué.
 """
 
 import logfire
@@ -11,6 +15,7 @@ from ..schemas.transform import SemanticCoherenceReport
 from .extraction import prepare_input
 from .isomorphism import enforce_isomorphism
 from .models import PipelineResult
+from .perception import run_perception
 from .structuring import structure_document
 from .validation import verify_grounding, verify_semantic_coherence
 
@@ -26,18 +31,27 @@ async def transform(
     filename: str | None = None,
     semantic_model: Model | None = None,
     semantic_enabled: bool = True,
+    perception_model: Model | None = None,
 ) -> PipelineResult:
     """Ejecuta el pipeline completo: fuente → presentación validada + reportes.
 
     `semantic_model` (verificación semántica, Fase 3 nivel LLM) usa `model` por defecto; se
     separa para poder inyectar un mock distinto en tests. `semantic_enabled=False` salta esa
     llamada extra (control de costo en desarrollo).
+
+    `perception_model` solo se usa si la fuente es audio (Fase 0); para el resto se ignora.
     """
     semantic_model = semantic_model or model
     with logfire.span("pipeline.transform"):
+        evidence = await run_perception(binary, media_type, perception_model)
+
         with logfire.span("fase1.extraccion"):
             extraction = prepare_input(
-                text=text, binary=binary, media_type=media_type, filename=filename
+                text=text,
+                binary=binary,
+                media_type=media_type,
+                filename=filename,
+                audio_evidence=evidence,
             )
 
         with logfire.span("fase2.estructuracion"):
@@ -68,4 +82,6 @@ async def transform(
             grounding=grounding,
             semantic=semantic,
             chart_notes=chart_notes,
+            transcript=evidence.verbal_text if evidence is not None else None,
+            audio_evidence=evidence.model_dump_json() if evidence is not None else None,
         )

@@ -8,8 +8,16 @@ interactiva (Punto 4) y el anclaje del chat (Hito 6).
 Hito 4: el grounding distingue tres estados honestos según la fuente:
 - `verified`   → texto: la cita se encontró en el documento (offsets calculados).
 - `not_found`  → texto: se verificó y la cita NO está (warning real de fabricación).
-- `unverified` → PDF/imagen: no se puede verificar por substring sin aplanar el binario
+- `unverified` → PDF/imagen/audio: no se puede verificar por substring sin aplanar la fuente
   (contra el principio rector); queda pendiente la verificación por página/región (Hito 5).
+
+Audio (A1): el estado honesto es `unverified`, el MISMO de PDF/imagen, y a propósito no se
+añade un cuarto estado. La cita de una sección generada desde audio proviene de la
+transcripción que hizo el modelo de percepción (Fase 0) — un derivado aplanado de la señal —,
+así que encontrarla ahí no verifica nada contra el audio: sería verificar contra el derivado y
+presentarlo como verificación de la fuente, justo la sobre-afirmación que eliminó el Hito 8A.1.
+Lo que sí se aporta es `SectionGrounding.start_s`, el análogo de `page`: lleva al momento del
+audio, sin afirmar que el contenido quedó verificado.
 """
 
 from typing import Literal
@@ -24,7 +32,7 @@ class _Strict(BaseModel):
 
 
 GroundingStatus = Literal["verified", "unverified", "not_found"]
-SourceKind = Literal["text", "pdf", "image"]
+SourceKind = Literal["text", "pdf", "image", "audio"]
 
 
 class SectionGrounding(_Strict):
@@ -35,6 +43,10 @@ class SectionGrounding(_Strict):
     char_start: int | None = Field(default=None, ge=0)  # solo fuentes de texto
     char_end: int | None = Field(default=None, ge=0)
     page: int | None = Field(default=None, ge=1)  # solo PDF
+    start_s: float | None = Field(default=None, ge=0)  # solo audio: segundo aproximado
+    """Momento del audio del que viene la cita, para que el reproductor salte ahí — el
+    análogo exacto de `page` en PDF. Se obtiene LOCALIZANDO la cita en la transcripción de la
+    Fase 0, no verificándola contra la señal: el estado sigue siendo `unverified`."""
 
 
 class GroundingReport(_Strict):
@@ -93,6 +105,13 @@ class TransformResponse(_Strict):
     grounding: GroundingReport
     semantic: SemanticCoherenceReport
     chart_notes: list[ChartNote] = Field(default_factory=list)
+    transcript: str | None = None
+    """Solo fuentes de audio: lo que la Fase 0 oyó. `None` para texto, PDF e imagen, que no
+    pasan por la percepción. Ver `StreamTranscript` para el razonamiento."""
+
+    audio_evidence: str | None = None
+    """Solo audio: la `AudioEvidence` serializada, para que las funciones derivadas relean el
+    mismo documento (ver `StreamTranscript.evidence`)."""
 
 
 class SummaryResponse(_Strict):
@@ -168,6 +187,33 @@ class GeneratedDeck(_Strict):
 
 # --- Eventos SSE del endpoint /transform/stream (Hito 5d) ---
 # Cada `Section` streameada es indistinguible en forma de una del contrato no-streaming.
+
+
+class StreamTranscript(_Strict):
+    """Lo que la Fase 0 oyó en el audio, emitido ANTES de que empiece la estructuración.
+
+    Dos razones para que viaje al frontend, y ninguna contradice el principio de no aplanar
+    (ese principio rige lo que entra al MODELO para que lo interprete, no lo que se le muestra
+    al lector para que verifique — esto último aumenta la trazabilidad):
+
+    1. La percepción añade varios segundos antes de la primera sección; con la transcripción en
+       la mano, el adelanto del audio deja de ser un hueco y pasa a decir qué se dijo.
+    2. El panel de fuente puede mostrar la transcripción completa con la cita resaltada, que es
+       el equivalente honesto de lo que ya hace con un documento de texto.
+
+    Sigue sin ser verificable contra la señal: es lo que el modelo de percepción OYÓ. La UI lo
+    dice, y el grounding de las secciones sigue siendo `unverified`.
+    """
+
+    type: Literal["transcript"] = "transcript"
+    text: str
+    speaker_count: int = Field(ge=1)
+    evidence: str
+    """La `AudioEvidence` completa serializada. El frontend la guarda como un bloque OPACO (no
+    la interpreta) y la reenvía al chat, a las sugeridas y al deck, que así releen el mismo
+    documento sin volver a percibir el audio — ni pagar, ni arriesgarse a que la anotación
+    cambie entre turnos. Lleva los hablantes y el énfasis, no solo el texto: sin eso el chat no
+    podría responder "¿quién dijo el 15%?", que es justo donde el audio aporta algo."""
 
 
 class StreamStart(_Strict):

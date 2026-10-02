@@ -6,6 +6,9 @@ Nivel barato (determinista): grounding de fuentes, adaptado al tipo de fuente.
 - PDF/imagen: NO se puede verificar por substring sin aplanar el binario (contra el
   principio rector). Las secciones quedan `unverified`; para PDF se conserva la página que
   aporta el modelo. La verificación por página/región es TODO(Hito5).
+- Audio: también `unverified`, con el segundo aproximado (`start_s`) en vez de la página. La
+  cita se LOCALIZA en la transcripción de la Fase 0 para poder saltar al momento, pero eso no
+  la verifica contra la señal; ver `schemas/transform.py` para el razonamiento completo.
 
 Nivel LLM (coherencia semántica): interfaz real ya cableada, hoy no-op. TODO(Hito2.1).
 """
@@ -80,6 +83,20 @@ def ground_section(
             return section.model_copy(update={"source": new_source}), entry
         return section, SectionGrounding(section_id=section.id, status="not_found")
 
+    if extraction.source_kind == "audio":
+        assert extraction.audio_evidence is not None
+        # `unverified`, el MISMO estado de PDF/imagen y a propósito no uno nuevo: la cita se
+        # busca contra la transcripción de la Fase 0, que es un derivado aplanado de la señal.
+        # Encontrarla ahí NO la verifica contra el audio. Lo que se gana es el momento
+        # (`start_s`), el análogo de `page`: lleva al punto del audio sin afirmar verificación.
+        new_source = section.source.model_copy(update={"document_id": extraction.document_id})
+        entry = SectionGrounding(
+            section_id=section.id,
+            status="unverified",
+            start_s=extraction.audio_evidence.locate(section.source.quote),
+        )
+        return section.model_copy(update={"source": new_source}), entry
+
     # Binario: no se verifica por substring (no hay texto sin aplanar). Se conserva la página.
     new_source = section.source.model_copy(update={"document_id": extraction.document_id})
     entry = SectionGrounding(section_id=section.id, status="unverified", page=section.source.page)
@@ -88,15 +105,24 @@ def ground_section(
 
 def ground_quote(
     quote: str | None, page: int | None, extraction: ExtractionResult
-) -> tuple[SourceReference | None, GroundingStatus]:
+) -> tuple[SourceReference | None, GroundingStatus, float | None]:
     """Ancla una CITA suelta (respuesta de chat, Hito 6) con la misma regla determinista.
 
-    - Sin cita → `(None, "not_found")`: el modelo no pudo anclar; no se inventa una fuente.
+    - Sin cita → `(None, "not_found", None)`: el modelo no pudo anclar; no se inventa fuente.
     - Texto: si la cita existe → `verified` con offsets; si no → `not_found` (fabricación).
     - Binario (PDF/imagen): `unverified`, conservando la página (Caso B del 5c).
+    - Audio: `unverified` con el MOMENTO (tercer valor), nunca `verified`. La cita se localiza
+      en la transcripción de la Fase 0, que es un derivado aplanado de la señal: encontrarla
+      ahí no la verifica contra el audio. Mismo criterio que `ground_section`.
     """
     if not quote:
-        return None, "not_found"
+        return None, "not_found", None
+
+    if extraction.source_kind == "audio":
+        assert extraction.audio_evidence is not None
+        source = SourceReference(document_id=extraction.document_id, quote=quote)
+        return source, "unverified", extraction.audio_evidence.locate(quote)
+
     if extraction.source_kind == "text":
         assert extraction.text is not None
         idx = _find_quote(extraction.text, quote)
@@ -107,11 +133,11 @@ def ground_quote(
                 char_start=idx,
                 char_end=idx + len(quote),
             )
-            return source, "verified"
-        return SourceReference(document_id=extraction.document_id, quote=quote), "not_found"
+            return source, "verified", None
+        return SourceReference(document_id=extraction.document_id, quote=quote), "not_found", None
 
     source = SourceReference(document_id=extraction.document_id, quote=quote, page=page)
-    return source, "unverified"
+    return source, "unverified", None
 
 
 def build_grounding_report(source_kind: str, entries: list[SectionGrounding]) -> GroundingReport:

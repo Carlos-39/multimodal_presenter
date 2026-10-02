@@ -15,6 +15,13 @@ import type { ChatResponse, ChatTurn, Section, SectionContent } from "@/lib/type
 export interface OriginalSource {
   text: string | null;
   file: File | null;
+  /**
+   * Solo audio: la evidencia acústica de la fase de percepción, como bloque OPACO (el frontend
+   * no la interpreta). Se reenvía al chat, a las sugeridas y al deck para que relean el MISMO
+   * documento sin volver a percibir el audio — ni pagar de nuevo, ni arriesgarse a que la
+   * anotación cambie entre turnos.
+   */
+  audioEvidence: string | null;
 }
 
 export interface ChatMessage {
@@ -78,7 +85,13 @@ export function useChat(original: OriginalSource | null) {
       let acc = "";
       let response: ChatResponse | null = null;
       try {
-        await streamChat(original.text, original.file, q, historySnapshot, (event) => {
+        await streamChat(
+          original.text,
+          original.file,
+          original.audioEvidence,
+          q,
+          historySnapshot,
+          (event) => {
           if (event.type === "text") {
             acc = event.text;
             setMessages((prev) =>
@@ -123,7 +136,12 @@ export function useChat(original: OriginalSource | null) {
     async (section: Section) => {
       if (!original || requestedRef.current.has(section.id)) return;
       requestedRef.current.add(section.id);
-      const questions = await fetchSuggestions(original.text, original.file, section);
+      const questions = await fetchSuggestions(
+        original.text,
+        original.file,
+        original.audioEvidence,
+        section,
+      );
       setSuggestions((prev) => ({ ...prev, [section.id]: questions }));
     },
     [original],

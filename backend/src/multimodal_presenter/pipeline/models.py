@@ -3,6 +3,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..schemas import Presentation
+from ..schemas.audio import AudioEvidence
 from ..schemas.transform import (
     ChartNote,
     GroundingReport,
@@ -28,6 +29,9 @@ class ExtractionResult(BaseModel):
     - Fuente de texto: `text` tiene el documento y `segments` sus párrafos con offsets.
     - Fuente binaria (PDF/imagen): `binary` + `media_type` tienen el documento; `instruction`
       guarda la indicación opcional que el usuario escribió junto al archivo.
+    - Fuente de audio: igual que la binaria, más `audio_evidence` con lo que la Fase 0 oyó.
+      El binario se conserva (es la fuente real), pero lo que viaja a la Fase 2 es la
+      evidencia: Sonnet no admite audio como entrada.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -46,6 +50,9 @@ class ExtractionResult(BaseModel):
     media_type: str | None = None
     filename: str | None = None
 
+    # Fuente de audio: la anotación estructurada que produjo la Fase 0 (percepción).
+    audio_evidence: AudioEvidence | None = None
+
     # Instrucción/contexto opcional que acompaña a un archivo (texto + archivo combinados).
     instruction: str | None = None
 
@@ -59,3 +66,5 @@ class PipelineResult(BaseModel):
     grounding: GroundingReport
     semantic: SemanticCoherenceReport
     chart_notes: list[ChartNote] = Field(default_factory=list)
+    transcript: str | None = None  # solo audio: lo que oyó la Fase 0
+    audio_evidence: str | None = None  # solo audio: la evidencia serializada (bloque opaco)

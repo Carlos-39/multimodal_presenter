@@ -11,6 +11,7 @@ import { SourcePanel } from "@/components/content/SourcePanel";
 import { StreamingStatus } from "@/components/content/StreamingStatus";
 import { SummaryBanner } from "@/components/content/SummaryBanner";
 import { TransformInput } from "@/components/TransformInput";
+import { sourceKindOf } from "@/lib/audio";
 import { postTransform } from "@/lib/api";
 import { fetchDeck } from "@/lib/deck";
 import { fetchIllustrations } from "@/lib/illustrations";
@@ -42,6 +43,7 @@ interface ActiveSource {
   source: SourceReference;
   status: GroundingStatus;
   key: string; // reancla el resaltado al cambiar (id de sección, o único para el chat)
+  startS: number | null; // solo audio: momento al que llevar el reproductor
 }
 
 /** Construye un GroundingReport agregado a partir de las entradas por sección (durante streaming). */
@@ -77,6 +79,8 @@ export default function Page() {
   // Adelanto inicial (Hito 5g): preview corto mientras corre la transformación completa.
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryStatus, setSummaryStatus] = useState<SummaryStatus>("idle");
+  // Solo audio: lo que oyó la fase de percepción (ver StreamEvent "transcript").
+  const [transcript, setTranscript] = useState<string | null>(null);
 
   // Ilustraciones de apoyo en camino (post-pase del 5h): solo para avisar en pantalla.
   const [illustrationsPending, setIllustrationsPending] = useState(false);
@@ -129,7 +133,7 @@ export default function Page() {
     }
     if (deckStatus === "loading" || !original) return;
     setDeckStatus("loading");
-    fetchDeck(original.text, original.file)
+    fetchDeck(original.text, original.file, original.audioEvidence)
       .then((d) => {
         setDeck(d);
         setDeckStatus("ready");
@@ -162,8 +166,13 @@ export default function Page() {
   // Cada apertura es una señal de "verificación de fuente" (Punto 4). Se registra el estado de
   // grounding para poder ver DESPUÉS si el participante revisa justo las marcadas (not_found).
   const openSectionSource = useCallback(
-    (section: Section, gstatus: GroundingStatus, ordinal: number | null) => {
-      setActiveSource({ source: section.source, status: gstatus, key: section.id });
+    (
+      section: Section,
+      gstatus: GroundingStatus,
+      ordinal: number | null,
+      startS: number | null,
+    ) => {
+      setActiveSource({ source: section.source, status: gstatus, key: section.id, startS });
       sourceOpenedAtRef.current = Date.now();
       track("source_open", {
         origin: "section",
@@ -175,8 +184,8 @@ export default function Page() {
     [openPanel],
   );
   const openChatSource = useCallback(
-    (source: SourceReference, gstatus: GroundingStatus) => {
-      setActiveSource({ source, status: gstatus, key: `chat-${source.quote}` });
+    (source: SourceReference, gstatus: GroundingStatus, startS: number | null = null) => {
+      setActiveSource({ source, status: gstatus, key: `chat-${source.quote}`, startS });
       sourceOpenedAtRef.current = Date.now();
       track("source_open", { origin: "chat", grounding_status: gstatus });
       openPanel("source");
@@ -198,6 +207,7 @@ export default function Page() {
     setActiveSource(null);
     setSummary(null);
     setSummaryStatus("idle");
+    setTranscript(null);
     illustrationRunRef.current += 1; // invalida ilustraciones en camino del documento anterior
     setIllustrationsPending(false);
     setSlidesOpen(false); // documento nuevo → vuelve a la vista de scroll
@@ -205,11 +215,13 @@ export default function Page() {
     setDeck(null);
     setDeckStatus("idle");
     setOpenOrder((prev) => prev.filter((p) => p !== "source")); // cierra la fuente; conserva el chat
-    setOriginal({ text, file });
-    setSourceKind(file ? (file.type === "application/pdf" ? "pdf" : "image") : "text");
+    setOriginal({ text, file, audioEvidence: null }); // la evidencia llega con el stream
+    setSourceKind(sourceKindOf(file));
   }
 
   function applyNonStreaming(data: TransformResponse) {
+    setTranscript(data.transcript);
+    setOriginal((prev) => (prev ? { ...prev, audioEvidence: data.audio_evidence } : prev));
     setTitle(data.presentation.title);
     setSections(data.presentation.sections);
     setEntries(data.grounding.sections);
@@ -250,27 +262,48 @@ export default function Page() {
   async function handleTransform(text: string | null, file: File | null) {
     // Marca el inicio de la interacción con un documento (segmenta la sesión). Solo el TIPO de
     // fuente, nunca el contenido ni el nombre del archivo (privacidad, Hito 8).
-    const sk: SourceKind = file ? (file.type === "application/pdf" ? "pdf" : "image") : "text";
+    const sk: SourceKind = sourceKindOf(file);
     track("transform_submit", { source_kind: sk });
     resetForRun(text, file);
     setStatus("streaming");
 
     // Adelanto en PARALELO (Hito 5g): no se espera (no bloquea el streaming). Latencia real del
     // LLM liviano, sin sleep. Si falla, se marca como error y se muestra como tal (honestidad).
+    //
+    // El AUDIO es el único caso que no puede lanzarlo aquí: el modelo del adelanto no admite
+    // audio como entrada. Se dispara más abajo, al llegar la transcripción de la fase de
+    // percepción — que además es justo el momento en que hay algo que resumir. Para el usuario
+    // la diferencia es que el adelanto del audio tarda un poco más, no que no exista.
     setSummaryStatus("loading");
-    fetchSummary(text, file)
-      .then((s) => {
-        setSummary(s);
-        setSummaryStatus("done");
-      })
-      .catch(() => setSummaryStatus("error"));
+    if (sk !== "audio") {
+      fetchSummary(text, file)
+        .then((s) => {
+          setSummary(s);
+          setSummaryStatus("done");
+        })
+        .catch(() => setSummaryStatus("error"));
+    }
 
     let received = 0;
     let docTitle = "";
     const collected: Section[] = []; // copia local de las secciones (para el post-pase de ilustraciones)
     try {
       await streamTransform(text, file, (event) => {
-        if (event.type === "start") {
+        if (event.type === "transcript") {
+          // Lo que la fase de percepción oyó. Alimenta el panel de fuente (transcripción con
+          // la cita resaltada) y, de paso, el adelanto: ya es TEXTO, así que el modelo liviano
+          // sí lo admite.
+          setTranscript(event.text);
+          // La evidencia se adjunta al DOCUMENTO: desde aquí el chat, las sugeridas y el deck
+          // la reenvían solas, sin que ningún componente tenga que saber que existe.
+          setOriginal((prev) => (prev ? { ...prev, audioEvidence: event.evidence } : prev));
+          fetchSummary(event.text, null)
+            .then((s) => {
+              setSummary(s);
+              setSummaryStatus("done");
+            })
+            .catch(() => setSummaryStatus("error"));
+        } else if (event.type === "start") {
           docTitle = event.title;
           setTitle(event.title);
         } else if (event.type === "section") {
@@ -327,9 +360,10 @@ export default function Page() {
   // Abrir la fuente de una sección: resuelve su estado de grounding y reusa el panel.
   const handleOpenSectionSource = useCallback(
     (section: Section) => {
-      const gstatus = entries.find((g) => g.section_id === section.id)?.status ?? "unverified";
+      const entry = entries.find((g) => g.section_id === section.id);
+      const gstatus = entry?.status ?? "unverified";
       const idx = visible.findIndex((s) => s.id === section.id); // ordinal, no el id (privacidad)
-      openSectionSource(section, gstatus, idx >= 0 ? idx + 1 : null);
+      openSectionSource(section, gstatus, idx >= 0 ? idx + 1 : null, entry?.start_s ?? null);
     },
     [entries, visible, openSectionSource],
   );
@@ -444,6 +478,8 @@ export default function Page() {
               source={activeSource!.source}
               status={activeSource!.status}
               sourceKey={activeSource!.key}
+              startS={activeSource!.startS}
+              transcript={transcript}
               onClose={() => closePanel("source")}
             />
           ) : null

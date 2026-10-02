@@ -66,7 +66,7 @@ def test_matching_robusto_ancla_pese_a_puntuacion_tipografica(
 
 def test_matching_robusto_no_inventa_anclaje(input_text: str) -> None:
     """Una cita que de verdad NO está sigue siendo `not_found` (la canonicalización no fabrica)."""
-    source, status = ground_quote(
+    source, status, _ = ground_quote(
         "Esta frase jamás aparece en el texto.", None, prepare_input(text=input_text)
     )
     assert status == "not_found"

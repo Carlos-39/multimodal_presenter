@@ -5,7 +5,14 @@ import { CircleNotch } from "@phosphor-icons/react";
 
 type Status = "idle" | "loading" | "streaming" | "error" | "done";
 
-const ACCEPT = "application/pdf,image/png,image/jpeg,image/webp";
+// Audio incluido: lo procesa la fase de percepción del backend (entrada acústica nativa).
+// M4A va con sus tres nombres (los navegadores no se ponen de acuerdo) más la extensión, porque
+// es el formato por defecto de las grabadoras de celular y de muchos podcasts descargables.
+// `video/mp4` NO se incluye: el sistema no procesa video, y el backend lo rechazaría.
+const ACCEPT =
+  "application/pdf,image/png,image/jpeg,image/webp," +
+  "audio/mpeg,audio/wav,audio/flac,audio/ogg,audio/aac,audio/aiff," +
+  "audio/mp4,audio/m4a,audio/x-m4a,.m4a";
 
 /**
  * Entrada de la transformación: texto y/o archivo (PDF/imagen). Debe haber al menos uno.
@@ -57,7 +64,7 @@ export function TransformInput({ status, onSubmit }: TransformInputProps) {
       </div>
 
       <div className="space-y-2">
-        <span className="block text-sm font-medium text-foreground">Documento (PDF o imagen)</span>
+        <span className="block text-sm font-medium text-foreground">Documento (PDF, imagen o audio)</span>
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -86,7 +93,7 @@ export function TransformInput({ status, onSubmit }: TransformInputProps) {
               onClick={() => inputRef.current?.click()}
               className="w-full text-left text-muted hover:text-foreground"
             >
-              Arrastra un PDF o imagen aquí, o haz clic para seleccionar.
+              Arrastra un PDF, una imagen o un audio aquí, o haz clic para seleccionar.
             </button>
           )}
           <input

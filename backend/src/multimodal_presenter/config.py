@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     app_name: str = "Multimodal Presenter API"
     environment: str = "development"
 
-    # Modelo (PydanticAI). Primario: Anthropic. Fallback: Gemini vía OpenRouter.
+    # Modelo (PydanticAI). Primario: Anthropic. Fallback: Gemini DIRECTO (Google AI Studio).
     # Las claves se validan en runtime al construir el modelo (model_provider.build_model),
     # no al importar la app, para que el CI (que mockea el LLM) no requiera claves reales.
     # Nunca se hardcodean.
@@ -39,17 +39,32 @@ class Settings(BaseSettings):
     # paralelo a la estructuración (Sonnet) para dar un preview mientras el pipeline trabaja.
     anthropic_summary_model: str = "claude-haiku-4-5-20251001"
     #
-    # Fallback — Gemini vía OpenRouter (recomendado; si falta, solo se usa el primario).
-    # El id es el de OpenRouter (gateway OpenAI-compatible), configurable sin tocar código.
-    openrouter_api_key: str | None = None
-    openrouter_gemini_model: str = "google/gemini-3-pro-preview"
+    # Una sola clave de Google (AI Studio) cubre los DOS roles de Gemini en el sistema:
+    #
+    # 1. Fallback de la ESTRUCTURACIÓN (opcional; si falta, solo se usa el primario). Antes se
+    #    llegaba al mismo Gemini a través de OpenRouter; ahora va directo — un intermediario
+    #    menos y una clave menos que mantener.
+    # 2. Percepción de AUDIO (Fase 0), que es obligatoria para aceptar audio: Sonnet no admite
+    #    audio como modalidad de entrada en su API, así que la percepción se delega a un modelo
+    #    con entrada acústica nativa y lo que entra a la Fase 2 es un `AudioEvidence` tipado
+    #    (no una transcripción plana). Sin esta clave, /transform con audio da un 503 claro;
+    #    el texto, el PDF y la imagen funcionan igual sin ella.
+    #
+    # La percepción NO tiene fallback a propósito. Es el mismo criterio por el que se descartó
+    # estructurar el audio con Gemini: si la anotación cayera en silencio a otra familia de
+    # modelos, su calidad cambiaría sin que nadie lo note — y esa anotación es justo el
+    # instrumento que mide la mini-evaluación. Un error claro es más honesto que una
+    # degradación invisible.
+    google_api_key: str | None = None
+    google_model: str = "gemini-3.1-pro-preview"  # fallback de estructuración (calidad Pro)
+    google_perception_model: str = "gemini-3.8-flash"  # percepción de audio (Fase 0)
 
     # Verificación semántica de gráficos (Fase 3, 2ª llamada al LLM). Ponla en false durante
     # el desarrollo para NO gastar esa llamada extra en documentos con gráficos.
     semantic_verification_enabled: bool = True
 
-    # Narración TTS (Hito 5g Parte 3) — OpenAI tts-1. Clave PROPIA de OpenAI (distinta a la de
-    # OpenRouter). Sin ella, /narration responde 503 y el frontend lo muestra (nunca en silencio).
+    # Narración TTS (Hito 5g Parte 3) — OpenAI tts-1. Sin ella, /narration responde 503 y el
+    # frontend lo muestra (nunca en silencio).
     openai_api_key: str | None = None
     openai_tts_model: str = "tts-1"
     openai_tts_voice: str = "nova"
@@ -65,6 +80,10 @@ class Settings(BaseSettings):
 
     # Entrada multimodal (Hito 4): tope de tamaño de archivo subido, en MB.
     max_upload_mb: int = 20
+    # Tope de DURACIÓN para entradas de audio. Los modelos de audio pierden fiabilidad en
+    # grabaciones largas, así que el prototipo se acota explícitamente: si se excede, el
+    # endpoint responde 413 con la duración real y el límite (nunca un fallo silencioso).
+    max_audio_minutes: int = 15
 
     # Observabilidad (Logfire)
     logfire_token: str | None = None

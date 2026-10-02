@@ -1,8 +1,10 @@
 """Fixtures compartidas de los tests del pipeline (Hito 2)."""
 
 import copy
+import io
 import json
 import os
+import wave
 
 import pytest
 from pydantic_ai.models.test import TestModel
@@ -97,3 +99,24 @@ def pdf_bytes() -> bytes:
 @pytest.fixture
 def png_bytes() -> bytes:
     return PNG_BYTES
+
+
+def make_wav(seconds: float, rate: int = 8000) -> bytes:
+    """WAV silencioso REAL de la duración pedida (stdlib `wave`, sin dependencias).
+
+    Se genera de verdad en vez de mockear la duración: así los tests del tope de duración
+    ejercitan la lectura real de la cabecera, igual que los de PDF usan magic bytes reales.
+    """
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as writer:
+        writer.setnchannels(1)
+        writer.setsampwidth(2)
+        writer.setframerate(rate)
+        writer.writeframes(b"\x00\x00" * int(rate * seconds))
+    return buffer.getvalue()
+
+
+@pytest.fixture
+def wav_bytes() -> bytes:
+    """Audio válido y corto (2.5 s), dentro de cualquier tope razonable."""
+    return make_wav(2.5)
