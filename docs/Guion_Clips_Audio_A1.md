@@ -17,9 +17,6 @@
 
 - **Formato:** MP3, WAV o **M4A** (el `.m4a`/`.mp4` que graba la Grabadora de Windows y el
   celular por defecto — no hace falta cambiar nada ni convertir). Mono está bien.
-  La única salvedad: si este backend llegara a correr por la ruta de contingencia (OpenRouter
-  en vez de Google), el M4A no viaja y el sistema te lo dirá pidiéndote MP3. Con la clave de
-  Google puesta, no aplica.
 - **Duración:** 20–45 s por clip. Cortos a propósito: el sistema acota el audio a 15 min y lo
   que se mide aquí son rasgos puntuales, no resistencia a audio largo.
 - **Idioma:** español.

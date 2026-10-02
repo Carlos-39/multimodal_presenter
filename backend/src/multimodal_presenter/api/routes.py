@@ -15,13 +15,7 @@ from pydantic import ValidationError
 from pydantic_ai.models import Model
 
 from ..config import Settings, get_settings
-from ..model_provider import (
-    OPENROUTER_UNSUPPORTED_AUDIO,
-    build_model,
-    build_perception_model,
-    build_summary_model,
-    perception_route,
-)
+from ..model_provider import build_model, build_perception_model, build_summary_model
 from ..pipeline import transform
 from ..pipeline.chat import chat_stream, generate_suggestions
 from ..pipeline.deck import generate_deck
@@ -57,7 +51,7 @@ MAX_CHAT_HISTORY = 12  # se acotan los turnos que viajan al modelo (prompt bound
 
 
 def get_model(settings: Settings = Depends(get_settings)) -> Model:
-    """Provee el modelo (Anthropic + fallback OpenRouter). Sobreescribible en tests."""
+    """Provee el modelo (Anthropic + fallback Gemini directo). Sobreescribible en tests."""
     return build_model(settings)
 
 
@@ -79,31 +73,15 @@ def get_perception_model(settings: Settings = Depends(get_settings)) -> Model | 
         return None
 
 
-def _need_audio_provider(media_type: str | None, model: Model | None, settings: Settings) -> None:
-    """Avisa antes de llamar al proveedor: 503 si no hay ninguno, 415 si el formato no viaja.
-
-    El segundo caso es la salvedad declarada de M4A: Gemini lo admite, pero la ruta de
-    CONTINGENCIA (OpenRouter) no puede transportarlo. Mejor decirlo con el formato al que
-    convertir que dejar que PydanticAI lance `Unknown media type` dentro del pipeline.
-    """
-    if not is_audio(media_type):
-        return
-    if model is None:
+def _need_audio_provider(media_type: str | None, model: Model | None) -> None:
+    """503 claro si se subió audio y no hay modelo de percepción configurado."""
+    if is_audio(media_type) and model is None:
         raise HTTPException(
             status_code=503,
             detail=(
                 "La entrada de audio necesita un modelo con entrada acústica nativa, que no "
-                "está configurado. Define GOOGLE_API_KEY (o OPENROUTER_API_KEY) en el backend. "
-                "El texto, el PDF y la imagen funcionan sin esa clave."
-            ),
-        )
-    if perception_route(settings) == "openrouter" and media_type in OPENROUTER_UNSUPPORTED_AUDIO:
-        raise HTTPException(
-            status_code=415,
-            detail=(
-                f"Este backend está usando la ruta de contingencia (OpenRouter), que no "
-                f"admite {media_type}. Conviértelo a MP3 o WAV, o define GOOGLE_API_KEY "
-                f"para usar la ruta directa de Google, que sí lo admite."
+                "está configurado. Define GOOGLE_API_KEY en el backend. El texto, el PDF y "
+                "la imagen funcionan sin esa clave."
             ),
         )
 
@@ -164,7 +142,7 @@ async def transform_endpoint(
     pipeline de estructuración es la `AudioEvidence`. Para texto/PDF/imagen no cambia nada.
     """
     text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
-    _need_audio_provider(media_type, perception_model, settings)
+    _need_audio_provider(media_type, perception_model)
 
     result = await transform(
         model,
@@ -200,7 +178,7 @@ async def transform_stream_endpoint(
     silenciosamente incompleta).
     """
     text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
-    _need_audio_provider(media_type, perception_model, settings)
+    _need_audio_provider(media_type, perception_model)
 
     async def event_source():
         try:

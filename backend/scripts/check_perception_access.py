@@ -1,7 +1,7 @@
 """Sonda mínima de acceso al modelo de percepción de audio (Fase 0, hallazgo A1).
 
 Hace UNA llamada con UN clip corto y responde tres cosas antes de construir nada más encima:
-  1. ¿Qué ruta quedó activa — Google AI Studio directo u OpenRouter?
+  1. ¿Responde la ruta de percepción (Google AI Studio directo)?
   2. ¿El modelo devuelve un `AudioEvidence` válido contra el esquema?
   3. ¿Cuánto cuesta por minuto de audio? (tokens de entrada/salida reales de la llamada)
 
@@ -14,7 +14,7 @@ mini-evaluación: si el acceso no funciona, grabar los 8 sería trabajo perdido.
 Uso:
     uv run python scripts/check_perception_access.py ruta/al/clip.mp3
 
-Requiere GOOGLE_API_KEY o, como contingencia, OPENROUTER_API_KEY en backend/.env.
+Requiere GOOGLE_API_KEY (Google AI Studio) en backend/.env.
 No corre en CI ni en pytest.
 """
 
@@ -87,10 +87,7 @@ async def main() -> int:
         print(f"SIN PROVEEDOR\n\n{exc}")
         return 1
 
-    if settings.google_api_key:
-        ruta = f"Google AI Studio directo · {settings.google_perception_model}"
-    else:
-        ruta = f"OpenRouter · {settings.openrouter_perception_model}"
+    ruta = f"Google AI Studio directo · {settings.google_perception_model}"
 
     print(f"Clip:  {path.name}  ({seconds:.1f} s, {len(audio) / 1024:.0f} KB, {media_type})")
     print(f"Ruta:  {ruta}")
@@ -108,17 +105,11 @@ async def main() -> int:
         print(f"FALLÓ la ruta «{ruta}».\n")
         print(f"  Tipo:  {type(exc).__name__}")
         print(f"  Error: {exc}\n")
-        if settings.google_api_key and not settings.openrouter_api_key:
-            print(
-                "Contingencia: define OPENROUTER_API_KEY en backend/.env y vuelve a correr "
-                "esto. Si también falla, pásame los DOS errores literales antes de que "
-                "intentemos un tercer proveedor."
-            )
-        elif not settings.google_api_key:
-            print(
-                "Esta era la ruta de contingencia (OpenRouter). Si la directa de Google "
-                "también falló, pásame los dos errores literales."
-            )
+        print(
+            "La percepción NO tiene fallback a propósito (ver build_perception_model): un "
+            "cambio silencioso de modelo alteraría la calidad de la anotación, que es el "
+            "instrumento que mide la mini-evaluación. Pásame el error literal de arriba."
+        )
         return 1
 
     evidence = result.output

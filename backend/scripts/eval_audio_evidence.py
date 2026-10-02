@@ -26,7 +26,7 @@ Uso:
     uv run python scripts/eval_audio_evidence.py
 No corre en CI ni en pytest. Requiere los clips grabados en tests/fixtures/local/audio/
 (ver docs/Guion_Clips_Audio_A1.md), ANTHROPIC_API_KEY, OPENAI_API_KEY (línea base) y
-GOOGLE_API_KEY u OPENROUTER_API_KEY (percepción). Escribe CSV y JSONL en scripts/outputs/.
+GOOGLE_API_KEY (percepción). Escribe CSV y JSONL en scripts/outputs/.
 """
 
 from __future__ import annotations

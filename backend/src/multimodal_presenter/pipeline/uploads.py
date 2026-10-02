@@ -31,10 +31,6 @@ ALLOWED_MIME: dict[str, str] = {
     # M4A: el formato por defecto de las grabadoras de celular y de buena parte de los
     # podcasts y audiolibros descargables, así que en el uso real es de los más probables.
     # Gemini lo admite, pero SOLO con el nombre `audio/m4a` (ver `_CANONICAL_MIME`).
-    # Salvedad declarada: la ruta de CONTINGENCIA (OpenRouter) no lo soporta — PydanticAI no
-    # tiene M4A en su mapa de formatos de audio y lanza `Unknown media type`. Con la ruta
-    # primaria (Google) no hay problema: `GoogleModel` pasa el media_type tal cual a
-    # `inline_data`, sin consultar ese mapa. `perception_route` permite avisar antes de fallar.
     "audio/m4a": "audio",
 }
 
