@@ -1,0 +1,91 @@
+{
+  "_nota": "Verdad de referencia de la mini-evaluación de audio (hallazgo A1). Cada clip declara qué se diseñó al grabarlo; el arnés (eval_audio_evidence.py) mide contra esto. Si al grabar cambió algo, se corrige AQUÍ antes de correr: la auditoría del dataset del Hito 7 mostró lo que cuesta no revisar la verdad de referencia a tiempo. Guion de grabación en docs/Guion_Clips_Audio_A1.md.",
+  "_claves": "Las frases se buscan en el texto generado, así que cada una lista variantes de superficie: lo dicho en voz ('cuarenta y dos por ciento') y lo que el modelo probablemente escriba ('42'). Basta con que aparezca UNA.",
+  "clips": [
+    {
+      "id": "c1_enfasis_cifra",
+      "archivo": "c1_enfasis_cifra.wav",
+      "hablantes": 1,
+      "con_ruido": false,
+      "enfasis_en": [["cuarenta y dos por ciento", "42 %", "42%", "42 por ciento"]],
+      "cifra_dudosa": null,
+      "cifra_firme": [["mil doscientos millones", "1.200", "1200"]],
+      "esperado": "La cifra remarcada (margen 42%) queda en una sección núcleo o en el título, no diluida entre las otras dos cifras."
+    },
+    {
+      "id": "c2_enfasis_juicio",
+      "archivo": "c2_enfasis_juicio.wav",
+      "hablantes": 1,
+      "con_ruido": false,
+      "enfasis_en": [["retención", "retencion"]],
+      "cifra_dudosa": null,
+      "cifra_firme": [["dieciocho por ciento", "18 %", "18%"]],
+      "esperado": "La idea central es la retención, no el 18% de crecimiento. Caso donde la prosodia contradice lo que la frecuencia léxica sugeriría."
+    },
+    {
+      "id": "c3_duda_cifra",
+      "archivo": "c3_duda_cifra.wav",
+      "hablantes": 1,
+      "con_ruido": false,
+      "enfasis_en": [],
+      "cifra_dudosa": ["ochocientos mil", "800.000", "800000", "800 mil"],
+      "cifra_firme": [["un millón doscientos mil", "1.200.000", "1200000"]],
+      "esperado": "Los 800 mil aparecen matizados (aproximadamente / sin confirmar / según el hablante) y el millón doscientos mil NO."
+    },
+    {
+      "id": "c4_dos_hablantes",
+      "archivo": "c4_dos_hablantes.wav",
+      "hablantes": 2,
+      "con_ruido": false,
+      "enfasis_en": [],
+      "cifra_dudosa": null,
+      "cifra_firme": [
+        ["doce por ciento", "12 %", "12%"],
+        ["quince por ciento", "15 %", "15%"]
+      ],
+      "esperado": "Cada cifra de rotación se atribuye a quien la dijo. NO se promedia, ni se elige una, ni se funden en una sola afirmación."
+    },
+    {
+      "id": "c5_dos_hablantes_enfasis",
+      "archivo": "c5_dos_hablantes_enfasis.wav",
+      "hablantes": 2,
+      "con_ruido": false,
+      "enfasis_en": [["ocho usuarios", "8 usuarios", "ocho"]],
+      "cifra_dudosa": null,
+      "cifra_firme": [["dos segundos", "2 segundos"]],
+      "esperado": "La objeción (solo 8 usuarios) queda visible y atribuida a su hablante, no fundida en un resumen optimista del piloto."
+    },
+    {
+      "id": "c6_ruido",
+      "archivo": "c6_ruido.wav",
+      "hablantes": 1,
+      "con_ruido": true,
+      "enfasis_en": [],
+      "cifra_dudosa": ["cuatrocientos", "400"],
+      "cifra_firme": [["siete departamentos", "7 departamentos"], ["cuatro meses", "4 meses"]],
+      "esperado": "El sistema declara que la cifra tapada por el ruido no se oyó bien, en vez de escribir un número con plena autoridad."
+    },
+    {
+      "id": "c7_control_plano",
+      "archivo": "c7_control_plano.wav",
+      "hablantes": 1,
+      "con_ruido": false,
+      "enfasis_en": [],
+      "cifra_dudosa": null,
+      "cifra_firme": [["quinientos millones", "500"]],
+      "es_control": true,
+      "esperado": "CONTROL: las dos condiciones deben dar prácticamente lo mismo. Si la percepción inventa énfasis o matices donde no hay ninguno, es anotación alucinada y este clip lo delata. Un empate es el resultado correcto."
+    },
+    {
+      "id": "c8_no_verbal",
+      "archivo": "c8_no_verbal.wav",
+      "hablantes": 1,
+      "con_ruido": false,
+      "enfasis_en": [],
+      "cifra_dudosa": null,
+      "cifra_firme": [],
+      "evento_no_verbal": "risa",
+      "esperado": "Se registra la risa como evento no verbal. EXPECTATIVA HONESTA: probablemente no cambie la presentación, porque el léxico ya delata el retraso. Se incluye para que la evaluación informe también donde esperamos que falle."
+    }
+  ]
+}
