@@ -12,7 +12,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic_ai.models.test import TestModel
 
-from multimodal_presenter.api.routes import get_model, get_perception_model
+from multimodal_presenter.api.routes import get_model, get_perception_model, get_summary_model
 from multimodal_presenter.main import app
 from multimodal_presenter.pipeline import transform
 from multimodal_presenter.pipeline.extraction import prepare_input
@@ -281,9 +281,21 @@ def test_la_percepcion_no_se_ejecuta_para_texto(input_text: str, mock_presentati
 # ─────────────────────────────────────────────────────────────
 # Endpoints
 # ─────────────────────────────────────────────────────────────
+def _mock_todos_los_modelos() -> None:
+    """Sustituye TODOS los proveedores de modelo por mocks.
+
+    Incluir `get_summary_model` NO es decorativo: FastAPI resuelve las dependencias ANTES de
+    entrar al cuerpo del endpoint, así que `/summary` construye su modelo aunque la petición
+    vaya a terminar en un 415. Sin este override, el test pasa en una máquina con
+    `ANTHROPIC_API_KEY` en el `.env` y **falla en el CI**, que corre sin claves a propósito.
+    """
+    app.dependency_overrides[get_model] = _structuring_model
+    app.dependency_overrides[get_summary_model] = lambda: TestModel(custom_output_text="adelanto")
+
+
 @pytest.fixture
 def client():
-    app.dependency_overrides[get_model] = _structuring_model
+    _mock_todos_los_modelos()
     app.dependency_overrides[get_perception_model] = _perception_model
     try:
         yield TestClient(app)
@@ -294,7 +306,7 @@ def client():
 @pytest.fixture
 def client_sin_percepcion():
     """Cliente sin proveedor de audio configurado (el caso de no tener clave de Gemini)."""
-    app.dependency_overrides[get_model] = _structuring_model
+    _mock_todos_los_modelos()
     app.dependency_overrides[get_perception_model] = lambda: None
     try:
         yield TestClient(app)

@@ -15,6 +15,50 @@ from pydantic_ai.models.test import TestModel
 os.environ["LOGFIRE_TOKEN"] = ""
 os.environ["PYDANTIC_AI_NO_BANNER"] = "1"  # sin el banner de PydanticAI en la salida de tests
 
+# Claves que el CI NO tiene y que la máquina del autor SÍ tiene en su `.env`.
+_CLAVES_DE_API = (
+    "ANTHROPIC_API_KEY",
+    "GOOGLE_API_KEY",
+    "OPENAI_API_KEY",
+    "IDEOGRAM_API_KEY",
+)
+
+
+@pytest.fixture(autouse=True)
+def sin_claves_reales(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch):
+    """Vacía las claves de API en TODOS los tests que no sean de integración.
+
+    Por qué existe: el CI corre **sin ninguna clave** (decisión del Hito 0 — se validan en
+    runtime al construir el modelo, no al importar, y los tests mockean el LLM), pero la
+    máquina del autor sí las tiene en `backend/.env`. Esa asimetría deja pasar tests mal
+    mockeados: pasan en local y **fallan en el CI**. Con esta fixture, correr la suite en
+    local es idéntico a correrla en el CI, así que el fallo aparece donde se puede arreglar.
+
+    Pasó de verdad: un test de `/summary` esperaba un 415 del cuerpo del endpoint, pero
+    FastAPI resuelve las dependencias ANTES de entrar a ese cuerpo, así que construía el
+    modelo del adelanto con la clave real del `.env`. En el CI reventó.
+
+    Las variables de entorno tienen precedencia sobre el `.env` en pydantic-settings, así que
+    ponerlas vacías basta. Hay que limpiar la caché de `get_settings` (es `lru_cache`) antes y
+    después, o el valor cacheado sobreviviría al parcheo.
+
+    Los tests marcados `integration` quedan EXENTOS: llaman a las APIs de verdad y las
+    necesitan. Si un test nuevo falla por falta de clave, la pregunta correcta es si le falta
+    un mock o si debería estar marcado como de integración.
+    """
+    if request.node.get_closest_marker("integration"):
+        yield
+        return
+
+    from multimodal_presenter.config import get_settings
+
+    for clave in _CLAVES_DE_API:
+        monkeypatch.setenv(clave, "")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
 # Texto de entrada de referencia. Los `quote` del mock son substrings EXACTOS de este texto.
 INPUT_TEXT = (
     "La empresa creció de forma sostenida durante la última década.\n\n"
