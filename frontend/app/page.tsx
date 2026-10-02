@@ -11,6 +11,7 @@ import { SourcePanel } from "@/components/content/SourcePanel";
 import { StreamingStatus } from "@/components/content/StreamingStatus";
 import { SummaryBanner } from "@/components/content/SummaryBanner";
 import { TransformInput } from "@/components/TransformInput";
+import { sourceKindOf } from "@/lib/audio";
 import { postTransform } from "@/lib/api";
 import { fetchDeck } from "@/lib/deck";
 import { fetchIllustrations } from "@/lib/illustrations";
@@ -42,6 +43,7 @@ interface ActiveSource {
   source: SourceReference;
   status: GroundingStatus;
   key: string; // reancla el resaltado al cambiar (id de sección, o único para el chat)
+  startS: number | null; // solo audio: momento al que llevar el reproductor
 }
 
 /** Construye un GroundingReport agregado a partir de las entradas por sección (durante streaming). */
@@ -162,8 +164,13 @@ export default function Page() {
   // Cada apertura es una señal de "verificación de fuente" (Punto 4). Se registra el estado de
   // grounding para poder ver DESPUÉS si el participante revisa justo las marcadas (not_found).
   const openSectionSource = useCallback(
-    (section: Section, gstatus: GroundingStatus, ordinal: number | null) => {
-      setActiveSource({ source: section.source, status: gstatus, key: section.id });
+    (
+      section: Section,
+      gstatus: GroundingStatus,
+      ordinal: number | null,
+      startS: number | null,
+    ) => {
+      setActiveSource({ source: section.source, status: gstatus, key: section.id, startS });
       sourceOpenedAtRef.current = Date.now();
       track("source_open", {
         origin: "section",
@@ -176,7 +183,7 @@ export default function Page() {
   );
   const openChatSource = useCallback(
     (source: SourceReference, gstatus: GroundingStatus) => {
-      setActiveSource({ source, status: gstatus, key: `chat-${source.quote}` });
+      setActiveSource({ source, status: gstatus, key: `chat-${source.quote}`, startS: null });
       sourceOpenedAtRef.current = Date.now();
       track("source_open", { origin: "chat", grounding_status: gstatus });
       openPanel("source");
@@ -206,7 +213,7 @@ export default function Page() {
     setDeckStatus("idle");
     setOpenOrder((prev) => prev.filter((p) => p !== "source")); // cierra la fuente; conserva el chat
     setOriginal({ text, file });
-    setSourceKind(file ? (file.type === "application/pdf" ? "pdf" : "image") : "text");
+    setSourceKind(sourceKindOf(file));
   }
 
   function applyNonStreaming(data: TransformResponse) {
@@ -250,7 +257,7 @@ export default function Page() {
   async function handleTransform(text: string | null, file: File | null) {
     // Marca el inicio de la interacción con un documento (segmenta la sesión). Solo el TIPO de
     // fuente, nunca el contenido ni el nombre del archivo (privacidad, Hito 8).
-    const sk: SourceKind = file ? (file.type === "application/pdf" ? "pdf" : "image") : "text";
+    const sk: SourceKind = sourceKindOf(file);
     track("transform_submit", { source_kind: sk });
     resetForRun(text, file);
     setStatus("streaming");
@@ -327,9 +334,10 @@ export default function Page() {
   // Abrir la fuente de una sección: resuelve su estado de grounding y reusa el panel.
   const handleOpenSectionSource = useCallback(
     (section: Section) => {
-      const gstatus = entries.find((g) => g.section_id === section.id)?.status ?? "unverified";
+      const entry = entries.find((g) => g.section_id === section.id);
+      const gstatus = entry?.status ?? "unverified";
       const idx = visible.findIndex((s) => s.id === section.id); // ordinal, no el id (privacidad)
-      openSectionSource(section, gstatus, idx >= 0 ? idx + 1 : null);
+      openSectionSource(section, gstatus, idx >= 0 ? idx + 1 : null, entry?.start_s ?? null);
     },
     [entries, visible, openSectionSource],
   );
@@ -444,6 +452,7 @@ export default function Page() {
               source={activeSource!.source}
               status={activeSource!.status}
               sourceKey={activeSource!.key}
+              startS={activeSource!.startS}
               onClose={() => closePanel("source")}
             />
           ) : null

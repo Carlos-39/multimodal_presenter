@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { X } from "@phosphor-icons/react";
+import { formatTimestamp } from "@/lib/audio";
 import { highlightSegments } from "@/lib/highlight";
 import type { GroundingStatus, SourceKind, SourceReference } from "@/lib/types";
 import { ImageExplanation } from "./ImageExplanation";
@@ -18,6 +19,10 @@ import { ImageExplanation } from "./ImageExplanation";
  * - PDF: documento navegable (iframe nativo), navega a `source.page`. Fidelidad de PÁGINA,
  *   no de región. TODO(Hito5x): resaltado de región en PDF/imagen.
  * - imagen: imagen completa, sin navegación.
+ * - audio: reproductor nativo que arranca en el momento de la cita (`startS`), el análogo de
+ *   la fidelidad de página del PDF. Se dice explícitamente que el contenido verbal proviene
+ *   de la percepción del modelo y no es verificable contra la señal: el estado es `unverified`
+ *   y la UI no finge lo contrario (misma honestidad que el aviso de `not_found` del 8A.1).
  */
 interface OriginalSource {
   text: string | null;
@@ -30,6 +35,7 @@ interface SourcePanelProps {
   source: SourceReference;
   status: GroundingStatus;
   sourceKey: string; // reancla el resaltado al cambiar de fuente (sección o chat)
+  startS?: number | null; // solo audio: segundo en el que arranca la cita
   onClose: () => void;
 }
 
@@ -39,6 +45,7 @@ export function SourcePanel({
   source,
   status,
   sourceKey,
+  startS = null,
   onClose,
 }: SourcePanelProps) {
   const fileUrl = useMemo(
@@ -81,6 +88,8 @@ export function SourcePanel({
           />
         ) : sourceKind === "pdf" ? (
           <PdfSource url={fileUrl} page={source.page} />
+        ) : sourceKind === "audio" ? (
+          <AudioSource url={fileUrl} quote={source.quote} startS={startS} />
         ) : (
           <ImageSource url={fileUrl} />
         )}
@@ -89,7 +98,7 @@ export function SourcePanel({
       {/* Explicar imagen REAL (Hito 5h Parte 3): solo para fuentes binarias (PDF/imagen). Vive
           aquí, sobre la imagen real = trazabilidad reforzada; NO es una ilustración generada. Se
           remonta por `sourceKey` → colapsada de nuevo al cambiar de fuente. */}
-      {sourceKind !== "text" && original.file ? (
+      {sourceKind !== "text" && sourceKind !== "audio" && original.file ? (
         <ImageExplanation
           key={sourceKey}
           file={original.file}
@@ -166,6 +175,64 @@ function PdfSource({ url, page }: { url: string | null; page: number | null }) {
         </a>
       </div>
       <iframe src={src} title="Documento fuente (PDF)" className="min-h-0 flex-1 border-0" />
+    </div>
+  );
+}
+
+/**
+ * Fuente de audio. El equivalente honesto de la "fidelidad de página" del PDF: lleva al
+ * MOMENTO de la cita, que es el grano real que el sistema puede ofrecer sobre una señal.
+ *
+ * Dice explícitamente de dónde viene el texto de la cita (de la percepción del modelo, no de
+ * la señal verificada) en vez de presentarla como un fragmento verificado. Es la misma
+ * honestidad del aviso de `not_found` del 8A.1: lo que ancla es trazable, lo que no, se avisa.
+ */
+function AudioSource({
+  url,
+  quote,
+  startS,
+}: {
+  url: string | null;
+  quote: string;
+  startS: number | null;
+}) {
+  const playerRef = useRef<HTMLAudioElement | null>(null);
+
+  // Arranca en el momento de la cita. Hay que esperar a que los metadatos carguen: antes de eso
+  // `currentTime` no se puede fijar (la duración aún no se conoce).
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player || startS === null) return;
+    const seek = () => {
+      player.currentTime = startS;
+    };
+    if (player.readyState >= 1) seek();
+    else player.addEventListener("loadedmetadata", seek, { once: true });
+    return () => player.removeEventListener("loadedmetadata", seek);
+  }, [startS, url]);
+
+  if (!url) return <PanelMessage>No hay audio disponible.</PanelMessage>;
+
+  return (
+    <div className="flex flex-col gap-4 p-4">
+      <div className="flex items-baseline justify-between gap-2 text-xs">
+        <span className="text-muted">Audio fuente</span>
+        {startS !== null ? (
+          <span className="text-muted">
+            Referencia: <span className="tabular">{formatTimestamp(startS)}</span>
+          </span>
+        ) : null}
+      </div>
+
+      <audio ref={playerRef} src={url} controls className="w-full" />
+
+      <figure className="border-l-2 border-border pl-3">
+        <blockquote className="text-sm leading-relaxed text-foreground">“{quote}”</blockquote>
+        <figcaption className="mt-2 text-xs leading-relaxed text-muted">
+          Transcrito por el modelo que escuchó el audio. No se puede verificar contra la señal
+          palabra por palabra: escucha el fragmento para confirmarlo.
+        </figcaption>
+      </figure>
     </div>
   );
 }

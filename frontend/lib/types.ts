@@ -113,7 +113,7 @@ export interface Presentation {
 }
 
 export type GroundingStatus = "verified" | "unverified" | "not_found";
-export type SourceKind = "text" | "pdf" | "image";
+export type SourceKind = "text" | "pdf" | "image" | "audio";
 
 export interface SectionGrounding {
   section_id: string;
@@ -121,6 +121,12 @@ export interface SectionGrounding {
   char_start: number | null;
   char_end: number | null;
   page: number | null;
+  /**
+   * Solo audio: momento aproximado del que viene la cita, para llevar el reproductor ahí (el
+   * análogo de `page` en PDF). El estado sigue siendo `unverified`: la cita se LOCALIZA en la
+   * transcripción del modelo de percepción, no se verifica contra la señal.
+   */
+  start_s: number | null;
 }
 
 export interface GroundingReport {

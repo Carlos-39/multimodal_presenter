@@ -5,7 +5,10 @@ import { CircleNotch } from "@phosphor-icons/react";
 
 type Status = "idle" | "loading" | "streaming" | "error" | "done";
 
-const ACCEPT = "application/pdf,image/png,image/jpeg,image/webp";
+// Audio incluido: lo procesa la fase de percepción del backend (entrada acústica nativa).
+// M4A queda fuera a propósito (no está en los formatos que acepta el modelo de audio).
+const ACCEPT =
+  "application/pdf,image/png,image/jpeg,image/webp,audio/mpeg,audio/wav,audio/flac,audio/ogg,audio/aac,audio/aiff";
 
 /**
  * Entrada de la transformación: texto y/o archivo (PDF/imagen). Debe haber al menos uno.
