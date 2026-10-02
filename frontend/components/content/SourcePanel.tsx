@@ -93,7 +93,7 @@ export function SourcePanel({
           respuesta del chat). Es necesario para el PDF: su página se fija por el fragmento
           `#page=N` del `src` del <iframe>, y los navegadores NO re-navegan un iframe cuando solo
           cambia el hash — remontarlo lo fuerza a cargar en la página correcta. Robusto ante clics
-          rápidos (React reconcilia al último key) y uniforme para texto/PDF/imagen. */}
+          rápidos (React reconcilia al último key) y uniforme para texto, PDF, imagen y audio. */}
       <div key={sourceKey} className="min-h-0 flex-1 overflow-y-auto">
         {sourceKind === "text" ? (
           <TextSource
