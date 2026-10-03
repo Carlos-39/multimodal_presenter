@@ -27,11 +27,14 @@ export function AccountPanel({
   usuario,
   onUsuario,
   onAbrir,
+  onBorrada,
   onCerrar,
 }: {
   usuario: Usuario | null;
   onUsuario: (u: Usuario | null) => void;
   onAbrir: (id: string) => void;
+  /** Avisa de qué se borró: si era la que se está viendo, deja de haber dónde guardar su chat. */
+  onBorrada: (id: string) => void;
   onCerrar: () => void;
 }) {
   const [email, setEmail] = useState("");
@@ -105,6 +108,7 @@ export function AccountPanel({
             onAbrir={onAbrir}
             onBorrar={async (id) => {
               await borrarPresentacion(id);
+              onBorrada(id);
               setVersion((v) => v + 1);
             }}
             onSalir={async () => {

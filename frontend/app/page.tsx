@@ -24,9 +24,11 @@ import { DEFAULT_DETAIL_LEVEL, visibleSections, type DetailLevel } from "@/lib/d
 import { initTelemetry, track, flush } from "@/lib/telemetry";
 import {
   abrirPresentacion,
+  guardarChat,
   guardarPresentacion,
   quienSoy,
   textoDelDocumento,
+  type MensajeGuardado,
   type Usuario,
 } from "@/lib/account";
 import { AccountPanel } from "@/components/shell/AccountPanel";
@@ -103,12 +105,29 @@ export default function Page() {
   const [cuentaAbierta, setCuentaAbierta] = useState(false);
   const [guardando, setGuardando] = useState<"idle" | "guardando" | "guardada" | "error">("idle");
 
+  // Qué presentación guardada se está viendo, o `null` si lo de pantalla no está guardado. Es lo
+  // único que hace falta para que el chat se persista: sin presentación no hay dónde, y entonces
+  // el chat se comporta igual que antes (que es como corren las sesiones del Hito 8).
+  //
+  // En un ref y no en estado porque lo lee el aviso de "turno terminado" del chat. En estado,
+  // cada vez que cambiara habría que reconstruir ese callback y con él `send`, que el panel de
+  // chat recibe como prop; el ref lo deja estable.
+  const presentacionIdRef = useRef<string | null>(null);
+
   // Ilustraciones de apoyo en camino (post-pase del 5h): solo para avisar en pantalla.
   const [illustrationsPending, setIllustrationsPending] = useState(false);
   const illustrationRunRef = useRef(0); // descarta el resultado de un documento anterior
 
-  // Chat (Hito 6): historial de sesión + streaming + sugerencias, aislado en un hook.
-  const chat = useChat(original);
+  // Chat (Hito 6): historial + streaming + sugerencias, aislado en un hook.
+  //
+  // El hook no sabe que existen cuentas: avisa de cada turno terminado y aquí se decide si hay
+  // dónde guardarlo. Así el chat sin cuenta queda exactamente como estaba, sin una rama que
+  // mantener en dos sitios.
+  const alTerminarTurno = useCallback((mensajes: MensajeGuardado[]) => {
+    const id = presentacionIdRef.current;
+    if (id) void guardarChat(id, mensajes);
+  }, []);
+  const chat = useChat(original, { alTerminarTurno });
 
   // Presentación actual (título + secciones completas) y narración (Hito 5g Parte 3). La narración
   // es independiente del toggle resumen/detallado y de la sección activa; solo se reinicia con un
@@ -303,7 +322,10 @@ export default function Page() {
 
   function resetForRun(text: string | null, file: File | null) {
     olvidarPaginas(original?.file ?? null); // suelta las páginas dibujadas del documento anterior
-    chat.reset(); // nuevo documento → nuevo chat (historial de sesión limpio)
+    chat.reset(); // nuevo documento → nuevo chat (y nada que persistir hasta que se guarde)
+    // Documento nuevo: lo de pantalla ya no es la presentación guardada. Sin esto, la
+    // conversación del documento nuevo se escribiría encima de la del anterior.
+    presentacionIdRef.current = null;
     narration.reset(); // nuevo documento → se descarta la narración cacheada
     setError(null);
     setTitle("");
@@ -328,12 +350,12 @@ export default function Page() {
     setSourceKind(sourceKindOf(file));
   }
 
-  /** Guarda lo que hay en pantalla, con el documento del que salió. */
+  /** Guarda lo que hay en pantalla, con el documento del que salió y la conversación que ya hubo. */
   async function guardar() {
     if (!original || sections.length === 0) return;
     setGuardando("guardando");
     try {
-      await guardarPresentacion(
+      const guardada = await guardarPresentacion(
         title || "Sin título",
         {
           presentation: { title, sections },
@@ -344,6 +366,11 @@ export default function Page() {
         },
         { text: original.text, file: original.file },
       );
+      // Desde aquí cada turno nuevo se va guardando solo. Y lo que YA se había preguntado antes
+      // de pulsar «Guardar» también cuenta: si no, guardar justo después de una conversación
+      // larga la perdería entera, que es el momento en que más duele.
+      presentacionIdRef.current = guardada.id;
+      alTerminarTurno(chat.historialGuardable());
       setGuardando("guardada");
     } catch {
       setGuardando("error");
@@ -381,6 +408,10 @@ export default function Page() {
     setSummaryStatus("idle");
     setGuardando("idle");
     setCuentaAbierta(false);
+    // Después de `resetForRun`, que acaba de vaciar el chat. Vuelve la conversación tal como
+    // quedó, con sus anclas, y desde aquí los turnos nuevos se siguen guardando en esta misma.
+    presentacionIdRef.current = g.id;
+    chat.restaurar(g.chat);
   }
 
   function applyNonStreaming(data: TransformResponse) {
@@ -753,6 +784,12 @@ export default function Page() {
               usuario={usuario}
               onUsuario={setUsuario}
               onAbrir={(id) => void restaurar(id)}
+              onBorrada={(id) => {
+                // Si se borró la que se está viendo, ya no hay dónde guardar su conversación. Sin
+                // esto el chat seguiría mandando turnos contra un id que no existe: se perderían
+                // en silencio, con la app aparentando que los guarda.
+                if (presentacionIdRef.current === id) presentacionIdRef.current = null;
+              }}
               onCerrar={() => setCuentaAbierta(false)}
             />
           </div>

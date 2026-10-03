@@ -9,7 +9,7 @@
  * navegador la manda sola. Eso es justamente lo que impide que un XSS se la lleve.
  */
 
-import type { GroundingReport, Presentation, SourceKind } from "./types";
+import type { ChatResponse, GroundingReport, Presentation, SourceKind } from "./types";
 
 export interface Usuario {
   id: string;
@@ -33,9 +33,23 @@ export interface PayloadGuardado {
   audio_evidence?: string | null;
 }
 
+/**
+ * Un mensaje del chat tal como se guarda.
+ *
+ * Lleva el `ChatResponse` completo y no solo el texto: lo que hay que poder volver a mostrar es la
+ * respuesta CON su ancla. Una respuesta restaurada sin su cita sería una afirmación sin respaldo.
+ */
+export interface MensajeGuardado {
+  rol: "user" | "assistant";
+  texto: string;
+  respuesta?: ChatResponse | null;
+}
+
 export interface PresentacionCompleta extends ResumenPresentacion {
   media_type: string | null;
   payload: PayloadGuardado;
+  /** La conversación viene en la MISMA respuesta: restaurar es un solo acto, no dos. */
+  chat: MensajeGuardado[];
 }
 
 async function json<T>(res: Response): Promise<T> {
@@ -115,6 +129,33 @@ export async function guardarPresentacion(
 
 export async function abrirPresentacion(id: string): Promise<PresentacionCompleta> {
   return json(await fetch(`/api/biblioteca/presentaciones/${id}`));
+}
+
+/**
+ * Deja guardada la conversación de una presentación tal como está ahora.
+ *
+ * Manda el historial COMPLETO y reemplaza al anterior. Mandar solo el turno nuevo sería más
+ * barato, pero lo guardado podría derivar de la conversación real —un reintento duplica un turno,
+ * una petición perdida deja un hueco— y un historial con huecos es peor que ninguno, porque
+ * parece completo.
+ *
+ * No lanza. Perder un turno del historial no puede romper el chat que se está usando: la
+ * conversación en pantalla sigue siendo la verdadera, y el siguiente turno vuelve a mandarla
+ * entera, así que un fallo suelto se corrige solo.
+ */
+export async function guardarChat(
+  presentacionId: string,
+  mensajes: MensajeGuardado[],
+): Promise<void> {
+  try {
+    await fetch(`/api/biblioteca/presentaciones/${presentacionId}/chat`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ mensajes }),
+    });
+  } catch {
+    // ver arriba: se reintenta solo en el turno siguiente
+  }
 }
 
 /**
