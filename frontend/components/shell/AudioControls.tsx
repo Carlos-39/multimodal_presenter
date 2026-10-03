@@ -44,7 +44,11 @@ export function AudioControls({
 
   return (
     <div className="mt-2.5">
-      <div className="flex items-center gap-2">
+      {/* `flex-wrap`: los cuatro botones no encogen (148 px con los huecos) y en el rail la fila
+          mide 190, así que al estado le quedaban 42 px. Una palabra como "documento" no cabe ahí
+          y no se puede partir, de modo que se salía del rail. Con el ancho mínimo de abajo, el
+          estado baja a su propia línea cuando no cabe al lado, y se queda al lado cuando sí. */}
+      <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={playing ? onPause : onPlay}
@@ -93,9 +97,10 @@ export function AudioControls({
           <Stop size={14} weight="fill" aria-hidden />
         </button>
 
-        {/* El estado se muestra COMPLETO (puede ocupar dos líneas): nunca recortado con "…". */}
+        {/* El estado se muestra COMPLETO (puede ocupar dos líneas): nunca recortado con "…". El
+            ancho mínimo es lo que decide si cabe al lado de los botones o baja de línea. */}
         <span
-          className={`min-w-0 flex-1 text-xs leading-4 ${status === "error" ? "text-warning" : "text-muted"}`}
+          className={`min-w-[6.5rem] flex-1 text-xs leading-4 ${status === "error" ? "text-warning" : "text-muted"}`}
           aria-live="polite"
         >
           {!available
