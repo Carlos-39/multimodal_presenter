@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Resp
 from ..config import Settings, get_settings
 from ..pipeline.extraction import prepare_input
 from ..schemas.library import (
+    ActualizacionPresentacion,
     HistorialChat,
     ListaPresentaciones,
     PayloadGuardado,
@@ -107,6 +108,38 @@ async def guardar_endpoint(
         presentaciones = await repo.listar(conn, usuario["id"])
 
     return next(p for p in presentaciones if p.id == presentacion_id)
+
+
+@router.put("/presentaciones/{presentacion_id}", status_code=204)
+async def actualizar_endpoint(
+    presentacion_id: str,
+    cambio: ActualizacionPresentacion,
+    usuario: aiosqlite.Row = Depends(usuario_actual),
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Actualiza una presentación ya guardada en vez de crear otra.
+
+    Pulsar «Guardar» dos veces creaba dos presentaciones con el mismo nombre. Y no bastaba con
+    deshabilitar el botón: lo que hay en pantalla PUEDE crecer después de guardarlo, porque las
+    ilustraciones de apoyo llegan en un post-pase. Quien guarda en cuanto aparecen las secciones y
+    vuelve a pulsar diez segundos más tarde está pidiendo completar lo guardado, no duplicarlo.
+
+    Cuerpo JSON y no formulario: aquí no hay documento que subir, y un payload ilustrado son
+    varios megas, por encima del tope de 1 MB que el multipart impone a los campos que no son
+    archivo.
+
+    No recibe el documento: es el mismo por definición. Si cambiara, sería otra presentación.
+    """
+    async with conectar(settings) as conn:
+        actualizada = await repo.actualizar(
+            conn,
+            usuario["id"],
+            presentacion_id,
+            titulo=cambio.titulo.strip() or "(sin título)",
+            payload=cambio.payload,
+        )
+    if not actualizada:
+        raise HTTPException(status_code=404, detail="No se encontró esa presentación.")
 
 
 @router.get("/presentaciones", response_model=ListaPresentaciones)

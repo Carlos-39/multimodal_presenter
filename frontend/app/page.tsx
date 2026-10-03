@@ -24,6 +24,7 @@ import { DEFAULT_DETAIL_LEVEL, visibleSections, type DetailLevel } from "@/lib/d
 import { initTelemetry, track, flush } from "@/lib/telemetry";
 import {
   abrirPresentacion,
+  actualizarPresentacion,
   deckGuardado as deckDeLaBiblioteca,
   guardarChat,
   guardarDeck,
@@ -377,22 +378,39 @@ export default function Page() {
     setSourceKind(sourceKindOf(file));
   }
 
-  /** Guarda lo que hay en pantalla, con el documento del que salió y la conversación que ya hubo. */
+  /**
+   * Guarda lo que hay en pantalla, con el documento del que salió y la conversación que ya hubo.
+   *
+   * Si esto YA es una presentación guardada, la completa en vez de crear otra. Antes creaba una
+   * gemela con el mismo nombre, y deshabilitar el botón no habría bastado: lo que se ve puede
+   * crecer DESPUÉS de guardarlo, porque las ilustraciones de apoyo llegan en un post-pase. Quien
+   * guarda en cuanto salen las secciones y vuelve a pulsar diez segundos más tarde quiere
+   * completar lo suyo. Y la misma gemela salía por otra puerta: al restaurar una guardada, el
+   * botón volvía a ofrecer «Guardar».
+   */
   async function guardar() {
     if (!original || sections.length === 0) return;
     setGuardando("guardando");
+    const titulo = title || "Sin título";
+    const payload = {
+      presentation: { title, sections },
+      grounding: displayGrounding ?? synthGrounding(sourceKind, entries),
+      chart_notes: chartNotes,
+      transcript,
+      audio_evidence: original.audioEvidence,
+    };
     try {
-      const guardada = await guardarPresentacion(
-        title || "Sin título",
-        {
-          presentation: { title, sections },
-          grounding: displayGrounding ?? synthGrounding(sourceKind, entries),
-          chart_notes: chartNotes,
-          transcript,
-          audio_evidence: original.audioEvidence,
-        },
-        { text: original.text, file: original.file },
-      );
+      const yaGuardada = presentacionIdRef.current;
+      if (yaGuardada) {
+        await actualizarPresentacion(yaGuardada, titulo, payload);
+        setGuardando("guardada");
+        return;
+      }
+
+      const guardada = await guardarPresentacion(titulo, payload, {
+        text: original.text,
+        file: original.file,
+      });
       // Desde aquí cada turno nuevo se va guardando solo. Y lo que YA se había preguntado antes
       // de pulsar «Guardar» también cuenta: si no, guardar justo después de una conversación
       // larga la perdería entera, que es el momento en que más duele.

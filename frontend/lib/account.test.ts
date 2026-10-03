@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { guardarChat, guardarNarracion, textoDelDocumento, urlDeLaNarracion } from "./account";
+import {
+  actualizarPresentacion,
+  guardarChat,
+  guardarNarracion,
+  textoDelDocumento,
+  urlDeLaNarracion,
+} from "./account";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -76,5 +82,41 @@ describe("artefactos guardados", () => {
     expect(urlDeLaNarracion("pre-1")).toBe(
       "/api/biblioteca/presentaciones/pre-1/artefactos/narracion",
     );
+  });
+});
+
+describe("actualizarPresentacion", () => {
+  const PAYLOAD = {
+    presentation: { title: "t", sections: [] },
+    grounding: {
+      source_kind: "text" as const,
+      sections: [],
+      total_sections: 0,
+      verified_sections: 0,
+      unverified_sections: 0,
+      not_found_sections: 0,
+    },
+  };
+
+  it("va por PUT a la presentación concreta y no manda el documento", async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 204 }) as unknown as Response);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await actualizarPresentacion("pre-1", "Mi título", PAYLOAD);
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/biblioteca/presentaciones/pre-1");
+    expect(init.method).toBe("PUT");
+    // JSON y no formulario: un payload con ilustraciones son varios megas, y los campos de
+    // formulario que no son archivo están topados en 1 MB. Además el documento no viaja: es el
+    // mismo por definición, y si cambiara sería otra presentación.
+    const cuerpo = JSON.parse(init.body as string);
+    expect(Object.keys(cuerpo).sort()).toEqual(["payload", "titulo"]);
+  });
+
+  it("sí lanza si falla, al revés que el chat o los artefactos", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404 }) as unknown as Response));
+    // Aquí el usuario PULSÓ guardar y está mirando el botón: tiene que poder decirle que no pudo.
+    await expect(actualizarPresentacion("pre-1", "t", PAYLOAD)).rejects.toThrow();
   });
 });

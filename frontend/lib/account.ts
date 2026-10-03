@@ -150,6 +150,31 @@ export async function guardarPresentacion(
   return json(await fetch("/api/biblioteca/presentaciones", { method: "POST", body: form }));
 }
 
+/**
+ * Completa una presentación ya guardada en vez de crear otra.
+ *
+ * Pulsar «Guardar» dos veces creaba dos presentaciones con el mismo nombre. Deshabilitar el botón
+ * no habría bastado: lo que hay en pantalla puede CRECER después de guardarlo, porque las
+ * ilustraciones de apoyo llegan en un post-pase. Quien guarda en cuanto salen las secciones y
+ * vuelve a pulsar diez segundos más tarde quiere completar lo suyo, no duplicarlo.
+ *
+ * No manda el documento: es el mismo por definición. Si cambiara, sería otra presentación.
+ */
+export async function actualizarPresentacion(
+  id: string,
+  titulo: string,
+  payload: PayloadGuardado,
+): Promise<void> {
+  // JSON y no formulario: aquí no hay documento que subir, y así el payload no pasa por el tope
+  // de 1 MB que el multipart impone a los campos que no son archivo.
+  const res = await fetch(`/api/biblioteca/presentaciones/${id}`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ titulo, payload }),
+  });
+  if (!res.ok) throw new Error(`Error ${res.status}`);
+}
+
 export async function abrirPresentacion(id: string): Promise<PresentacionCompleta> {
   return json(await fetch(`/api/biblioteca/presentaciones/${id}`));
 }
