@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef } from "react";
 import { X } from "@phosphor-icons/react";
 import { formatTimestamp } from "@/lib/audio";
 import { highlightSegments } from "@/lib/highlight";
-import type { GroundingStatus, SourceKind, SourceReference } from "@/lib/types";
+import type { CitedRegion, GroundingStatus, SourceKind, SourceReference } from "@/lib/types";
 import { ImageExplanation } from "./ImageExplanation";
+import { PdfRegionView } from "./PdfRegionView";
 
 /**
  * Panel de documento fuente (atribución interactiva, Punto 4 · Hito 5c). Lo comparten la
@@ -37,6 +38,7 @@ interface SourcePanelProps {
   status: GroundingStatus;
   sourceKey: string; // reancla el resaltado al cambiar de fuente (sección o chat)
   startS?: number | null; // solo audio: segundo en el que arranca la cita
+  region?: CitedRegion | null; // solo PDF: dónde está la cita dentro de la página
   transcript?: string | null; // solo audio: lo que oyó la fase de percepción
   onClose: () => void;
 }
@@ -48,6 +50,7 @@ export function SourcePanel({
   status,
   sourceKey,
   startS = null,
+  region = null,
   transcript = null,
   onClose,
 }: SourcePanelProps) {
@@ -103,7 +106,25 @@ export function SourcePanel({
             sourceKey={sourceKey}
           />
         ) : sourceKind === "pdf" ? (
-          <PdfSource url={fileUrl} page={source.page} fileName={original.file?.name ?? null} />
+          // Con región se recuadra la cita; sin ella, el visor de siempre (fidelidad de página).
+          // El <iframe> no se toca: sigue siendo la salida para todo lo que no se pudo localizar,
+          // y desde él se abre o se descarga el PDF completo.
+          region && source.page && original.file ? (
+            <PdfRegionView
+              file={original.file}
+              page={source.page}
+              region={region}
+              fallback={
+                <PdfSource
+                  url={fileUrl}
+                  page={source.page}
+                  fileName={original.file?.name ?? null}
+                />
+              }
+            />
+          ) : (
+            <PdfSource url={fileUrl} page={source.page} fileName={original.file?.name ?? null} />
+          )
         ) : sourceKind === "audio" ? (
           <AudioSource
             url={fileUrl}

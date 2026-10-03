@@ -4,7 +4,7 @@ import { useCallback, useId, useState, useSyncExternalStore } from "react";
 import { CornersIn, CornersOut, Sparkle } from "@phosphor-icons/react";
 import { useSlideKeys } from "@/hooks/useSlideKeys";
 import { slideLayout } from "@/lib/deckLayout";
-import type { GeneratedDeck, GroundingStatus, SourceReference } from "@/lib/types";
+import type { CitedRegion, GeneratedDeck, GroundingStatus, SourceReference } from "@/lib/types";
 import { GeneratedFigure } from "./GeneratedFigure";
 import { SlideNav } from "./SlideNav";
 import { isAnchored } from "@/lib/grounding";
@@ -23,7 +23,12 @@ import { SourceCitation, UnanchoredNotice } from "./SourceCitation";
  */
 interface DeckViewProps {
   deck: GeneratedDeck;
-  onOpenSource: (source: SourceReference, status: GroundingStatus, startS: number | null) => void;
+  onOpenSource: (
+    source: SourceReference,
+    status: GroundingStatus,
+    startS: number | null,
+    region: CitedRegion | null,
+  ) => void;
   initialIndex?: number; // diapositiva en la que se abre (0-based)
 }
 
@@ -74,9 +79,14 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
   }
 
   // El panel de fuente vive fuera de la pantalla completa: se sale primero para poder verlo.
-  function openSource(source: SourceReference, status: GroundingStatus, startS: number | null) {
+  function openSource(
+    source: SourceReference,
+    status: GroundingStatus,
+    startS: number | null,
+    region: CitedRegion | null,
+  ) {
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
-    onOpenSource(source, status, startS);
+    onOpenSource(source, status, startS, region);
   }
 
   return (
@@ -170,7 +180,7 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
               {slide.is_synthesis ? (
                 <span className="text-muted">Síntesis del documento, sin cita exacta</span>
               ) : slide.source && isAnchored(slide.grounding) ? (
-                <SourceCitation onOpen={() => openSource(slide.source!, slide.grounding, slide.start_s)}>
+                <SourceCitation onOpen={() => openSource(slide.source!, slide.grounding, slide.start_s, slide.region ?? null)}>
                   {truncate(slide.source.quote)}
                 </SourceCitation>
               ) : (

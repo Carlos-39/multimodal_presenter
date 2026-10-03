@@ -101,6 +101,8 @@ export interface GeneratedSlide {
   grounding: GroundingStatus;
   /** Solo audio: momento de la cita, para que el reproductor del panel arranque ahí. */
   start_s: number | null;
+  /** Solo PDF: dónde está la cita dentro de la página. Ausente o `null` = fidelidad de página. */
+  region?: CitedRegion | null;
   is_synthesis: boolean;
   illustration: GeneratedIllustration | null;
 }
@@ -129,6 +131,30 @@ export interface SectionGrounding {
    * transcripción del modelo de percepción, no se verifica contra la señal.
    */
   start_s: number | null;
+  /** Solo PDF con capa de texto: dónde está la cita dentro de `page`. `null` = solo la página. */
+  region?: CitedRegion | null;
+}
+
+/** Un recuadro dentro de la página, en fracciones 0-1 con origen arriba-izquierda.
+ *
+ * En fracciones y no en píxeles: aquí solo se multiplica por el tamaño del contenedor. Las
+ * escalas y la rotación de la página ya las resolvió el backend, con el mismo motor que dibuja
+ * la imagen, así que el recuadro no puede descuadrarse respecto a lo que se ve. */
+export interface RegionBox {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/** Dónde está la cita DENTRO de la página citada. Un recuadro por renglón.
+ *
+ * No existe un valor "página" aquí: la fidelidad de página (lo de siempre, llevar a la página sin
+ * señalar dentro) es la AUSENCIA de este objeto. `approximate` obliga a decirlo en la interfaz —
+ * marcar como exacto algo aproximado sería la sobre-afirmación que eliminó el Hito 8A.1. */
+export interface CitedRegion {
+  quality: "exact" | "approximate";
+  boxes: RegionBox[];
 }
 
 export interface GroundingReport {
@@ -217,6 +243,8 @@ export interface ChatResponse {
   clarification?: ClarificationNeeded | null;
   /** Solo audio: momento de la cita, para que el reproductor del panel salte ahí. */
   start_s?: number | null;
+  /** Solo PDF: dónde está la cita dentro de la página. */
+  region?: CitedRegion | null;
 }
 
 /** Eventos SSE de POST /chat/stream. Texto en vivo; el ancla llega en `done`. */
