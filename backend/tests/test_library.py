@@ -58,13 +58,23 @@ def _registra(client: TestClient, email: str) -> None:
     assert r.status_code == 201
 
 
-def _guarda(client: TestClient, titulo: str = "Duendes rojos") -> dict:
-    r = client.post(
-        "/biblioteca/presentaciones",
-        data={"payload": json.dumps(PAYLOAD), "titulo": titulo, "text": TEXTO},
-    )
+def _guarda(client: TestClient, titulo: str = "Duendes rojos", payload: dict | None = None) -> dict:
+    r = _post_guardar(client, titulo, payload or PAYLOAD)
     assert r.status_code == 201, r.text
     return r.json()
+
+
+def _post_guardar(client: TestClient, titulo: str, payload: dict):
+    """El payload viaja como PARTE DE ARCHIVO, no como campo.
+
+    No es un detalle de implementación: como campo, el analizador de multipart lo topa en 1 MB y
+    una presentación con ilustraciones (son data URIs, varios megas) no se podía guardar.
+    """
+    return client.post(
+        "/biblioteca/presentaciones",
+        data={"titulo": titulo, "text": TEXTO},
+        files={"payload": ("payload.json", json.dumps(payload), "application/json")},
+    )
 
 
 # ─────────────────────────────────────────────────────────────
@@ -120,14 +130,7 @@ def test_varias_presentaciones_a_la_vez(client: TestClient) -> None:
 def test_un_payload_corrupto_no_entra(client: TestClient) -> None:
     """Validar al guardar y no al leer: lo corrupto es fácil de no notar hasta meses después."""
     _registra(client, "a@x.com")
-    r = client.post(
-        "/biblioteca/presentaciones",
-        data={
-            "payload": json.dumps({"presentation": "esto no es una presentación"}),
-            "titulo": "mala",
-            "text": TEXTO,
-        },
-    )
+    r = _post_guardar(client, "mala", {"presentation": "esto no es una presentación"})
     assert r.status_code == 422
 
 
@@ -186,11 +189,7 @@ def test_la_biblioteca_exige_cuenta(client: TestClient, metodo: str, ruta: str) 
 
 
 def test_guardar_exige_cuenta(client: TestClient) -> None:
-    r = client.post(
-        "/biblioteca/presentaciones",
-        data={"payload": json.dumps(PAYLOAD), "titulo": "t", "text": TEXTO},
-    )
-    assert r.status_code == 401
+    assert _post_guardar(client, "t", PAYLOAD).status_code == 401
 
 
 # ─────────────────────────────────────────────────────────────
@@ -574,3 +573,41 @@ def test_si_el_archivo_desaparece_se_responde_que_no_hay(client: TestClient) -> 
     (resolve_data_dir(get_settings()) / "narraciones" / f"{pid}.mp3").unlink()
 
     assert client.get(_ruta_narracion(pid)).status_code == 404
+
+
+# ─────────────────────────────────────────────────────────────
+# El payload grande: la regresión que de verdad dolía
+#
+# Las ilustraciones de apoyo son data URIs. Cuatro de ellas son ~3,5 MB, y el analizador de
+# multipart topa en 1 MB las partes que NO son archivo. Mientras el payload viajó como campo de
+# formulario, guardar una presentación ilustrada respondía 400 y la interfaz solo decía "No se
+# pudo guardar". Se vio probando contra el sistema real, no con tests: los de entonces usaban
+# payloads de laboratorio, de unos pocos cientos de bytes.
+# ─────────────────────────────────────────────────────────────
+def _payload_ilustrado(megas: int = 3) -> dict:
+    """Un payload del tamaño real de una presentación con ilustraciones."""
+    datos = json.loads(json.dumps(PAYLOAD))
+    datos["presentation"]["sections"][0]["illustration"] = {
+        "kind": "generated_illustration",
+        # Un data URI de verdad, del tamaño de verdad.
+        "image_url": "data:image/jpeg;base64," + ("A" * (megas * 1024 * 1024)),
+        "alt": "Un duende rojo sobre una tormenta",
+    }
+    return datos
+
+
+def test_se_puede_guardar_una_presentacion_con_ilustraciones(client: TestClient) -> None:
+    _registra(client, "a@x.com")
+    r = _post_guardar(client, "Con ilustraciones", _payload_ilustrado())
+    assert r.status_code == 201, f"un payload de 3 MB no entró: {r.status_code}"
+
+    completa = client.get(f"/biblioteca/presentaciones/{r.json()['id']}").json()
+    url = completa["payload"]["presentation"]["sections"][0]["illustration"]["image_url"]
+    assert len(url) > 3 * 1024 * 1024, "la ilustración se guardó recortada"
+
+
+def test_un_payload_desmesurado_se_rechaza(client: TestClient) -> None:
+    """Sin tope, un cuerpo enorme llenaría el disco antes de que nadie lo valide."""
+    _registra(client, "a@x.com")
+    r = _post_guardar(client, "enorme", _payload_ilustrado(megas=26))
+    assert r.status_code == 413

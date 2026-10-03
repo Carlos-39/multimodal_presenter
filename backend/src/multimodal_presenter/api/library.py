@@ -34,6 +34,10 @@ from .routes import parse_document_inputs
 
 router = APIRouter(prefix="/biblioteca", tags=["biblioteca"])
 
+MAX_PAYLOAD_BYTES = 25 * 1024 * 1024
+"""Tope del payload guardado. Una presentación con cuatro ilustraciones ronda los 4 MB (son data
+URIs); 25 deja aire de sobra y evita que un cuerpo enorme llene el disco antes de validarlo."""
+
 MAX_NARRACION_BYTES = 25 * 1024 * 1024
 """Tope del mp3. Una narración de un documento normal ronda el megabyte; 25 deja muchísimo aire
 y evita que un cuerpo enorme llene el disco antes de que nadie lo mire."""
@@ -52,7 +56,7 @@ def _parece_mp3(datos: bytes) -> bool:
 
 @router.post("/presentaciones", response_model=ResumenPresentacion, status_code=201)
 async def guardar_endpoint(
-    payload: str = Form(...),
+    payload: UploadFile = File(...),
     titulo: str = Form(...),
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
@@ -61,11 +65,19 @@ async def guardar_endpoint(
 ) -> ResumenPresentacion:
     """Guarda una presentación junto con el documento del que salió.
 
+    El payload viaja como PARTE DE ARCHIVO, no como campo de formulario. No es capricho: el
+    analizador de multipart topa en 1 MB las partes que no son archivo, y un payload con
+    ilustraciones son varios megas porque son data URIs. Como campo, guardar una presentación
+    ilustrada fallaba con un 400 y la interfaz solo decía "No se pudo guardar".
+
     El payload se VALIDA aquí contra el contrato antes de escribirlo. Guardar algo corrupto es
     fácil de no notar hasta meses después, cuando ya no se puede reconstruir qué pasó.
     """
+    crudo = await payload.read()
+    if len(crudo) > MAX_PAYLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="La presentación es demasiado grande.")
     try:
-        datos = PayloadGuardado.model_validate_json(payload)
+        datos = PayloadGuardado.model_validate_json(crudo)
     except Exception as exc:  # noqa: BLE001 — un payload inválido es error de quien llama
         raise HTTPException(status_code=422, detail="La presentación no es válida.") from exc
 

@@ -136,7 +136,15 @@ export async function guardarPresentacion(
 ): Promise<ResumenPresentacion> {
   const form = new FormData();
   form.append("titulo", titulo);
-  form.append("payload", JSON.stringify(payload));
+  // El payload va como ARCHIVO, no como campo de texto. Los campos de formulario que no son
+  // archivo están topados en 1 MB por el analizador de multipart, y una presentación con
+  // ilustraciones son varios megas porque son data URIs: como campo, guardarla fallaba con un 400
+  // y aquí solo se veía "No se pudo guardar".
+  form.append(
+    "payload",
+    new Blob([JSON.stringify(payload)], { type: "application/json" }),
+    "payload.json",
+  );
   if (documento.text) form.append("text", documento.text);
   if (documento.file) form.append("file", documento.file);
   return json(await fetch("/api/biblioteca/presentaciones", { method: "POST", body: form }));
