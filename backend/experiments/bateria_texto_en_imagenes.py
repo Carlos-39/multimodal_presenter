@@ -33,10 +33,16 @@ from pathlib import Path
 import httpx
 
 from multimodal_presenter.config import get_settings
-from multimodal_presenter.pipeline.illustration import (
-    _IDEOGRAM_NEGATIVE,
-    _IDEOGRAM_URL,
-    _IMAGE_STYLE,
+from multimodal_presenter.pipeline.illustration import _IDEOGRAM_NEGATIVE, _IDEOGRAM_URL
+
+# Copia CONGELADA del bloque de estilo que corría antes del diagnóstico. Vive aquí y no se
+# importa porque producción ya no lo tiene: la variante A existe para reproducir el "antes", y un
+# "antes" que cambiara solo con que cambie el código no serviría para comparar nada.
+_IMAGE_STYLE_HISTORICO = (
+    " Estilo: ilustración educativa clara y DETALLADA que explique el concepto mediante formas, "
+    "colores, flechas y composición. SIN NINGÚN TEXTO, palabra, número ni etiqueta dentro de la "
+    "imagen (las explicaciones van aparte). Fondo claro, limpio, alta legibilidad visual; no un "
+    "ícono abstracto ni meramente decorativo."
 )
 
 SALIDA = Path(__file__).resolve().parent / "outputs" / "texto_en_imagenes"
@@ -71,12 +77,23 @@ _STYLE_TYPE_B = "GENERAL"  # explícito: DESIGN es el de pósters, el que más t
 
 def variante_a(image_prompt: str) -> tuple[str, str, str | None]:
     """Lo que el sistema envía HOY."""
-    return image_prompt + _IMAGE_STYLE, _IDEOGRAM_NEGATIVE, None
+    return image_prompt + _IMAGE_STYLE_HISTORICO, _IDEOGRAM_NEGATIVE, None
 
 
 def variante_b(image_prompt: str) -> tuple[str, str, str | None]:
-    """El arreglo propuesto."""
+    """El primer arreglo propuesto (solo prohibía TEXTO)."""
     return _ESTILO_B_PREFIJO + image_prompt, _NEGATIVO_B, _STYLE_TYPE_B
+
+
+def variante_c(image_prompt: str) -> tuple[str, str, str | None]:
+    """La regla ENDURECIDA, tal como quedó en producción.
+
+    Se importa del código real en vez de copiarla aquí: si el prompt de producción cambia, esta
+    batería mide el nuevo, no una foto vieja de él.
+    """
+    from multimodal_presenter.pipeline.illustration import _IMAGE_STYLE_PREFIX
+
+    return _IMAGE_STYLE_PREFIX + image_prompt, _NEGATIVO_B, _STYLE_TYPE_B
 
 
 # ── Contenidos de prueba: variados y del tipo que el sistema procesa de verdad ──
@@ -168,19 +185,15 @@ async def genera_ideogram(prompt: str, negativo: str, style_type: str | None) ->
 
 
 async def genera_gemini(prompt: str) -> bytes:
-    """Gemini no tiene `negative_prompt`: la restricción va toda en el prompt (ya va primero)."""
-    from google import genai
+    """Usa el generador REAL de producción, para medir lo que de verdad corre.
 
-    settings = get_settings()
-    cliente = genai.Client(api_key=settings.google_api_key)
-    respuesta = await asyncio.to_thread(
-        cliente.models.generate_content, model=MODELO_GEMINI, contents=prompt
-    )
-    for parte in respuesta.candidates[0].content.parts:
-        datos = getattr(parte, "inline_data", None)
-        if datos and datos.data:
-            return datos.data if isinstance(datos.data, bytes) else base64.b64decode(datos.data)
-    raise RuntimeError("Gemini no devolvió imagen")
+    El prompt ya se construyó arriba, así que se llama a `_gemini_image` con él tal cual; lo que
+    aporta es la proporción y el tamaño fijados, que es como sale en la aplicación.
+    """
+    from multimodal_presenter.pipeline.illustration import _gemini_image
+
+    uri = await _gemini_image(get_settings(), prompt)
+    return base64.b64decode(uri.split(",", 1)[1])
 
 
 def carga_indice() -> dict:
@@ -212,6 +225,7 @@ async def main() -> None:
         ("ideogram_A", "ideogram", variante_a),
         ("ideogram_B", "ideogram", variante_b),
         ("gemini_B", "gemini", variante_b),
+        ("gemini_C", "gemini", variante_c),  # la regla endurecida (sin referencias huérfanas)
     ]
 
     for etiqueta, proveedor, construye in tandas:

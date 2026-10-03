@@ -35,9 +35,11 @@ juez = Agent(
     system_prompt=(
         "Examinas una ilustración generada por IA. La regla del sistema es que la imagen NO debe "
         "contener NINGÚN texto escrito: ni palabras, ni etiquetas, ni títulos, ni leyendas. "
-        "Reporta con precisión si aparece texto, cuántas palabras o grupos de letras se ven, y si "
-        "están mal escritas o son ilegibles. Los números sueltos y los símbolos matemáticos (+, -, "
-        "flechas) NO cuentan como texto. Sé literal: transcribe lo que de verdad se lee."
+        "La regla es más estricta que 'sin texto': la imagen debe entenderse SOLA, así que "
+        "tampoco puede llevar marcas que remitan a una leyenda que no existe — numeración de "
+        "pasos como (1) (2) (3), letras clave, o líneas guía que apuntan a un hueco. Cuenta esas "
+        "marcas igual que el texto. Las flechas de dirección, los símbolos de carga (+, -) y los "
+        "colores NO cuentan: se entienden sin clave. Sé literal: transcribe lo que de verdad se ve."
     ),
 )
 
@@ -70,7 +72,7 @@ async def main() -> None:
     )
 
     print("\n── Resumen ──")
-    for tanda in ("ideogram_A", "ideogram_B", "gemini_B"):
+    for tanda in ("ideogram_A", "ideogram_B", "gemini_B", "gemini_C"):
         de_la_tanda = {k: v for k, v in resultados.items() if k.startswith(tanda + "__")}
         con = sum(1 for v in de_la_tanda.values() if v["hay_texto"])
         print(f"{tanda:<12} con texto: {con}/{len(de_la_tanda)}")
