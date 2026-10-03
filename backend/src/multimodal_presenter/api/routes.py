@@ -24,6 +24,7 @@ from ..pipeline.extraction import prepare_input
 from ..pipeline.illustration import has_image_provider, illustrate
 from ..pipeline.image_explanation import explain_image
 from ..pipeline.narration import narrate
+from ..pipeline.pdf_locator import render_pagina
 from ..pipeline.perception import is_audio
 from ..pipeline.streaming import transform_stream
 from ..pipeline.summary import summarize
@@ -347,6 +348,48 @@ async def narration_endpoint(
     except Exception as exc:  # fallo del proveedor TTS / red → error visible, no silencio
         raise HTTPException(status_code=502, detail="No se pudo generar la narración.") from exc
     return Response(content=audio, media_type="audio/mpeg")
+
+
+@router.post(
+    "/pdf-page",
+    responses={200: {"content": {"image/png": {}}}},
+    response_class=Response,
+)
+async def pdf_page_endpoint(
+    file: UploadFile | None = File(default=None),
+    page: int = Form(...),
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    """Dibuja UNA página del PDF como PNG, para el visor con resaltado de región.
+
+    La dibuja el MISMO motor que calculó las regiones. Esa es la razón de renderizar aquí en vez
+    de en el navegador: con un motor que dibuja y otro que mide, cualquier desacuerdo sobre el
+    recorte o la rotación de la página saldría como un recuadro descuadrado — y el recuadro es lo
+    único que esta pieza promete.
+
+    El archivo viaja en la petición, como en el chat, el deck y la narración: el backend no
+    guarda documentos. El frontend memoriza la imagen por página, así que abrir y cerrar la misma
+    fuente no vuelve a subir nada.
+    """
+    _text, binary, media_type, _filename = await _parse_inputs(None, file, settings)
+    if binary is None or media_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="Se requiere un archivo PDF.")
+    if page < 1:
+        raise HTTPException(status_code=400, detail="La página debe ser 1 o mayor.")
+    try:
+        imagen = render_pagina(binary, page)
+    except IndexError as exc:
+        raise HTTPException(
+            status_code=404, detail="Esa página no existe en el documento."
+        ) from exc
+    except Exception as exc:  # noqa: BLE001 — un PDF que no se puede dibujar es error visible
+        raise HTTPException(status_code=502, detail="No se pudo dibujar la página.") from exc
+    # Inmutable: la misma página del mismo PDF siempre da la misma imagen.
+    return Response(
+        content=imagen,
+        media_type="image/png",
+        headers={"Cache-Control": "private, max-age=3600, immutable"},
+    )
 
 
 @router.post("/explain-image", response_model=ImageExplanationResponse)
