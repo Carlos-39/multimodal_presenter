@@ -137,7 +137,10 @@ export function useNarration(presentation: NarrationInput) {
     audio.pause();
     audio.currentTime = 0;
     setCurrentTime(0);
-    setStatus("paused");
+    // `idle`, no `paused`: detener devuelve al principio, así que el control debe decir
+    // "Pulsa para escuchar" y no "En pausa" con el reloj en 0:00. El audio sigue cacheado —
+    // `play` lo reusa por `cacheRef`, sin volver a pedirlo al TTS.
+    setStatus("idle");
   }, []);
 
   return { status, available, currentTime, duration, play, pause, stop, seek, skip, reset };
