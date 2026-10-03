@@ -24,6 +24,8 @@ se hace OCR: es una decisión de alcance consciente.
 from __future__ import annotations
 
 import ctypes
+import io
+import re
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -55,6 +57,13 @@ UMBRAL_DIFUSO = 90.0
 # sensación de precisión. Si el pasaje hallado es así de grande, es más honesto degradar.
 MAX_LINEAS = 12
 MAX_FRACCION_AREA = 0.40
+
+# Puntos suspensivos con los que un modelo marca que elidió parte de la cita: "...", "…" y sus
+# variantes entre corchetes, que es como se cita en textos académicos.
+_ELIPSIS = re.compile(r"\s*(?:\[\s*(?:\.{3,}|…)\s*\]|\.{3,}|…)\s*")
+
+# Longitud mínima de un fragmento para buscarlo por separado. Por debajo casa en cualquier parte.
+MIN_CHARS_FRAGMENTO = 12
 
 # Por debajo de esto la página no tiene capa de texto utilizable (escaneada, o solo imágenes):
 # no hay nada que localizar y se degrada limpio, sin intentarlo.
@@ -154,7 +163,24 @@ def _normalizar(texto: str) -> tuple[str, list[int]]:
     return "".join(salida), mapa
 
 
-def _rango_normalizado(texto_norm: str, cita_norm: str) -> tuple[int, int, Calidad] | None:
+def _fragmentos_de_cita(cita: str) -> list[str]:
+    """Parte la cita por puntos suspensivos y normaliza cada trozo.
+
+    Se descartan los trozos demasiado cortos: un fragmento de pocos caracteres casa en cualquier
+    sitio de la página, y recuadrar un sitio cualquiera es peor que no recuadrarlo. Si al filtrar
+    no queda ninguno, se devuelve la cita entera y la escalera decide como siempre.
+    """
+    trozos = [_normalizar(t)[0] for t in _ELIPSIS.split(cita)]
+    utiles = [t for t in trozos if len(t) >= MIN_CHARS_FRAGMENTO]
+    if utiles:
+        return utiles
+    entera = _normalizar(cita)[0]
+    return [entera] if entera else []
+
+
+def _rango_normalizado(
+    texto_norm: str, cita_norm: str, desde: int = 0
+) -> tuple[int, int, Calidad] | None:
     """La escalera de matching, sobre el texto ya normalizado.
 
     Exacto primero (barato y el caso común), difuso después. El peldaño canónico no aparece como
@@ -165,14 +191,14 @@ def _rango_normalizado(texto_norm: str, cita_norm: str) -> tuple[int, int, Calid
     if not cita_norm:
         return None
 
-    idx = texto_norm.find(cita_norm)
+    idx = texto_norm.find(cita_norm, desde)
     if idx != -1:
         return idx, idx + len(cita_norm), "exact"
 
-    alineacion = fuzz.partial_ratio_alignment(cita_norm, texto_norm)
+    alineacion = fuzz.partial_ratio_alignment(cita_norm, texto_norm[desde:])
     if alineacion is None or alineacion.score < UMBRAL_DIFUSO:
         return None
-    inicio, fin = alineacion.dest_start, alineacion.dest_end
+    inicio, fin = desde + alineacion.dest_start, desde + alineacion.dest_end
     if fin <= inicio:
         return None
     return inicio, fin, "approximate"
@@ -257,24 +283,29 @@ class PdfLocator:
             if total < MIN_CHARS_CAPA_TEXTO:
                 return Localizacion.solo_pagina()  # sin capa de texto: nada que localizar
 
-            texto = textpage.get_text_range()
-            texto_norm, mapa = _normalizar(texto)
-            cita_norm, _ = _normalizar(cita)
-            hallado = _rango_normalizado(texto_norm, cita_norm)
-            if hallado is None:
-                return Localizacion.solo_pagina()
-            ini_norm, fin_norm, calidad = hallado
+            texto_norm, mapa = _normalizar(textpage.get_text_range())
 
-            # De vuelta a índices del texto original, que son los mismos de las cajas.
-            ini = mapa[ini_norm]
-            fin = mapa[min(fin_norm, len(mapa)) - 1] + 1
-
+            # Una cita con puntos suspensivos se busca POR FRAGMENTOS. El modelo elide la parte
+            # de en medio a menudo ("...a una altitud tan alta... que no representan..."), y
+            # buscarla entera la hunde: medido sobre un caso real, 78 puntos frente al umbral de
+            # 90, así que se perdía una localización que era exacta. Partirla no relaja nada: la
+            # elipsis DICE que ahí hay un hueco, y recuadrar los dos trozos sin lo de en medio es
+            # más fiel que un recuadro único que lo abarcaría todo.
+            fragmentos = _fragmentos_de_cita(cita)
             cajas: list[tuple[float, float, float, float]] = []
-            for i in range(ini, min(fin, total)):
-                izq, abajo, der, arriba = textpage.get_charbox(i)
-                if der <= izq or arriba <= abajo:
-                    continue  # espacios y caracteres sin geometría propia
-                cajas.append((izq, abajo, der, arriba))
+            calidad: Calidad = "exact"
+            desde = 0
+            for fragmento in fragmentos:
+                hallado = _rango_normalizado(texto_norm, fragmento, desde)
+                if hallado is None:
+                    return Localizacion.solo_pagina()
+                ini_norm, fin_norm, calidad_fragmento = hallado
+                if calidad_fragmento == "approximate":
+                    calidad = "approximate"  # basta uno aproximado para no prometer exactitud
+                # Los fragmentos se buscan EN ORDEN: "A ... B" significa que B va después de A.
+                # Sin esto, un trozo corto podría casar antes y señalar al revés.
+                desde = fin_norm
+                cajas.extend(self._cajas_de_rango(textpage, mapa, total, ini_norm, fin_norm))
 
             lineas = _agrupar_en_lineas(cajas)
             if not lineas:
@@ -290,6 +321,21 @@ class PdfLocator:
             return Localizacion(calidad=calidad, regiones=regiones)
         except Exception:  # noqa: BLE001 — un PDF roto degrada, no tumba la generación
             return Localizacion.solo_pagina()
+
+    @staticmethod
+    def _cajas_de_rango(
+        textpage: object, mapa: list[int], total: int, ini_norm: int, fin_norm: int
+    ) -> list[tuple[float, float, float, float]]:
+        """Cajas de los caracteres del rango, ya de vuelta en índices del texto ORIGINAL."""
+        ini = mapa[ini_norm]
+        fin = mapa[min(fin_norm, len(mapa)) - 1] + 1
+        cajas: list[tuple[float, float, float, float]] = []
+        for i in range(ini, min(fin, total)):
+            izq, abajo, der, arriba = textpage.get_charbox(i)  # type: ignore[attr-defined]
+            if der <= izq or arriba <= abajo:
+                continue  # espacios y caracteres sin geometría propia
+            cajas.append((izq, abajo, der, arriba))
+        return cajas
 
     def _a_regiones(self, page: pdfium.PdfPage, lineas: list[list[float]]) -> list[Region]:
         """Pasa los renglones de coordenadas de página a 0-1 sobre la página tal como se ve.
@@ -369,3 +415,34 @@ def region_de_cita(
         quality=hallazgo.calidad,
         boxes=[RegionBox(x0=r.x0, y0=r.y0, x1=r.x1, y1=r.y1) for r in hallazgo.regiones],
     )
+
+
+# Escala del render de una página. 2x da texto legible al tamaño del panel sin que el PNG pese
+# de más; el recuadro no depende de esto (viaja en fracciones), así que cambiarlo no lo descuadra.
+ESCALA_RENDER = 2
+
+
+def render_pagina(pdf: bytes, pagina: int, escala: int = ESCALA_RENDER) -> bytes:
+    """Dibuja UNA página como PNG. `pagina` es 1-based, igual que `SourceReference.page`.
+
+    Lo dibuja el MISMO motor que calculó las regiones. Esa es toda la razón de renderizar aquí en
+    vez de en el navegador: con dos motores distintos (uno que dibuja y otro que mide) cualquier
+    desacuerdo sobre el recorte o la rotación de la página aparecería como un recuadro
+    descuadrado, y el recuadro es justamente lo que esta pieza promete.
+    """
+    documento = pdfium.PdfDocument(pdf)
+    try:
+        indice = pagina - 1
+        if indice < 0 or indice >= len(documento):
+            raise IndexError(f"la página {pagina} no existe en este documento")
+        bitmap = documento[indice].render(scale=escala)
+        buffer = io.BytesIO()
+        # PNG (sin pérdida) y no WebP/JPEG a propósito: esta imagen existe para que alguien LEA
+        # la cita, así que no se arriesgan artefactos en el texto por ahorrar bytes. WebP la
+        # dejaría en la mitad (177 KB frente a 333) si algún día el ancho de banda importa.
+        # `compress_level=6` es el punto de equilibrio medido: mismo tamaño que `optimize=True`
+        # en una quinta parte del tiempo.
+        bitmap.to_pil().convert("RGB").save(buffer, format="PNG", compress_level=6)
+        return buffer.getvalue()
+    finally:
+        documento.close()

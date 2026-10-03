@@ -296,3 +296,42 @@ def test_la_normalizacion_no_toca_las_mayusculas() -> None:
     """Mismo criterio que el grounding de texto plano: unificar mayúsculas sería semántica."""
     norm, _ = _normalizar("La NASA")
     assert norm == "La NASA"
+
+
+# ─────────────────────────────────────────────────────────────
+# Citas con elipsis: lo que el modelo hace de verdad
+# ─────────────────────────────────────────────────────────────
+def test_una_cita_con_elipsis_se_busca_por_fragmentos(localizador) -> None:
+    """Caso encontrado verificando con un documento real, no inventado.
+
+    El modelo elide la parte de en medio muy a menudo. Buscada entera, esa cita puntuaba 78
+    frente al umbral de 90 y se perdía una localización que era exacta. Partirla por la elipsis
+    no relaja el criterio: la elipsis DICE que ahí hay un hueco, así que recuadrar los dos
+    trozos sin lo de en medio es más fiel que un recuadro único que lo abarcaría todo.
+    """
+    r = localizador.localizar("Los duendes rojos son descargas... La mesosfera se extiende", 1)
+    assert r.calidad == "exact"
+    assert len(r.regiones) == 2  # un trozo en cada renglón, sin lo de en medio
+
+
+def test_los_fragmentos_se_buscan_en_orden(localizador) -> None:
+    """ "A ... B" significa que B va DESPUÉS de A: al revés no debe casar."""
+    al_derecho = localizador.localizar("son descargas electricas... El fenomeno se documento", 1)
+    al_reves = localizador.localizar("El fenomeno se documento... son descargas electricas", 1)
+    assert al_derecho.calidad == "exact"
+    assert al_reves.calidad == "page"
+
+
+def test_un_fragmento_demasiado_corto_no_se_busca_suelto(localizador) -> None:
+    """Un trozo de tres letras casa en cualquier parte; recuadrar un sitio cualquiera es peor."""
+    from multimodal_presenter.pipeline.pdf_locator import _fragmentos_de_cita
+
+    assert _fragmentos_de_cita("son... La mesosfera se extiende entre los cincuenta") == [
+        "La mesosfera se extiende entre los cincuenta"
+    ]
+
+
+def test_tambien_con_corchetes_y_puntos_suspensivos_tipograficos(localizador) -> None:
+    for marca in ("[...]", "…", "[…]"):
+        r = localizador.localizar(f"Los duendes rojos son descargas {marca} La mesosfera", 1)
+        assert r.calidad == "exact", marca
