@@ -15,6 +15,11 @@ dependencies = [
     "truststore>=0.10.4",
     "httpx>=0.28.1",
     "mutagen>=1.47",
+    # Localizador de regiones en PDF (resaltado por región). pypdfium2 es el motor PDF de
+    # Chromium, con licencia permisiva (BSD-3/Apache-2.0): se eligió frente a PyMuPDF, que es
+    # AGPL-3.0, por el mismo criterio que ya se había aplicado en `experiments/common.py`.
+    "pypdfium2>=5.13.0",
+    "rapidfuzz>=3.14",
 ]
 
 [dependency-groups]
@@ -28,7 +33,6 @@ dev = [
 ]
 experiments = [
     "lightrag-hku>=1.5.7",
-    "pypdfium2>=5.13.0",
     "voyageai>=0.5.0",
 ]
 

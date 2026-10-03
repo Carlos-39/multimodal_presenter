@@ -8,7 +8,7 @@ import { SourceCitation, UnanchoredNotice } from "@/components/content/SourceCit
 import type { ChatMessage } from "@/hooks/useChat";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { track } from "@/lib/telemetry";
-import type { GroundingStatus, SourceReference } from "@/lib/types";
+import type { CitedRegion, GroundingStatus, SourceReference } from "@/lib/types";
 
 /**
  * Chat anclado a fuentes (Hito 6). Reemplaza el placeholder del Hito 3.
@@ -26,7 +26,12 @@ interface ChatPanelProps {
   status: "idle" | "streaming" | "error";
   onSend: (question: string) => void;
   suggestions: string[];
-  onOpenSource: (source: SourceReference, status: GroundingStatus, startS: number | null) => void;
+  onOpenSource: (
+    source: SourceReference,
+    status: GroundingStatus,
+    startS: number | null,
+    region: CitedRegion | null,
+  ) => void;
   disabled: boolean; // sin documento aún
   activeSectionOrdinal: number | null; // telemetría (Hito 8): sección activa al preguntar
 }
@@ -200,7 +205,12 @@ function Message({
   canAsk,
 }: {
   message: ChatMessage;
-  onOpenSource: (source: SourceReference, status: GroundingStatus, startS: number | null) => void;
+  onOpenSource: (
+    source: SourceReference,
+    status: GroundingStatus,
+    startS: number | null,
+    region: CitedRegion | null,
+  ) => void;
   onAsk: (question: string) => void;
   canAsk: boolean;
 }) {
@@ -292,10 +302,16 @@ function SourceChip({
   onOpenSource,
 }: {
   response: NonNullable<ChatMessage["response"]>;
-  onOpenSource: (source: SourceReference, status: GroundingStatus, startS: number | null) => void;
+  onOpenSource: (
+    source: SourceReference,
+    status: GroundingStatus,
+    startS: number | null,
+    region: CitedRegion | null,
+  ) => void;
 }) {
   const { source, grounding } = response;
   const startS = response.start_s ?? null;
+  const region = response.region ?? null;
 
   // No anclada: se dice con honestidad, no se inventa una fuente (mismo espíritu que not_found 5c).
   if (!source || grounding === "not_found") {
@@ -310,7 +326,7 @@ function SourceChip({
 
   return (
     <div className="mt-2.5 border-t border-border pt-2">
-      <SourceCitation onOpen={() => onOpenSource(source, grounding, startS)} quoted={!byPage} action="ver">
+      <SourceCitation onOpen={() => onOpenSource(source, grounding, startS, region)} quoted={!byPage} action="ver">
         {byPage ? `página ${source.page}` : truncate(source.quote)}
       </SourceCitation>
     </div>

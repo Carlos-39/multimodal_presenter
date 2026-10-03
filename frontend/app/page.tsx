@@ -14,6 +14,7 @@ import { TransformInput } from "@/components/TransformInput";
 import { sourceKindOf } from "@/lib/audio";
 import { postTransform } from "@/lib/api";
 import { fetchDeck } from "@/lib/deck";
+import { olvidarPaginas } from "@/lib/pdfPage";
 import { fetchIllustrations } from "@/lib/illustrations";
 import { fetchSummary } from "@/lib/summary";
 import { streamTransform } from "@/lib/stream";
@@ -24,6 +25,7 @@ import { initTelemetry, track, flush } from "@/lib/telemetry";
 import type { PanelId } from "@/lib/workspace";
 import type {
   ChartNote,
+  CitedRegion,
   GeneratedDeck,
   GroundingReport,
   GroundingStatus,
@@ -44,6 +46,7 @@ interface ActiveSource {
   status: GroundingStatus;
   key: string; // reancla el resaltado al cambiar (id de sección, o único para el chat)
   startS: number | null; // solo audio: momento al que llevar el reproductor
+  region: CitedRegion | null; // solo PDF: dónde está la cita dentro de la página
 }
 
 /** Construye un GroundingReport agregado a partir de las entradas por sección (durante streaming). */
@@ -221,8 +224,15 @@ export default function Page() {
       gstatus: GroundingStatus,
       ordinal: number | null,
       startS: number | null,
+      region: CitedRegion | null,
     ) => {
-      setActiveSource({ source: section.source, status: gstatus, key: section.id, startS });
+      setActiveSource({
+        source: section.source,
+        status: gstatus,
+        key: section.id,
+        startS,
+        region,
+      });
       sourceOpenedAtRef.current = Date.now();
       track("source_open", {
         origin: "section",
@@ -242,8 +252,15 @@ export default function Page() {
       source: SourceReference,
       gstatus: GroundingStatus,
       startS: number | null,
+      region: CitedRegion | null,
     ) => {
-      setActiveSource({ source, status: gstatus, key: `${origin}-${source.quote}`, startS });
+      setActiveSource({
+        source,
+        status: gstatus,
+        key: `${origin}-${source.quote}`,
+        startS,
+        region,
+      });
       sourceOpenedAtRef.current = Date.now();
       track("source_open", { origin, grounding_status: gstatus });
       openPanel("source");
@@ -251,17 +268,26 @@ export default function Page() {
     [openPanel],
   );
   const openChatSource = useCallback(
-    (source: SourceReference, gstatus: GroundingStatus, startS: number | null = null) =>
-      openLooseSource("chat", source, gstatus, startS),
+    (
+      source: SourceReference,
+      gstatus: GroundingStatus,
+      startS: number | null = null,
+      region: CitedRegion | null = null,
+    ) => openLooseSource("chat", source, gstatus, startS, region),
     [openLooseSource],
   );
   const openDeckSource = useCallback(
-    (source: SourceReference, gstatus: GroundingStatus, startS: number | null = null) =>
-      openLooseSource("deck", source, gstatus, startS),
+    (
+      source: SourceReference,
+      gstatus: GroundingStatus,
+      startS: number | null = null,
+      region: CitedRegion | null = null,
+    ) => openLooseSource("deck", source, gstatus, startS, region),
     [openLooseSource],
   );
 
   function resetForRun(text: string | null, file: File | null) {
+    olvidarPaginas(original?.file ?? null); // suelta las páginas dibujadas del documento anterior
     chat.reset(); // nuevo documento → nuevo chat (historial de sesión limpio)
     narration.reset(); // nuevo documento → se descarta la narración cacheada
     setError(null);
@@ -431,7 +457,13 @@ export default function Page() {
       const entry = entries.find((g) => g.section_id === section.id);
       const gstatus = entry?.status ?? "unverified";
       const idx = visible.findIndex((s) => s.id === section.id); // ordinal, no el id (privacidad)
-      openSectionSource(section, gstatus, idx >= 0 ? idx + 1 : null, entry?.start_s ?? null);
+      openSectionSource(
+        section,
+        gstatus,
+        idx >= 0 ? idx + 1 : null,
+        entry?.start_s ?? null,
+        entry?.region ?? null,
+      );
     },
     [entries, visible, openSectionSource],
   );
@@ -548,6 +580,7 @@ export default function Page() {
               status={activeSource!.status}
               sourceKey={activeSource!.key}
               startS={activeSource!.startS}
+              region={activeSource!.region}
               transcript={transcript}
               onClose={() => closePanel("source")}
             />

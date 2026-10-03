@@ -5,13 +5,16 @@ Nivel barato (determinista): grounding de fuentes, adaptado al tipo de fuente.
   offsets, o `not_found` (warning real de fabricación).
 - PDF/imagen: NO se puede verificar por substring sin aplanar el binario (contra el
   principio rector). Las secciones quedan `unverified`; para PDF se conserva la página que
-  aporta el modelo. La verificación por página/región es TODO(Hito5).
+  aporta el modelo y, si tiene capa de texto, la REGIÓN dentro de ella (ver `pdf_locator`).
+  La región localiza, no verifica: el estado no cambia. La VERIFICACIÓN sigue siendo TODO(Hito5).
 - Audio: también `unverified`, con el segundo aproximado (`start_s`) en vez de la página. La
   cita se LOCALIZA en la transcripción de la Fase 0 para poder saltar al momento, pero eso no
   la verifica contra la señal; ver `schemas/transform.py` para el razonamiento completo.
 
 Nivel LLM (coherencia semántica): interfaz real ya cableada, hoy no-op. TODO(Hito2.1).
 """
+
+from dataclasses import dataclass
 
 import logfire
 from pydantic_ai import Agent, BinaryContent, ToolOutput
@@ -20,35 +23,30 @@ from pydantic_ai.models import Model
 from ..schemas import Presentation
 from ..schemas.presentation import ChartContent, Section, SourceReference
 from ..schemas.transform import (
+    CitedRegion,
     GroundingReport,
     GroundingStatus,
     SectionGrounding,
     SemanticCoherenceReport,
 )
+from .canon import CANON_MAP
 from .models import ExtractionResult
+from .pdf_locator import PdfLocator, abrir_localizador, region_de_cita
 
-# Matching robusto (Hito 8): un modelo fiel a veces cita con comillas tipográficas, espacios duros
-# o guiones distintos a los del documento, y un `find` exacto lo marcaría `not_found` FALSO. Se
-# canonicaliza la puntuación antes de comparar. El mapa es estrictamente 1 carácter → 1 carácter
-# (misma longitud), así que el índice hallado sobre el texto canónico sigue siendo válido sobre el
-# texto ORIGINAL → el resaltado del 5c se mantiene exacto. NO se toca la semántica (no minúsculas,
-# no colapso de espacios): solo se unifican variantes tipográficas de un mismo signo.
-_CANON_MAP = str.maketrans(
-    {
-        "“": '"',  # “
-        "”": '"',  # ”
-        "‘": "'",  # ‘
-        "’": "'",  # ’
-        " ": " ",  # espacio duro
-        " ": " ",  # espacio fino duro
-        " ": " ",  # espacio fino
-        " ": " ",  # espacio de figura
-        "​": " ",  # espacio de ancho cero
-        "–": "-",  # – (en dash)
-        "—": "-",  # — (em dash)
-        "−": "-",  # − (signo menos)
-    }
-)
+
+@dataclass(frozen=True)
+class QuoteAnchor:
+    """Anclaje de una cita suelta (chat, diapositiva generada).
+
+    Es un objeto y no una tupla porque ya lleva cuatro datos y cada fuente aporta uno distinto:
+    offsets en texto, página en PDF, momento en audio, región dentro de la página. Desempaquetar
+    `_, _, _, region` en cada sitio escondía justo lo que se quiere leer de un vistazo.
+    """
+
+    source: SourceReference | None
+    status: GroundingStatus
+    start_s: float | None = None
+    region: CitedRegion | None = None
 
 
 def _find_quote(text: str, quote: str) -> int:
@@ -56,11 +54,11 @@ def _find_quote(text: str, quote: str) -> int:
     idx = text.find(quote)
     if idx != -1:
         return idx
-    return text.translate(_CANON_MAP).find(quote.translate(_CANON_MAP))
+    return text.translate(CANON_MAP).find(quote.translate(CANON_MAP))
 
 
 def ground_section(
-    section: Section, extraction: ExtractionResult
+    section: Section, extraction: ExtractionResult, localizador: PdfLocator | None = None
 ) -> tuple[Section, SectionGrounding]:
     """Ancla UNA sección a su fuente. Devuelve (sección enriquecida, entrada de grounding).
 
@@ -98,18 +96,27 @@ def ground_section(
         )
         return section.model_copy(update={"source": new_source}), entry
 
-    # Binario: no se verifica por substring (no hay texto sin aplanar). Se conserva la página.
+    # Binario: no se verifica por substring (no hay texto sin aplanar). Se conserva la página, y
+    # en PDF se añade DÓNDE dentro de ella. Localizar no verifica: el estado no cambia.
     new_source = section.source.model_copy(update={"document_id": extraction.document_id})
-    entry = SectionGrounding(section_id=section.id, status="unverified", page=section.source.page)
+    entry = SectionGrounding(
+        section_id=section.id,
+        status="unverified",
+        page=section.source.page,
+        region=region_de_cita(localizador, section.source.quote, section.source.page),
+    )
     return section.model_copy(update={"source": new_source}), entry
 
 
 def ground_quote(
-    quote: str | None, page: int | None, extraction: ExtractionResult
-) -> tuple[SourceReference | None, GroundingStatus, float | None]:
+    quote: str | None,
+    page: int | None,
+    extraction: ExtractionResult,
+    localizador: PdfLocator | None = None,
+) -> QuoteAnchor:
     """Ancla una CITA suelta (respuesta de chat, Hito 6) con la misma regla determinista.
 
-    - Sin cita → `(None, "not_found", None)`: el modelo no pudo anclar; no se inventa fuente.
+    - Sin cita → `not_found` sin fuente: el modelo no pudo anclar; no se inventa una.
     - Texto: si la cita existe → `verified` con offsets; si no → `not_found` (fabricación).
     - Binario (PDF/imagen): `unverified`, conservando la página (Caso B del 5c).
     - Audio: `unverified` con el MOMENTO (tercer valor), nunca `verified`. La cita se localiza
@@ -117,12 +124,16 @@ def ground_quote(
       ahí no la verifica contra el audio. Mismo criterio que `ground_section`.
     """
     if not quote:
-        return None, "not_found", None
+        return QuoteAnchor(source=None, status="not_found")
 
     if extraction.source_kind == "audio":
         assert extraction.audio_evidence is not None
         source = SourceReference(document_id=extraction.document_id, quote=quote)
-        return source, "unverified", extraction.audio_evidence.locate(quote)
+        return QuoteAnchor(
+            source=source,
+            status="unverified",
+            start_s=extraction.audio_evidence.locate(quote),
+        )
 
     if extraction.source_kind == "text":
         assert extraction.text is not None
@@ -134,11 +145,18 @@ def ground_quote(
                 char_start=idx,
                 char_end=idx + len(quote),
             )
-            return source, "verified", None
-        return SourceReference(document_id=extraction.document_id, quote=quote), "not_found", None
+            return QuoteAnchor(source=source, status="verified")
+        return QuoteAnchor(
+            source=SourceReference(document_id=extraction.document_id, quote=quote),
+            status="not_found",
+        )
 
     source = SourceReference(document_id=extraction.document_id, quote=quote, page=page)
-    return source, "unverified", None
+    return QuoteAnchor(
+        source=source,
+        status="unverified",
+        region=region_de_cita(localizador, quote, page),
+    )
 
 
 def build_grounding_report(source_kind: str, entries: list[SectionGrounding]) -> GroundingReport:
@@ -208,11 +226,13 @@ def verify_grounding(
     deduper = SectionIdDeduper()
     new_sections: list[Section] = []
     entries: list[SectionGrounding] = []
-    for section in presentation.sections:
-        unica, _renombrada = deduper.ensure_unique(section)
-        new_section, entry = ground_section(unica, extraction)
-        new_sections.append(new_section)
-        entries.append(entry)
+    # El PDF se abre UNA vez para toda la presentación, no una por sección.
+    with abrir_localizador(extraction.source_kind, extraction.binary) as localizador:
+        for section in presentation.sections:
+            unica, _renombrada = deduper.ensure_unique(section)
+            new_section, entry = ground_section(unica, extraction, localizador)
+            new_sections.append(new_section)
+            entries.append(entry)
     report = build_grounding_report(extraction.source_kind, entries)
     return presentation.model_copy(update={"sections": new_sections}), report
 

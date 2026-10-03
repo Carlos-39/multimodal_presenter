@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef } from "react";
 import { X } from "@phosphor-icons/react";
 import { formatTimestamp } from "@/lib/audio";
 import { highlightSegments } from "@/lib/highlight";
-import type { GroundingStatus, SourceKind, SourceReference } from "@/lib/types";
+import type { CitedRegion, GroundingStatus, SourceKind, SourceReference } from "@/lib/types";
 import { ImageExplanation } from "./ImageExplanation";
+import { PdfRegionView } from "./PdfRegionView";
 
 /**
  * Panel de documento fuente (atribución interactiva, Punto 4 · Hito 5c). Lo comparten la
@@ -37,6 +38,7 @@ interface SourcePanelProps {
   status: GroundingStatus;
   sourceKey: string; // reancla el resaltado al cambiar de fuente (sección o chat)
   startS?: number | null; // solo audio: segundo en el que arranca la cita
+  region?: CitedRegion | null; // solo PDF: dónde está la cita dentro de la página
   transcript?: string | null; // solo audio: lo que oyó la fase de percepción
   onClose: () => void;
 }
@@ -48,6 +50,7 @@ export function SourcePanel({
   status,
   sourceKey,
   startS = null,
+  region = null,
   transcript = null,
   onClose,
 }: SourcePanelProps) {
@@ -89,12 +92,17 @@ export function SourcePanel({
         </button>
       </header>
 
-      {/* `key={sourceKey}` REMONTA el contenido al cambiar de fuente activa (otra sección o una
-          respuesta del chat). Es necesario para el PDF: su página se fija por el fragmento
-          `#page=N` del `src` del <iframe>, y los navegadores NO re-navegan un iframe cuando solo
-          cambia el hash — remontarlo lo fuerza a cargar en la página correcta. Robusto ante clics
-          rápidos (React reconcilia al último key) y uniforme para texto, PDF, imagen y audio. */}
-      <div key={sourceKey} className="min-h-0 flex-1 overflow-y-auto">
+      {/* La clave REMONTA el contenido al cambiar de fuente activa (otra sección o una respuesta
+          del chat). Es necesario para el PDF: su página se fija por el fragmento `#page=N` del
+          `src` del <iframe>, y los navegadores NO re-navegan un iframe cuando solo cambia el
+          hash — remontarlo lo fuerza a cargar en la página correcta. Robusto ante clics rápidos
+          (React reconcilia al último key) y uniforme para texto, PDF, imagen y audio.
+
+          El PREFIJO no es decorativo. Este bloque y el de "explicar imagen" son hermanos, y los
+          dos se remontan con la misma fuente: con `sourceKey` pelado compartían clave, que es un
+          caso que React declara no soportado ("puede duplicar u omitir hijos"). Se vio: cada
+          apertura de fuente APILABA un visor más en lugar de reemplazarlo. */}
+      <div key={`contenido-${sourceKey}`} className="min-h-0 flex-1 overflow-y-auto">
         {sourceKind === "text" ? (
           <TextSource
             text={original.text ?? ""}
@@ -103,7 +111,24 @@ export function SourcePanel({
             sourceKey={sourceKey}
           />
         ) : sourceKind === "pdf" ? (
-          <PdfSource url={fileUrl} page={source.page} fileName={original.file?.name ?? null} />
+          // Con región se recuadra la cita; sin ella, el visor de siempre (fidelidad de página).
+          // El <iframe> no se toca: sigue siendo la salida para todo lo que no se pudo localizar,
+          // y desde él se abre o se descarga el PDF completo.
+          region && source.page && original.file ? (
+            <PdfRegionView
+              file={original.file}
+              region={region}
+              fallback={
+                <PdfSource
+                  url={fileUrl}
+                  page={source.page}
+                  fileName={original.file?.name ?? null}
+                />
+              }
+            />
+          ) : (
+            <PdfSource url={fileUrl} page={source.page} fileName={original.file?.name ?? null} />
+          )
         ) : sourceKind === "audio" ? (
           <AudioSource
             url={fileUrl}
@@ -122,7 +147,7 @@ export function SourcePanel({
           remonta por `sourceKey` → colapsada de nuevo al cambiar de fuente. */}
       {sourceKind !== "text" && sourceKind !== "audio" && original.file ? (
         <ImageExplanation
-          key={sourceKey}
+          key={`explicar-${sourceKey}`}
           file={original.file}
           page={source.page ?? null}
           context={source.quote}

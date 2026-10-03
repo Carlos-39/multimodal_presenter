@@ -22,6 +22,7 @@ from ..schemas.presentation import GeneratedIllustration
 from ..schemas.transform import GeneratedDeck, GeneratedSlide
 from .illustration import _generate_image, has_image_provider
 from .models import ExtractionResult
+from .pdf_locator import abrir_localizador
 from .validation import ground_quote
 
 _IMAGE_CAP = 3  # techo de imágenes por deck: imágenes solo donde aporten de verdad (y acota costo)
@@ -107,43 +108,47 @@ async def generate_deck(
     images_made = 0
     can_make_images = has_image_provider(settings)
     slides: list[GeneratedSlide] = []
-    for plan in plans:
-        # Trazabilidad por slide (mix honesto).
-        source = None
-        grounding = "not_found"
-        start_s = None
-        is_synthesis = False
-        if plan.synthesis or not plan.source_quote:
-            is_synthesis = True
-        else:
-            source, grounding, start_s = ground_quote(
-                plan.source_quote, plan.source_page, extraction
-            )
+    # Una sola apertura del PDF para todas las diapositivas, igual que en la presentación.
+    with abrir_localizador(extraction.source_kind, extraction.binary) as localizador:
+        for plan in plans:
+            # Trazabilidad por slide (mix honesto).
+            source = None
+            grounding = "not_found"
+            start_s = None
+            region = None
+            is_synthesis = False
+            if plan.synthesis or not plan.source_quote:
+                is_synthesis = True
+            else:
+                ancla = ground_quote(plan.source_quote, plan.source_page, extraction, localizador)
+                source, grounding = ancla.source, ancla.status
+                start_s, region = ancla.start_s, ancla.region
 
-        # Apoyo visual: reusa el generador de ilustraciones (con etiqueta obligatoria), acotado.
-        illustration = None
-        if plan.image_prompt and can_make_images and images_made < _IMAGE_CAP:
-            try:
-                data_uri = await _generate_image(settings, plan.image_prompt)
-                illustration = GeneratedIllustration(
-                    image_url=data_uri, alt=f"Apoyo visual: {plan.title}"
+            # Apoyo visual: reusa el generador de ilustraciones (con etiqueta obligatoria), acotado.
+            illustration = None
+            if plan.image_prompt and can_make_images and images_made < _IMAGE_CAP:
+                try:
+                    data_uri = await _generate_image(settings, plan.image_prompt)
+                    illustration = GeneratedIllustration(
+                        image_url=data_uri, alt=f"Apoyo visual: {plan.title}"
+                    )
+                    images_made += 1
+                except Exception:  # noqa: BLE001 — la imagen es un extra; sin ella la slide sigue
+                    illustration = None
+
+            slides.append(
+                GeneratedSlide(
+                    title=plan.title,
+                    body=plan.body,
+                    bullets=plan.bullets[:6],
+                    source=source,
+                    grounding=grounding,
+                    start_s=start_s,
+                    region=region,
+                    is_synthesis=is_synthesis,
+                    illustration=illustration,
                 )
-                images_made += 1
-            except Exception:  # noqa: BLE001 — la imagen es un extra; sin ella la slide sigue
-                illustration = None
-
-        slides.append(
-            GeneratedSlide(
-                title=plan.title,
-                body=plan.body,
-                bullets=plan.bullets[:6],
-                source=source,
-                grounding=grounding,
-                start_s=start_s,
-                is_synthesis=is_synthesis,
-                illustration=illustration,
             )
-        )
 
     if not slides:  # nunca un deck vacío: una slide con el título del documento
         slides = [GeneratedSlide(title="Presentación", bullets=[], is_synthesis=True)]

@@ -66,11 +66,11 @@ def test_matching_robusto_ancla_pese_a_puntuacion_tipografica(
 
 def test_matching_robusto_no_inventa_anclaje(input_text: str) -> None:
     """Una cita que de verdad NO está sigue siendo `not_found` (la canonicalización no fabrica)."""
-    source, status, _ = ground_quote(
+    ancla = ground_quote(
         "Esta frase jamás aparece en el texto.", None, prepare_input(text=input_text)
     )
-    assert status == "not_found"
-    assert source is not None and source.char_start is None  # no se inventan offsets
+    assert ancla.status == "not_found"
+    assert ancla.source is not None and ancla.source.char_start is None  # no se inventan offsets
 
 
 def test_binary_grounding_is_unverified(pdf_bytes: bytes, mock_presentation: dict) -> None:

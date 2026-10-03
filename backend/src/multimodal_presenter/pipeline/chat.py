@@ -27,6 +27,7 @@ from ..schemas.chat import (
 )
 from ..schemas.presentation import Section
 from .models import ExtractionResult
+from .pdf_locator import abrir_localizador
 from .validation import ground_quote
 
 ChatEvent = ChatStreamText | ChatStreamDone
@@ -168,16 +169,17 @@ async def chat_stream(
             )
             return
 
-        # Fase 3 determinista: el código valida la cita, no el LLM.
-        source, grounding, start_s = ground_quote(
-            answer.source_quote, answer.source_page, extraction
-        )
+        # Fase 3 determinista: el código valida la cita, no el LLM. El localizador se abre aquí
+        # y muere aquí: una respuesta de chat ancla UNA cita, así que no hay nada que reusar.
+        with abrir_localizador(extraction.source_kind, extraction.binary) as localizador:
+            ancla = ground_quote(answer.source_quote, answer.source_page, extraction, localizador)
         yield ChatStreamDone(
             response=ChatResponse(
                 content=answer.content,
-                source=source,
-                grounding=grounding,
-                start_s=start_s,
+                source=ancla.source,
+                grounding=ancla.status,
+                start_s=ancla.start_s,
+                region=ancla.region,
             )
         )
 

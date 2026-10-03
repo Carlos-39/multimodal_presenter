@@ -28,6 +28,7 @@ from ..schemas.transform import (
 )
 from .extraction import prepare_input
 from .isomorphism import isomorphize_section
+from .pdf_locator import abrir_localizador
 from .perception import run_perception
 from .structuring import build_model_input, structuring_agent
 from .validation import (
@@ -96,7 +97,7 @@ async def transform_stream(
         # El deduper vive durante TODO el stream, así que un id ya emitido cuenta al
         # deduplicar los siguientes (ver SectionIdDeduper).
         unica, _renombrada = deduper.ensure_unique(section)
-        grounded, entry = ground_section(unica, extraction)
+        grounded, entry = ground_section(unica, extraction, localizador)
         iso, note = isomorphize_section(grounded)
         sections.append(iso)
         entries.append(entry)
@@ -127,37 +128,42 @@ async def transform_stream(
         )
         emitter = SectionEmitter()
         deduper = SectionIdDeduper()
+        # El PDF se abre UNA vez y vive todo el stream, igual que el deduper: las secciones
+        # se anclan una por una según llegan. Es un `with` y no una apertura suelta porque si
+        # el consumidor abandona el stream hay que soltar el documento igual.
+        with abrir_localizador(extraction.source_kind, extraction.binary) as localizador:
+            with logfire.span("fase2.estructuracion.stream"):
+                async with structuring_agent.run_stream(
+                    build_model_input(extraction), model=model
+                ) as result:
+                    async for partial in result.stream_output():
+                        if not title_sent and getattr(partial, "title", None):
+                            title = partial.title
+                            title_sent = True
+                            yield StreamStart(title=title)
+                        for section in emitter.take(partial, final=False):
+                            yield finalize(section)
 
-        with logfire.span("fase2.estructuracion.stream"):
-            async with structuring_agent.run_stream(
-                build_model_input(extraction), model=model
-            ) as result:
-                async for partial in result.stream_output():
-                    if not title_sent and getattr(partial, "title", None):
-                        title = partial.title
+                    final_output = await result.get_output()
+                    title = final_output.title or title
+                    if not title_sent:
                         title_sent = True
-                        yield StreamStart(title=title)
-                    for section in emitter.take(partial, final=False):
+                        yield StreamStart(title=title or "Presentación")
+                    for section in emitter.take(final_output, final=True):
                         yield finalize(section)
 
-                final_output = await result.get_output()
-                title = final_output.title or title
-                if not title_sent:
-                    title_sent = True
-                    yield StreamStart(title=title or "Presentación")
-                for section in emitter.take(final_output, final=True):
-                    yield finalize(section)
+            if not sections:
+                yield StreamError(message="No se generaron secciones.")
+                return
 
-        if not sections:
-            yield StreamError(message="No se generaron secciones.")
-            return
+            with logfire.span("fase3.validacion.stream"):
+                presentation = Presentation(title=title or "Presentación", sections=sections)
+                grounding = build_grounding_report(extraction.source_kind, entries)
+                if semantic_enabled:
+                    semantic = await verify_semantic_coherence(
+                        presentation, extraction, semantic_model
+                    )
+                else:
+                    semantic = SemanticCoherenceReport()
 
-        with logfire.span("fase3.validacion.stream"):
-            presentation = Presentation(title=title or "Presentación", sections=sections)
-            grounding = build_grounding_report(extraction.source_kind, entries)
-            if semantic_enabled:
-                semantic = await verify_semantic_coherence(presentation, extraction, semantic_model)
-            else:
-                semantic = SemanticCoherenceReport()
-
-        yield StreamDone(grounding=grounding, semantic=semantic, chart_notes=chart_notes)
+            yield StreamDone(grounding=grounding, semantic=semantic, chart_notes=chart_notes)
