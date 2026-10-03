@@ -70,9 +70,15 @@ class Settings(BaseSettings):
     openai_tts_voice: str = "nova"
     # Entrada por voz en el chat: transcripción audio→texto (misma clave OpenAI).
     openai_transcribe_model: str = "gpt-4o-mini-transcribe"
-    # Generación de imágenes (ilustraciones 5h + deck 5j). Las imágenes se generan SIN texto
-    # (las etiquetas van en el HTML de la slide) para evitar los typos de los modelos de imagen.
-    # Proveedor PRIMARIO: Ideogram (mejores dibujos, ~$0.06-0.09); FALLBACK: OpenAI gpt-image-1.
+    # Generación de imágenes (ilustraciones 5h + deck 5j). La imagen debe entenderse SOLA: sin
+    # texto y sin marcas que remitan a una leyenda que no existe (ver `illustration.py`).
+    # PRIMARIO: Gemini. Pasó a serlo tras medirlo contra Ideogram con los mismos prompts: 0 de 6
+    # imágenes con palabras inventadas frente a 3 de 6, y más barato. Respaldos: Ideogram y
+    # OpenAI, que siguen cableados porque Gemini puede rechazar un prompt por filtros de
+    # seguridad y una imagen peor es mejor que ninguna.
+    google_image_model: str = "gemini-3.1-flash-image"
+    google_image_aspect_ratio: str = "1:1"  # cuadrada, como la tarjeta donde se muestra
+    google_image_size: str = "1K"  # fija el precio en $0.067/imagen (2K sube a $0.101)
     ideogram_api_key: str | None = None
     ideogram_rendering_speed: str = "QUALITY"  # TURBO ($0.03) | DEFAULT ($0.06) | QUALITY ($0.09)
     openai_image_model: str = "gpt-image-1"

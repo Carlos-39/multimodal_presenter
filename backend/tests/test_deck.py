@@ -71,10 +71,10 @@ def test_deck_mix_trazabilidad_y_imagen(monkeypatch, input_text: str) -> None:
 
 
 def test_deck_sin_clave_openai_genera_sin_imagenes(monkeypatch, input_text: str) -> None:
-    # Sin NINGÚN proveedor de imagen (Ideogram ni OpenAI): el deck degrada sin imágenes. Se anulan
-    # ambas claves explícitamente para no depender del `.env` real de la máquina.
+    # Sin NINGÚN proveedor de imagen: el deck degrada sin imágenes. Se anulan las TRES claves
+    # explícitamente (Gemini es el primario) para no depender del `.env` real de la máquina.
     app.dependency_overrides[get_settings] = lambda: Settings(
-        openai_api_key=None, ideogram_api_key=None, logfire_token=""
+        google_api_key=None, openai_api_key=None, ideogram_api_key=None, logfire_token=""
     )
     app.dependency_overrides[get_model] = lambda: _deck_model(input_text)
 
@@ -138,7 +138,9 @@ def test_deck_sobre_audio_lleva_el_momento_de_la_cita(wav_bytes: bytes) -> None:
         ]
     }
     extraction = prepare_input(binary=wav_bytes, media_type="audio/wav", audio_evidence=evidencia)
-    ajustes = _get_settings().model_copy(update={"ideogram_api_key": None, "openai_api_key": None})
+    ajustes = _get_settings().model_copy(
+        update={"google_api_key": None, "ideogram_api_key": None, "openai_api_key": None}
+    )
     resultado = asyncio.run(
         deck.generate_deck(TestModel(custom_output_text=json.dumps(payload)), ajustes, extraction)
     )
