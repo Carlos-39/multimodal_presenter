@@ -153,6 +153,9 @@ export interface RegionBox {
  * señalar dentro) es la AUSENCIA de este objeto. `approximate` obliga a decirlo en la interfaz —
  * marcar como exacto algo aproximado sería la sobre-afirmación que eliminó el Hito 8A.1. */
 export interface CitedRegion {
+  /** Página en la que están los recuadros. NO se da por supuesto que sea la de la cita: si el
+   * modelo erró el número y la frase estaba en una página vecina, los recuadros son de esa. */
+  page: number;
   quality: "exact" | "approximate";
   boxes: RegionBox[];
 }

@@ -108,6 +108,10 @@ class Localizacion:
 
     calidad: Calidad
     regiones: tuple[Region, ...] = ()
+    pagina: int | None = None
+    """Página (1-based) en la que están los recuadros. Puede NO ser la que dijo el modelo: ver
+    la búsqueda en las páginas vecinas. Los recuadros y su página viajan siempre juntos, así que
+    dibujarlos sobre la página equivocada no es un estado representable."""
 
     @classmethod
     def solo_pagina(cls) -> Localizacion:
@@ -264,14 +268,38 @@ class PdfLocator:
         return len(self._doc)
 
     def localizar(self, cita: str, pagina: int) -> Localizacion:
-        """Localiza `cita` en la página `pagina` (1-based, como `SourceReference.page`).
+        """Localiza `cita` alrededor de la página `pagina` (1-based, como `SourceReference.page`).
+
+        Si no está en esa página, se prueban la ANTERIOR y la SIGUIENTE. El desfase entre el
+        número impreso en el documento y el número físico de la página es común (portadas, hojas
+        de cortesía, numeración romana al principio), y el modelo cita el que ve impreso.
+
+        En las vecinas solo se acepta una coincidencia EXACTA. Un parecido difuso en una página
+        que ni siquiera es la citada acumula dos incertidumbres a la vez, y la regla de todo el
+        módulo es la misma: antes sin recuadro que con uno que señale mal.
 
         Nunca lanza: cualquier cosa que no se pueda localizar degrada a `calidad: "page"`, que
-        es el comportamiento que el sistema ya tenía. Una cita sin recuadro no rompe nada; un
-        recuadro equivocado sí rompería la confianza, que es lo que este proyecto cuida.
+        es el comportamiento que el sistema ya tenía.
         """
         if not cita or not cita.strip():
             return Localizacion.solo_pagina()
+        # Una página menor que 1 no es un desfase, es una entrada inválida: no se intenta
+        # "rescatar" probando la 1. Pedir una más allá de la última SÍ es el desfase típico, y
+        # esa la arregla la vecina de abajo.
+        if pagina < 1:
+            return Localizacion.solo_pagina()
+
+        en_la_citada = self._localizar_en(cita, pagina)
+        if en_la_citada.regiones:
+            return en_la_citada
+        for vecina in (pagina - 1, pagina + 1):
+            hallazgo = self._localizar_en(cita, vecina)
+            if hallazgo.regiones and hallazgo.calidad == "exact":
+                return hallazgo
+        return Localizacion.solo_pagina()
+
+    def _localizar_en(self, cita: str, pagina: int) -> Localizacion:
+        """El trabajo real sobre UNA página concreta."""
         indice = pagina - 1
         if indice < 0 or indice >= len(self._doc):
             return Localizacion.solo_pagina()
@@ -318,7 +346,7 @@ class PdfLocator:
                 return Localizacion.solo_pagina()
             if sum(r.area for r in regiones) > MAX_FRACCION_AREA:
                 return Localizacion.solo_pagina()
-            return Localizacion(calidad=calidad, regiones=regiones)
+            return Localizacion(calidad=calidad, regiones=regiones, pagina=pagina)
         except Exception:  # noqa: BLE001 — un PDF roto degrada, no tumba la generación
             return Localizacion.solo_pagina()
 
@@ -409,10 +437,11 @@ def region_de_cita(
     if localizador is None or not cita or pagina is None:
         return None
     hallazgo = localizador.localizar(cita, pagina)
-    if hallazgo.calidad == "page" or not hallazgo.regiones:
+    if hallazgo.calidad == "page" or not hallazgo.regiones or hallazgo.pagina is None:
         return None
     return CitedRegion(
         quality=hallazgo.calidad,
+        page=hallazgo.pagina,
         boxes=[RegionBox(x0=r.x0, y0=r.y0, x1=r.x1, y1=r.y1) for r in hallazgo.regiones],
     )
 

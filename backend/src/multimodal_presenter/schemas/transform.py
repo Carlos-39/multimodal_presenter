@@ -67,6 +67,12 @@ class CitedRegion(_Strict):
     gana es poder señalar dónde mirar, no una afirmación de que el contenido quedó verificado.
     """
 
+    page: int = Field(ge=1)
+    """Página en la que están los recuadros. Viaja CON ellos, y no se da por supuesto que sea
+    `SectionGrounding.page`: si la cita no estaba en la página que dijo el modelo pero sí en una
+    vecina, los recuadros son de esa otra. Juntos, dibujarlos sobre la página equivocada deja de
+    ser un estado representable."""
+
     quality: Literal["exact", "approximate"]
     """`exact`: la cita está literal (salvo variantes tipográficas y de espaciado).
     `approximate`: se halló un pasaje muy parecido; el recuadro señala una zona, no la frase. La

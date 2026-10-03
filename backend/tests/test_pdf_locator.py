@@ -27,6 +27,7 @@ from fpdf import FPDF
 
 from multimodal_presenter.pipeline.pdf_locator import (
     MAX_LINEAS,
+    Localizacion,
     PdfLocator,
     _normalizar,
 )
@@ -335,3 +336,78 @@ def test_tambien_con_corchetes_y_puntos_suspensivos_tipograficos(localizador) ->
     for marca in ("[...]", "…", "[…]"):
         r = localizador.localizar(f"Los duendes rojos son descargas {marca} La mesosfera", 1)
         assert r.calidad == "exact", marca
+
+
+# ─────────────────────────────────────────────────────────────
+# Páginas vecinas: el número impreso no siempre es el físico
+# ─────────────────────────────────────────────────────────────
+@pytest.fixture
+def tres_paginas() -> bytes:
+    """Un documento donde cada página tiene una frase propia e inconfundible."""
+    return _pdf_por_paginas(
+        [
+            ["Portada del informe anual sin contenido relevante."],
+            TEXTO,
+            ["Anexo final con referencias bibliograficas diversas."],
+        ]
+    )
+
+
+def _pdf_por_paginas(paginas: list[list[str]]) -> bytes:
+    pdf = FPDF(unit="pt", format="A4")
+    pdf.add_font("dejavu", "", str(_TTF))
+    pdf.set_font("dejavu", size=11)
+    pdf.set_auto_page_break(auto=False)
+    for lineas in paginas:
+        pdf.add_page()
+        for linea in lineas:
+            pdf.cell(0, 16, linea, new_x="LMARGIN", new_y="NEXT")
+    return bytes(pdf.output())
+
+
+@pytest.mark.parametrize("dijo_el_modelo", [1, 2, 3])
+def test_encuentra_la_cita_aunque_el_modelo_yerre_la_pagina(
+    tres_paginas: bytes, dijo_el_modelo: int
+) -> None:
+    """El desfase entre el número impreso y el físico es común, y el modelo cita el impreso."""
+    with PdfLocator(tres_paginas) as loc:
+        r = loc.localizar("descargas electricas que ocurren sobre las tormentas", dijo_el_modelo)
+    assert r.calidad == "exact"
+    assert r.pagina == 2, "la cita está en la 2 aunque se pidiera otra"
+    assert r.regiones
+
+
+def test_no_busca_mas_alla_de_las_vecinas(tres_paginas: bytes) -> None:
+    """Solo ±1. Buscar por todo el documento convertiría un error de página en una búsqueda
+    global, y entonces un recuadro ya no diría nada sobre si el modelo acertó."""
+    pdf = _pdf_por_paginas(
+        [["Relleno uno."], ["Relleno dos."], ["Relleno tres."], ["Relleno cuatro."], TEXTO]
+    )
+    with PdfLocator(pdf) as loc:
+        r = loc.localizar("descargas electricas que ocurren sobre las tormentas", 1)
+    assert r.calidad == "page"
+    assert r.regiones == ()
+
+
+def test_los_recuadros_viajan_con_su_pagina(localizador) -> None:
+    """Sin esto se podrían dibujar sobre la página equivocada."""
+    r = localizador.localizar("descargas electricas que ocurren", 1)
+    assert r.pagina == 1
+    assert Localizacion.solo_pagina().pagina is None
+
+
+def test_en_una_vecina_no_vale_un_parecido_difuso(tres_paginas: bytes) -> None:
+    """Dos incertidumbres a la vez (página que no es + parecido) no se acumulan: se degrada.
+
+    La misma cita aproximada SÍ se acepta en la página que el modelo citó, así que lo que se
+    está midiendo es exactamente la diferencia de criterio entre una página y otra.
+    """
+    aproximada = (
+        "La mesosfera se extiende entre los cincuenta y noventa kilometros de altura "
+        "sobre la superficie"
+    )
+    with PdfLocator(tres_paginas) as loc:
+        en_la_suya = loc.localizar(aproximada, 2)
+        en_la_vecina = loc.localizar(aproximada, 1)
+    assert en_la_suya.calidad == "approximate"
+    assert en_la_vecina.calidad == "page"

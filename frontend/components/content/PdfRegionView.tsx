@@ -21,15 +21,17 @@ import type { CitedRegion } from "@/lib/types";
  */
 export function PdfRegionView({
   file,
-  page,
   region,
   fallback,
 }: {
   file: File;
-  page: number;
   region: CitedRegion;
   fallback: React.ReactNode;
 }) {
+  // La página sale de la REGIÓN, no de la cita: si el modelo erró el número y la frase estaba en
+  // una vecina, los recuadros son de esa otra página y hay que dibujar esa. Que viajen juntos es
+  // lo que impide pintar los recuadros sobre la página equivocada.
+  const page = region.page;
   const [src, setSrc] = useState<string | null>(null);
   const [estado, setEstado] = useState<"cargando" | "listo" | "error">("cargando");
 

@@ -218,3 +218,30 @@ def test_ningun_modulo_de_prompts_importa_el_localizador() -> None:
             continue
         fuente = ruta.read_text(encoding="utf-8")
         assert "pdf_locator" not in fuente, f"{nombre} no debería conocer el localizador"
+
+
+def test_la_region_dice_su_pagina_y_corrige_la_del_modelo() -> None:
+    """Si el modelo yerra el número de página, los recuadros llegan con la página REAL.
+
+    Es la pieza que impide dibujarlos sobre la página equivocada: el visor usa la página de la
+    región, no la de la cita, y las dos viajan juntas.
+    """
+    pdf = FPDF(unit="pt", format="A4")
+    pdf.add_font("dejavu", "", str(_TTF))
+    pdf.set_font("dejavu", size=11)
+    pdf.add_page()
+    pdf.multi_cell(0, 16, "Portada del informe, sin contenido relevante para la cita.")
+    pdf.add_page()
+    pdf.multi_cell(0, 16, PARRAFO)
+    documento = bytes(pdf.output())
+
+    # El modelo dice "página 1" (el número impreso), pero la frase está en la 2 (la física).
+    modelo = TestModel(custom_output_text=json.dumps(_presentacion(CITA, 1)))
+    resultado = asyncio.run(
+        transform(modelo, binary=documento, media_type="application/pdf", semantic_enabled=False)
+    )
+    (entrada,) = resultado.grounding.sections
+    assert entrada.page == 1, "lo que dijo el modelo no se reescribe"
+    assert entrada.region is not None
+    assert entrada.region.page == 2, "los recuadros saben que son de la página 2"
+    assert entrada.region.quality == "exact"

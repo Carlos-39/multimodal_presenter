@@ -117,7 +117,6 @@ export function SourcePanel({
           region && source.page && original.file ? (
             <PdfRegionView
               file={original.file}
-              page={source.page}
               region={region}
               fallback={
                 <PdfSource
