@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 import logfire
 from fastapi import FastAPI
 
+from .api.auth import router as auth_router
 from .api.routes import router as pipeline_router
 from .config import get_settings
 from .observability import configure_observability
@@ -30,8 +31,13 @@ async def ciclo_de_vida(_app: FastAPI):
 
     La persistencia es OPCIONAL: la aplicación entera sigue funcionando sin cuenta, que es como
     corren las sesiones de evaluación del Hito 8. Esto solo prepara el sitio donde guardar.
+
+    Los ajustes se leen AQUÍ y no se toma el `settings` de arriba, que quedó fijado al importar el
+    módulo. Los endpoints los resuelven por dependencia en cada petición, así que si ambos no leen
+    lo mismo se migra una base y se usa otra — que es exactamente lo que pasó al escribir los
+    tests: tablas que no existían en la base contra la que corría la aplicación.
     """
-    aplicadas = await migrar(settings)
+    aplicadas = await migrar(get_settings())
     if aplicadas:
         logfire.info("esquema actualizado: {versiones}", versiones=aplicadas)
     yield
@@ -49,6 +55,7 @@ logfire.instrument_fastapi(app)
 logfire.instrument_pydantic_ai()
 
 app.include_router(pipeline_router)
+app.include_router(auth_router)
 
 
 @app.get("/health", tags=["infra"])

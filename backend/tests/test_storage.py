@@ -42,7 +42,11 @@ def migrada(ajustes: Settings) -> Settings:
 # ─────────────────────────────────────────────────────────────
 def test_migrar_crea_el_esquema(ajustes: Settings) -> None:
     aplicadas = asyncio.run(db.migrar(ajustes))
-    assert aplicadas == [1]
+    # Se comprueba que se aplicaron EN ORDEN y desde la primera, no cuántas son: atar el test al
+    # número exacto obligaría a tocarlo cada vez que se añade una migración, que es justo lo que
+    # NO debe costar trabajo.
+    assert aplicadas == sorted(aplicadas)
+    assert aplicadas[0] == 1
 
     async def tablas() -> set[str]:
         async with (
@@ -58,12 +62,14 @@ def test_migrar_crea_el_esquema(ajustes: Settings) -> None:
         "presentaciones",
         "mensajes_chat",
         "artefactos",
+        "sesiones",
     } <= asyncio.run(tablas())
 
 
 def test_migrar_dos_veces_no_hace_nada_la_segunda(ajustes: Settings) -> None:
     """Idempotente: arrancar la aplicación dos veces no puede romper el esquema."""
-    assert asyncio.run(db.migrar(ajustes)) == [1]
+    primera = asyncio.run(db.migrar(ajustes))
+    assert primera, "la primera vez debe aplicar algo"
     assert asyncio.run(db.migrar(ajustes)) == []
 
 
