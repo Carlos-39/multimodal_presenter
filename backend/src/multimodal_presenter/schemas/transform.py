@@ -114,8 +114,10 @@ class GroundingReport(_Strict):
     # es un warning blando: el frontend lo pone en AVISO visible y le quita el botón de fuente
     # (no se finge una cita que no ancla), coherente con el chat. No se descarta la sección
     # (dejaría el contenido incompleto): se avisa con honestidad.
-    # TODO(Hito5): verificación por página/región para PDF/imagen (hoy `unverified`); el
-    # aplanamiento/render por página que viene en paralelo hará trazable más contenido binario.
+    # TODO(Hito5): VERIFICACIÓN por página/región para PDF/imagen (hoy `unverified`). Ojo con la
+    # distinción: la localización por región ya existe (ver `CitedRegion`), pero localizar no es
+    # verificar — el estado no cambia por encontrar la cita en la capa de texto. Lo que sigue
+    # abierto es poder afirmar que el contenido quedó verificado contra la fuente binaria.
 
 
 class SemanticObservation(_Strict):

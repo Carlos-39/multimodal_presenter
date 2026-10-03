@@ -5,7 +5,8 @@ Nivel barato (determinista): grounding de fuentes, adaptado al tipo de fuente.
   offsets, o `not_found` (warning real de fabricación).
 - PDF/imagen: NO se puede verificar por substring sin aplanar el binario (contra el
   principio rector). Las secciones quedan `unverified`; para PDF se conserva la página que
-  aporta el modelo. La verificación por página/región es TODO(Hito5).
+  aporta el modelo y, si tiene capa de texto, la REGIÓN dentro de ella (ver `pdf_locator`).
+  La región localiza, no verifica: el estado no cambia. La VERIFICACIÓN sigue siendo TODO(Hito5).
 - Audio: también `unverified`, con el segundo aproximado (`start_s`) en vez de la página. La
   cita se LOCALIZA en la transcripción de la Fase 0 para poder saltar al momento, pero eso no
   la verifica contra la señal; ver `schemas/transform.py` para el razonamiento completo.
