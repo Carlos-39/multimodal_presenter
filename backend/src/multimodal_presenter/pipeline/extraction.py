@@ -20,7 +20,13 @@ from .models import ExtractionResult, Segment
 _HAS_NUMBER = re.compile(r"\d")
 
 
-def _document_id(payload: bytes) -> str:
+def compute_document_id(payload: bytes) -> str:
+    """Id DIRECCIONABLE POR CONTENIDO de un documento: el mismo contenido da el mismo id.
+
+    Es público porque el almacén de documentos (`storage.documents`) lo necesita para comprobar
+    que unos bytes se guardan bajo el id que de verdad les corresponde. Que la regla viva en un
+    solo sitio es lo que hace que esa comprobación signifique algo.
+    """
     return f"doc-{hashlib.sha256(payload).hexdigest()[:12]}"
 
 
@@ -44,7 +50,7 @@ def _prepare_text(text: str) -> ExtractionResult:
     segments = _split_segments(text)
     return ExtractionResult(
         source_kind="text",
-        document_id=_document_id(text.encode("utf-8")),
+        document_id=compute_document_id(text.encode("utf-8")),
         text=text,
         segments=segments,
         has_numbers=bool(_HAS_NUMBER.search(text)),
@@ -69,7 +75,7 @@ def _prepare_binary(
 ) -> ExtractionResult:
     return ExtractionResult(
         source_kind=_source_kind(media_type),  # type: ignore[arg-type]
-        document_id=_document_id(binary),
+        document_id=compute_document_id(binary),
         binary=binary,
         media_type=media_type,
         filename=filename,
