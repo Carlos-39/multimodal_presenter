@@ -40,6 +40,8 @@ backend/tests/fixtures/local/*
 !backend/tests/fixtures/local/README.md
 # Salidas del arnés de métricas (Hito 5f A4): reportes con datos, no código.
 backend/scripts/outputs/
+# Salidas del spike F0 (PNGs y el PDF rotado que fabrica): se regeneran corriendo el script.
+backend/experiments/outputs/
 
 # Experimento del Hito 7 (RAG vs GraphRAG): documentos, índices, corridas y datasets con
 # datos reales NO se commitean; solo el código del experimento sí.
