@@ -107,7 +107,9 @@ export async function salir(): Promise<void> {
 export async function quienSoy(): Promise<Usuario | null> {
   try {
     const res = await fetch("/api/auth/yo");
-    return res.ok ? ((await res.json()) as Usuario) : null;
+    // El backend responde `null` sin sesión, no un error: no tener cuenta es el estado normal de
+    // esta aplicación. El `res.ok` se mantiene por si algún día el servidor sí falla de verdad.
+    return res.ok ? (((await res.json()) ?? null) as Usuario | null) : null;
   } catch {
     return null;
   }

@@ -121,7 +121,7 @@ def test_salir_revoca_la_sesion_de_verdad(client: TestClient) -> None:
     client.post("/auth/salir")
 
     client.cookies.set("mmp_sesion", token)
-    assert client.get("/auth/yo").status_code == 401
+    assert client.get("/auth/yo").json() is None, "el token revocado seguía valiendo"
 
 
 def test_salir_sin_sesion_no_es_un_error(client: TestClient) -> None:
@@ -130,11 +130,18 @@ def test_salir_sin_sesion_no_es_un_error(client: TestClient) -> None:
 
 def test_un_token_inventado_no_entra(client: TestClient) -> None:
     client.cookies.set("mmp_sesion", "token-que-me-acabo-de-inventar")
-    assert client.get("/auth/yo").status_code == 401
+    assert client.get("/auth/yo").json() is None
 
 
-def test_yo_sin_sesion_es_401(client: TestClient) -> None:
-    assert client.get("/auth/yo").status_code == 401
+def test_yo_sin_sesion_responde_que_no_hay_nadie(client: TestClient) -> None:
+    """`null` y no 401: no tener cuenta es el estado NORMAL de esta aplicación, no un error.
+
+    Con 401, cada carga sin sesión pintaba dos errores rojos en la consola del navegador por algo
+    que funcionaba como debía — y un error que no lo es enseña a ignorar los que sí lo son.
+    """
+    respuesta = client.get("/auth/yo")
+    assert respuesta.status_code == 200
+    assert respuesta.json() is None
 
 
 # ─────────────────────────────────────────────────────────────

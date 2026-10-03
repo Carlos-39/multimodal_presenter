@@ -123,7 +123,17 @@ async def salir_endpoint(
     return Response(status_code=204)
 
 
-@router.get("/yo", response_model=UsuarioResponse)
-async def yo_endpoint(usuario: aiosqlite.Row = Depends(usuario_actual)) -> UsuarioResponse:
-    """Para que el frontend sepa al cargar si hay sesión. 401 si no la hay."""
+@router.get("/yo", response_model=UsuarioResponse | None)
+async def yo_endpoint(
+    usuario: aiosqlite.Row | None = Depends(usuario_opcional),
+) -> UsuarioResponse | None:
+    """Para que el frontend sepa al cargar si hay sesión. Sin sesión responde `null`, no 401.
+
+    No tener cuenta no es un error: es el estado NORMAL de esta aplicación, el que usan las
+    sesiones de evaluación del Hito 8. Con 401, cada carga sin sesión pintaba dos errores rojos en
+    la consola del navegador por algo que estaba funcionando como debía — y un error que no lo es
+    enseña a ignorar los que sí lo son.
+    """
+    if usuario is None:
+        return None
     return UsuarioResponse(id=usuario["id"], email=usuario["email"])
