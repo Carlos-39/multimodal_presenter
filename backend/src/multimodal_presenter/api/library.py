@@ -1,0 +1,123 @@
+"""Biblioteca: guardar una presentación y volver a ella después.
+
+Estos son los únicos endpoints que EXIGEN cuenta. Todo lo demás sigue funcionando sin ella: las
+sesiones de evaluación del Hito 8 corren sin login, y entrar añade *guardar y volver*, no
+habilita usar el sistema.
+
+El documento viaja con la presentación al guardarla, y no se guarda solo al transformar. Es
+deliberado: así no se almacena el documento de alguien que nunca pidió guardar nada. Guardar es
+un acto explícito y lleva consigo lo que hace falta para que lo guardado siga sirviendo.
+"""
+
+from __future__ import annotations
+
+import aiosqlite
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+
+from ..config import Settings, get_settings
+from ..pipeline.extraction import prepare_input
+from ..schemas.library import (
+    ListaPresentaciones,
+    PayloadGuardado,
+    PresentacionCompleta,
+    ResumenPresentacion,
+)
+from ..storage import conectar
+from ..storage import documents as almacen
+from ..storage import presentations as repo
+from .auth import usuario_actual
+from .routes import parse_document_inputs
+
+router = APIRouter(prefix="/biblioteca", tags=["biblioteca"])
+
+
+@router.post("/presentaciones", response_model=ResumenPresentacion, status_code=201)
+async def guardar_endpoint(
+    payload: str = Form(...),
+    titulo: str = Form(...),
+    text: str | None = Form(default=None),
+    file: UploadFile | None = File(default=None),
+    usuario: aiosqlite.Row = Depends(usuario_actual),
+    settings: Settings = Depends(get_settings),
+) -> ResumenPresentacion:
+    """Guarda una presentación junto con el documento del que salió.
+
+    El payload se VALIDA aquí contra el contrato antes de escribirlo. Guardar algo corrupto es
+    fácil de no notar hasta meses después, cuando ya no se puede reconstruir qué pasó.
+    """
+    try:
+        datos = PayloadGuardado.model_validate_json(payload)
+    except Exception as exc:  # noqa: BLE001 — un payload inválido es error de quien llama
+        raise HTTPException(status_code=422, detail="La presentación no es válida.") from exc
+
+    text_value, binario, media_type, nombre = await parse_document_inputs(text, file, settings)
+    extraction = prepare_input(
+        text=text_value, binary=binario, media_type=media_type, filename=nombre
+    )
+    contenido = binario if binario is not None else (text_value or "").encode("utf-8")
+
+    async with conectar(settings) as conn:
+        await almacen.guardar(
+            conn,
+            settings,
+            document_id=extraction.document_id,
+            source_kind=extraction.source_kind,
+            contenido=contenido,
+            nombre_archivo=nombre,
+            media_type=media_type,
+        )
+        presentacion_id = await repo.guardar(
+            conn,
+            usuario_id=usuario["id"],
+            document_id=extraction.document_id,
+            titulo=titulo.strip() or "(sin título)",
+            payload=datos,
+        )
+        presentaciones = await repo.listar(conn, usuario["id"])
+
+    return next(p for p in presentaciones if p.id == presentacion_id)
+
+
+@router.get("/presentaciones", response_model=ListaPresentaciones)
+async def listar_endpoint(
+    usuario: aiosqlite.Row = Depends(usuario_actual),
+    settings: Settings = Depends(get_settings),
+) -> ListaPresentaciones:
+    """Mis presentaciones, la más reciente primero."""
+    async with conectar(settings) as conn:
+        return ListaPresentaciones(presentaciones=await repo.listar(conn, usuario["id"]))
+
+
+@router.get("/presentaciones/{presentacion_id}", response_model=PresentacionCompleta)
+async def obtener_endpoint(
+    presentacion_id: str,
+    usuario: aiosqlite.Row = Depends(usuario_actual),
+    settings: Settings = Depends(get_settings),
+) -> PresentacionCompleta:
+    """Una presentación guardada, con el `document_id` para seguir usándola.
+
+    404 tanto si no existe como si es de otra persona: distinguir los dos casos revelaría qué
+    identificadores están en uso, igual que el error de inicio de sesión no dice si el correo
+    existe.
+    """
+    async with conectar(settings) as conn:
+        presentacion = await repo.obtener(conn, usuario["id"], presentacion_id)
+    if presentacion is None:
+        raise HTTPException(status_code=404, detail="No se encontró esa presentación.")
+    return presentacion
+
+
+@router.delete("/presentaciones/{presentacion_id}", status_code=204)
+async def borrar_endpoint(
+    presentacion_id: str,
+    usuario: aiosqlite.Row = Depends(usuario_actual),
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Borra una presentación. Una biblioteca que no se puede podar acaba inservible.
+
+    Los bytes del documento no se borran: el almacén es direccionable por contenido, así que
+    pueden estar compartidos con otra presentación o con otro usuario.
+    """
+    async with conectar(settings) as conn:
+        if not await repo.borrar(conn, usuario["id"], presentacion_id):
+            raise HTTPException(status_code=404, detail="No se encontró esa presentación.")

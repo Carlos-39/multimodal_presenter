@@ -10,6 +10,7 @@ import logfire
 from fastapi import FastAPI
 
 from .api.auth import router as auth_router
+from .api.library import router as library_router
 from .api.routes import router as pipeline_router
 from .config import get_settings
 from .observability import configure_observability
@@ -56,6 +57,7 @@ logfire.instrument_pydantic_ai()
 
 app.include_router(pipeline_router)
 app.include_router(auth_router)
+app.include_router(library_router)
 
 
 @app.get("/health", tags=["infra"])
