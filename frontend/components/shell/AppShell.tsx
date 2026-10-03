@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import type { DetailLevel } from "@/lib/detail";
 import type { NarrationStatus } from "@/hooks/useNarration";
 import type { GroundingReport, Section } from "@/lib/types";
@@ -117,9 +118,17 @@ export function AppShell({
       {/* Header fijo */}
       <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border bg-surface px-4 py-2.5">
         <div className="flex min-w-0 items-baseline gap-2">
-          <span className="truncate text-sm font-semibold tracking-tight text-foreground">
+          {/* El nombre lleva a la portada. Es el sitio convencional y descubrible para volver al
+              inicio, y es un enlace de verdad: funciona con el teclado, con el botón central y
+              con «abrir en pestaña nueva». Va a `/inicio` y no a `/`, porque `/` es la puerta que
+              con la cookie puesta devuelve aquí mismo. */}
+          <Link
+            href="/inicio"
+            title="Volver a la portada"
+            className="truncate rounded-sm text-sm font-semibold tracking-tight text-foreground transition-colors hover:text-accent"
+          >
             Multimodal Presenter
-          </span>
+          </Link>
           <span className="hidden text-xs text-muted lg:inline">prototipo</span>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">

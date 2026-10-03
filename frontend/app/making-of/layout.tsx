@@ -11,8 +11,10 @@ export default function MakingOfLayout({ children }: { children: ReactNode }) {
     <div className="min-h-[100dvh] bg-background">
       <header className="sticky top-0 z-10 border-b border-border bg-background/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 py-3">
+          {/* A `/inicio`, no a `/`: `/` es una puerta que, con la cookie puesta, lleva a la
+              aplicación. Volver desde aquí tiene que devolver a la portada de la que se vino. */}
           <Link
-            href="/"
+            href="/inicio"
             className="flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-foreground"
           >
             <ArrowLeft size={14} aria-hidden />
