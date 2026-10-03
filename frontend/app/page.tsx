@@ -18,10 +18,18 @@ import { olvidarPaginas } from "@/lib/pdfPage";
 import { fetchIllustrations } from "@/lib/illustrations";
 import { fetchSummary } from "@/lib/summary";
 import { streamTransform } from "@/lib/stream";
-import { useChat, type OriginalSource } from "@/hooks/useChat";
+import { useChat } from "@/hooks/useChat";
 import { useNarration } from "@/hooks/useNarration";
 import { DEFAULT_DETAIL_LEVEL, visibleSections, type DetailLevel } from "@/lib/detail";
 import { initTelemetry, track, flush } from "@/lib/telemetry";
+import {
+  abrirPresentacion,
+  guardarPresentacion,
+  quienSoy,
+  textoDelDocumento,
+  type Usuario,
+} from "@/lib/account";
+import { AccountPanel } from "@/components/shell/AccountPanel";
 import type { PanelId } from "@/lib/workspace";
 import type {
   ChartNote,
@@ -29,6 +37,7 @@ import type {
   GeneratedDeck,
   GroundingReport,
   GroundingStatus,
+  OriginalSource,
   Section,
   SectionGrounding,
   SemanticCoherenceReport,
@@ -87,6 +96,12 @@ export default function Page() {
   const [summaryStatus, setSummaryStatus] = useState<SummaryStatus>("idle");
   // Solo audio: lo que oyó la fase de percepción (ver StreamEvent "transcript").
   const [transcript, setTranscript] = useState<string | null>(null);
+
+  // Cuenta: OPCIONAL. Sin ella todo sigue funcionando igual — las sesiones de evaluación del
+  // Hito 8 corren sin login. Entrar añade guardar y volver, nada más.
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [cuentaAbierta, setCuentaAbierta] = useState(false);
+  const [guardando, setGuardando] = useState<"idle" | "guardando" | "guardada" | "error">("idle");
 
   // Ilustraciones de apoyo en camino (post-pase del 5h): solo para avisar en pantalla.
   const [illustrationsPending, setIllustrationsPending] = useState(false);
@@ -186,7 +201,7 @@ export default function Page() {
     }
     if (deckStatus === "loading" || !original) return;
     setDeckStatus("loading");
-    fetchDeck(original.text, original.file, original.audioEvidence)
+    fetchDeck(original)
       .then((d) => {
         setDeck(d);
         setDeckStatus("ready");
@@ -309,8 +324,63 @@ export default function Page() {
     setDeck(null);
     setDeckStatus("idle");
     setOpenOrder((prev) => prev.filter((p) => p !== "source")); // cierra la fuente; conserva el chat
-    setOriginal({ text, file, audioEvidence: null }); // la evidencia llega con el stream
+    setOriginal({ text, file, audioEvidence: null, documentId: null }); // la evidencia llega con el stream
     setSourceKind(sourceKindOf(file));
+  }
+
+  /** Guarda lo que hay en pantalla, con el documento del que salió. */
+  async function guardar() {
+    if (!original || sections.length === 0) return;
+    setGuardando("guardando");
+    try {
+      await guardarPresentacion(
+        title || "Sin título",
+        {
+          presentation: { title, sections },
+          grounding: displayGrounding ?? synthGrounding(sourceKind, entries),
+          chart_notes: chartNotes,
+          transcript,
+          audio_evidence: original.audioEvidence,
+        },
+        { text: original.text, file: original.file },
+      );
+      setGuardando("guardada");
+    } catch {
+      setGuardando("error");
+    }
+  }
+
+  /** Restaura una presentación guardada: el mismo estado que dejaría una generación.
+   *
+   * Pasa por `resetForRun` igual que una transformación nueva, en vez de asignar campo por campo.
+   * Si se restaurara por un camino propio, cada estado que alguien añada después habría que
+   * acordarse de limpiarlo también aquí — y lo que se olvide quedaría del documento anterior.
+   */
+  async function restaurar(id: string) {
+    const g = await abrirPresentacion(id);
+    // Las fuentes de TEXTO se traen enteras: el panel de fuente las resalta carácter a carácter,
+    // así que no le sirve una URL. Las binarias sí se resuelven por URL cuando hagan falta.
+    const texto = g.source_kind === "text" ? await textoDelDocumento(g.document_id) : null;
+    resetForRun(null, null);
+    setOriginal({
+      text: texto,
+      file: null,
+      audioEvidence: g.payload.audio_evidence ?? null,
+      // El documento vive en el almacén: esto es lo que deja seguir usándola sin tener el archivo.
+      documentId: g.document_id,
+    });
+    setSourceKind(g.source_kind);
+    setTitle(g.payload.presentation.title);
+    setSections(g.payload.presentation.sections);
+    setEntries(g.payload.grounding.sections);
+    setAggGrounding(g.payload.grounding);
+    setChartNotes((g.payload.chart_notes ?? []) as ChartNote[]);
+    setTranscript(g.payload.transcript ?? null);
+    setActiveSectionId(g.payload.presentation.sections[0]?.id ?? null);
+    setStatus("done");
+    setSummaryStatus("idle");
+    setGuardando("idle");
+    setCuentaAbierta(false);
   }
 
   function applyNonStreaming(data: TransformResponse) {
@@ -357,6 +427,9 @@ export default function Page() {
     // Marca el inicio de la interacción con un documento (segmenta la sesión). Solo el TIPO de
     // fuente, nunca el contenido ni el nombre del archivo (privacidad, Hito 8).
     const sk: SourceKind = sourceKindOf(file);
+    // El documento que se va a transformar, en la forma que entiende el punto único de envío.
+    // Aquí siempre viene del navegador: `documentId` es para las presentaciones RESTAURADAS.
+    const origen: OriginalSource = { text, file, audioEvidence: null, documentId: null };
     track("transform_submit", { source_kind: sk });
     resetForRun(text, file);
     setStatus("streaming");
@@ -370,7 +443,7 @@ export default function Page() {
     // la diferencia es que el adelanto del audio tarda un poco más, no que no exista.
     setSummaryStatus("loading");
     if (sk !== "audio") {
-      fetchSummary(text, file)
+      fetchSummary(origen)
         .then((s) => {
           setSummary(s);
           setSummaryStatus("done");
@@ -382,7 +455,7 @@ export default function Page() {
     let docTitle = "";
     const collected: Section[] = []; // copia local de las secciones (para el post-pase de ilustraciones)
     try {
-      await streamTransform(text, file, (event) => {
+      await streamTransform(origen, (event) => {
         if (event.type === "transcript") {
           // Lo que la fase de percepción oyó. Alimenta el panel de fuente (transcripción con
           // la cita resaltada) y, de paso, el adelanto: ya es TEXTO, así que el modelo liviano
@@ -391,7 +464,7 @@ export default function Page() {
           // La evidencia se adjunta al DOCUMENTO: desde aquí el chat, las sugeridas y el deck
           // la reenvían solas, sin que ningún componente tenga que saber que existe.
           setOriginal((prev) => (prev ? { ...prev, audioEvidence: event.evidence } : prev));
-          fetchSummary(event.text, null)
+          fetchSummary({ text: event.text, file: null, audioEvidence: null, documentId: null })
             .then((s) => {
               setSummary(s);
               setSummaryStatus("done");
@@ -423,7 +496,7 @@ export default function Page() {
       if (received === 0) {
         // El streaming no arrancó → fallback gracioso al endpoint no-streaming.
         try {
-          const data = await postTransform(text, file);
+          const data = await postTransform(origen);
           applyNonStreaming(data);
           setStatus("done");
           void fetchAndMergeIllustrations(data.presentation, sk === "text");
@@ -490,6 +563,10 @@ export default function Page() {
   // Telemetría (Hito 8): arranca la sesión al montar y la cierra al ocultarse la pestaña,
   // reportando el último tramo de modo abierto (que ningún cambio llegó a cerrar).
   useEffect(() => {
+    void quienSoy().then(setUsuario);
+  }, []);
+
+  useEffect(() => {
     initTelemetry();
     modeEnteredAtRef.current = Date.now(); // línea base del primer modo (resumen, al montar)
     const onHide = () => {
@@ -538,6 +615,7 @@ export default function Page() {
   }
 
   return (
+    <>
     <AppShell
       sections={visible}
       grounding={displayGrounding}
@@ -653,5 +731,56 @@ export default function Page() {
         )}
       </Workspace>
     </AppShell>
+
+    {/* Cuenta y biblioteca. Van FUERA del Workspace, que arbitra las columnas de contenido: la
+        cuenta no es una vista del documento, y meterla ahí la habría hecho competir por espacio
+        con la fuente y el chat. Es un cajón que se abre y se cierra. */}
+    <div className="pointer-events-none fixed inset-0 z-40 flex justify-end">
+      {cuentaAbierta ? (
+        <>
+          <button
+            type="button"
+            aria-label="Cerrar el panel de cuenta"
+            onClick={() => setCuentaAbierta(false)}
+            className="pointer-events-auto flex-1 bg-black/20"
+          />
+          <div className="pointer-events-auto h-full w-80 max-w-[85vw] border-l border-border shadow-xl">
+            <AccountPanel
+              usuario={usuario}
+              onUsuario={setUsuario}
+              onAbrir={(id) => void restaurar(id)}
+              onCerrar={() => setCuentaAbierta(false)}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="pointer-events-auto absolute right-3 top-2.5 flex items-center gap-2">
+          {hasContent && usuario ? (
+            <button
+              type="button"
+              onClick={() => void guardar()}
+              disabled={guardando === "guardando"}
+              className="rounded-md border border-border bg-surface px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-surface-sunken disabled:opacity-50"
+            >
+              {guardando === "guardando"
+                ? "Guardando…"
+                : guardando === "guardada"
+                  ? "Guardada"
+                  : guardando === "error"
+                    ? "No se pudo guardar"
+                    : "Guardar"}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setCuentaAbierta(true)}
+            className="max-w-[12rem] truncate rounded-md border border-border bg-surface px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-surface-sunken"
+          >
+            {usuario ? usuario.email : "Entrar"}
+          </button>
+        </div>
+      )}
+    </div>
+    </>
   );
 }

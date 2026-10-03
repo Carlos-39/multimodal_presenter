@@ -1,0 +1,140 @@
+/**
+ * Cuenta y biblioteca: el cliente de los endpoints que SÍ exigen iniciar sesión.
+ *
+ * El resto de la aplicación no pasa por aquí, y es deliberado: sin cuenta todo sigue funcionando
+ * igual que antes. Las sesiones de evaluación del Hito 8 corren sin login, así que entrar añade
+ * *guardar y volver*, no habilita usar el sistema.
+ *
+ * La sesión viaja en una cookie `HttpOnly`, así que aquí no hay ningún token que manejar: el
+ * navegador la manda sola. Eso es justamente lo que impide que un XSS se la lleve.
+ */
+
+import type { GroundingReport, Presentation, SourceKind } from "./types";
+
+export interface Usuario {
+  id: string;
+  email: string;
+}
+
+export interface ResumenPresentacion {
+  id: string;
+  titulo: string;
+  document_id: string;
+  source_kind: SourceKind;
+  nombre_archivo: string | null;
+  creada_en: string;
+}
+
+export interface PayloadGuardado {
+  presentation: Presentation;
+  grounding: GroundingReport;
+  chart_notes?: unknown[];
+  transcript?: string | null;
+  audio_evidence?: string | null;
+}
+
+export interface PresentacionCompleta extends ResumenPresentacion {
+  media_type: string | null;
+  payload: PayloadGuardado;
+}
+
+async function json<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    let detalle = `Error ${res.status}`;
+    try {
+      const cuerpo = await res.json();
+      if (typeof cuerpo?.detail === "string") detalle = cuerpo.detail;
+    } catch {
+      // sin cuerpo JSON
+    }
+    throw new Error(detalle);
+  }
+  return (await res.json()) as T;
+}
+
+export async function registrarse(email: string, contrasena: string): Promise<Usuario> {
+  return json(
+    await fetch("/api/auth/registro", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, contrasena }),
+    }),
+  );
+}
+
+export async function entrar(email: string, contrasena: string): Promise<Usuario> {
+  return json(
+    await fetch("/api/auth/entrar", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, contrasena }),
+    }),
+  );
+}
+
+export async function salir(): Promise<void> {
+  await fetch("/api/auth/salir", { method: "POST" });
+}
+
+/** Quién está dentro, o `null`. No lanza: no tener sesión es normal, no un error. */
+export async function quienSoy(): Promise<Usuario | null> {
+  try {
+    const res = await fetch("/api/auth/yo");
+    return res.ok ? ((await res.json()) as Usuario) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function misPresentaciones(): Promise<ResumenPresentacion[]> {
+  const cuerpo = await json<{ presentaciones: ResumenPresentacion[] }>(
+    await fetch("/api/biblioteca/presentaciones"),
+  );
+  return cuerpo.presentaciones;
+}
+
+/**
+ * Guarda una presentación junto con el documento del que salió.
+ *
+ * El documento viaja aquí y no se guarda solo al transformar: así no se almacena el documento de
+ * quien nunca pidió guardar nada. Guardar es un acto explícito y lleva consigo lo que hace falta
+ * para que lo guardado siga sirviendo.
+ */
+export async function guardarPresentacion(
+  titulo: string,
+  payload: PayloadGuardado,
+  documento: { text: string | null; file: File | null },
+): Promise<ResumenPresentacion> {
+  const form = new FormData();
+  form.append("titulo", titulo);
+  form.append("payload", JSON.stringify(payload));
+  if (documento.text) form.append("text", documento.text);
+  if (documento.file) form.append("file", documento.file);
+  return json(await fetch("/api/biblioteca/presentaciones", { method: "POST", body: form }));
+}
+
+export async function abrirPresentacion(id: string): Promise<PresentacionCompleta> {
+  return json(await fetch(`/api/biblioteca/presentaciones/${id}`));
+}
+
+/**
+ * El TEXTO de un documento guardado.
+ *
+ * Las fuentes binarias se resuelven por URL (el panel apunta al endpoint y el navegador descarga),
+ * pero el texto plano no: el panel lo resalta carácter a carácter, así que necesita la cadena.
+ * Sin esto, una presentación de texto restaurada abría un panel de fuente VACÍO — se podía leer
+ * pero no verificar, que es justo lo que no puede pasar.
+ */
+export async function textoDelDocumento(documentId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`/api/biblioteca/documentos/${documentId}`);
+    return res.ok ? await res.text() : null;
+  } catch {
+    return null; // sin el texto el resto sigue usable; el panel lo dirá por sí mismo
+  }
+}
+
+export async function borrarPresentacion(id: string): Promise<void> {
+  const res = await fetch(`/api/biblioteca/presentaciones/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Error ${res.status}`);
+}
