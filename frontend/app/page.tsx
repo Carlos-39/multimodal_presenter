@@ -738,9 +738,13 @@ export default function Page() {
     <div className="pointer-events-none fixed inset-0 z-40 flex justify-end">
       {cuentaAbierta ? (
         <>
+          {/* El fondo oscurecido cierra al tocar fuera, pero se oculta a los lectores de
+              pantalla: anunciaba "Cerrar el panel de cuenta" igual que la X del panel, y oír dos
+              veces la misma acción obliga a probar cuál es cuál. La X ya la ofrece. */}
           <button
             type="button"
-            aria-label="Cerrar el panel de cuenta"
+            aria-hidden
+            tabIndex={-1}
             onClick={() => setCuentaAbierta(false)}
             className="pointer-events-auto flex-1 bg-black/20"
           />
