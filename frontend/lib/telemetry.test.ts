@@ -85,6 +85,26 @@ describe("telemetry tracker", () => {
     expect(events[0].participant).toBe("P07");
   });
 
+  it("el contador sigue subiendo tras una recarga de la misma pestaña", async () => {
+    // Una recarga reinicia el módulo pero NO el sessionStorage: la sesión es la misma, así que
+    // `seq` tiene que continuar donde iba. Si volviera a 0 habría dos eventos con seq 0 en la
+    // misma sesión y el orden dentro de ella dejaría de ser inequívoco (el backend documenta
+    // este campo como "contador monótono por sesión", y el análisis ordena por él).
+    track("transform_submit", { source_kind: "pdf" });
+    track("detail_mode_change", { from: "summary", to: "detailed", ms_in_from: 900 });
+    flush();
+    const antes = await bodyOf(beacon.mock.calls[0][1] as Blob);
+    const sesion = antes.events[0].session_id;
+
+    __resetForTest(); // la recarga: módulo nuevo, mismo sessionStorage
+    track("source_open", { origin: "section", grounding_status: "verified" });
+    flush();
+    const despues = await bodyOf(beacon.mock.calls[1][1] as Blob);
+
+    expect(despues.events[0].session_id).toBe(sesion); // misma sesión
+    expect(despues.events[0].seq).toBe(2); // y el contador NO volvió a 0
+  });
+
   it("cae a fetch keepalive cuando sendBeacon falla", async () => {
     beacon.mockReturnValue(false);
     track("typed_question_submit", { question_len: 15 });

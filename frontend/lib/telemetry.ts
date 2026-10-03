@@ -19,6 +19,7 @@ export type TelemetryEventName =
   | "session_start"
   | "transform_submit"
   | "detail_mode_change"
+  | "view_change"
   | "suggested_question_click"
   | "typed_question_submit"
   | "source_open"
@@ -35,6 +36,7 @@ interface RawEvent {
 }
 
 const SESSION_KEY = "mmp_session_id";
+const SEQ_KEY = "mmp_seq";
 const PARTICIPANT_KEY = "mmp_participant";
 const ENDPOINT = "/api/telemetry";
 const FLUSH_INTERVAL_MS = 5000;
@@ -88,6 +90,12 @@ function ensureSession(): string {
       sessionStorage.setItem(SESSION_KEY, id);
     }
     sessionId = id;
+    // El contador vive junto al id, y por la MISMA razón: el id sobrevive a una recarga, así que
+    // si `seq` volviera a 0 la sesión tendría dos eventos con seq 0, dos con seq 1… y el orden
+    // dentro de la sesión dejaría de ser inequívoco — justo lo que el contrato del backend pide
+    // de este campo ("contador monótono por sesión"). Pasa de verdad: una recarga en medio de la
+    // prueba basta, y el análisis ordena por `seq`.
+    seq = Number.parseInt(sessionStorage.getItem(SEQ_KEY) ?? "0", 10) || 0;
   } catch {
     sessionId = randomId();
   }
@@ -114,6 +122,11 @@ export function track(name: TelemetryEventName, data: Record<string, Primitive> 
   if (!inBrowser()) return;
   const id = ensureSession();
   buffer.push({ session_id: id, participant, name, ts: new Date().toISOString(), seq: seq++, data });
+  try {
+    sessionStorage.setItem(SEQ_KEY, String(seq));
+  } catch {
+    // Sin storage el contador sigue en memoria: la sesión se mide igual, solo no cruza recargas.
+  }
   if (buffer.length >= MAX_BUFFER) flush();
 }
 

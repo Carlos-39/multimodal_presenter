@@ -7,6 +7,7 @@ import { slideLayout } from "@/lib/deckLayout";
 import type { GeneratedDeck, GroundingStatus, SourceReference } from "@/lib/types";
 import { GeneratedFigure } from "./GeneratedFigure";
 import { SlideNav } from "./SlideNav";
+import { isAnchored } from "@/lib/grounding";
 import { SourceCitation, UnanchoredNotice } from "./SourceCitation";
 
 /**
@@ -168,7 +169,7 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
             <footer className="slide-footer shrink-0 border-t border-border text-xs">
               {slide.is_synthesis ? (
                 <span className="text-muted">Síntesis del documento, sin cita exacta</span>
-              ) : slide.source && slide.grounding !== "not_found" ? (
+              ) : slide.source && isAnchored(slide.grounding) ? (
                 <SourceCitation onOpen={() => openSource(slide.source!, slide.grounding, slide.start_s)}>
                   {truncate(slide.source.quote)}
                 </SourceCitation>
