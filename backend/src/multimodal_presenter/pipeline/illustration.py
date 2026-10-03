@@ -41,19 +41,32 @@ from ..schemas.presentation import (
 truststore.inject_into_ssl()  # SSL del sistema (Windows)
 
 _SAFETY_CAP = 4  # techo por documento: la rúbrica suele dar 1-2; esto acota el peor caso de costo
-# Opción 2: la imagen NO lleva texto (las etiquetas/explicación van en la slide). El dibujo debe
-# explicar por sí mismo con formas, colores, flechas y composición — sin palabras dentro.
-_IMAGE_STYLE = (
-    " Estilo: ilustración educativa clara y DETALLADA que explique el concepto mediante formas, "
-    "colores, flechas y composición. SIN NINGÚN TEXTO, palabra, número ni etiqueta dentro de la "
-    "imagen (las explicaciones van aparte). Fondo claro, limpio, alta legibilidad visual; no un "
-    "ícono abstracto ni meramente decorativo."
+# La imagen tiene que ENTENDERSE SOLA. No basta con que no lleve texto: tampoco puede llevar
+# marcas que remitan a información que no está dentro de la imagen — numeración de pasos, letras
+# clave, leyendas, líneas guía que apuntan a un hueco. Una referencia huérfana es PEOR que nada,
+# porque el lector busca una explicación que no existe. (Lo señaló el autor al revisar la batería
+# de diagnóstico: una foto con símbolos y sin clave deja peor a quien no conoce el tema.)
+#
+# Va en INGLÉS y con la restricción PRIMERO, no enterrada al final: así se midió que funciona.
+# Y se dice también en POSITIVO (con qué SÍ se construye el significado), porque los modelos de
+# imagen siguen mal las instrucciones puramente negativas.
+_IMAGE_STYLE_PREFIX = (
+    "SELF-EXPLANATORY WORDLESS ILLUSTRATION. Someone who knows nothing about the topic must "
+    "understand it from the picture alone, with no key or caption to consult.\n"
+    "The image contains NO writing and NO reference marks: no words, labels, captions or titles; "
+    "no callout numbers like (1) (2) (3); no letter keys; no legend; no leader lines pointing at "
+    "empty space; no watermark or signature.\n"
+    "Show meaning only with: recognizable objects drawn clearly, their arrangement in space, "
+    "arrows for direction or flow, and colour. If there is a sequence, lay the stages out in "
+    "reading order with arrows between them — never number them.\n"
+    "Clean light background, detailed and clear artwork, not a vague abstract icon.\n"
+    "Subject to depict: "
 )
 
 
 def has_image_provider(settings: Settings) -> bool:
-    """¿Hay con qué generar imágenes? (Ideogram primario u OpenAI de fallback)."""
-    return bool(settings.ideogram_api_key or settings.openai_api_key)
+    """¿Hay con qué generar imágenes? (Gemini primario, Ideogram u OpenAI de respaldo)."""
+    return bool(settings.google_api_key or settings.ideogram_api_key or settings.openai_api_key)
 
 
 class _Plan(BaseModel):
@@ -70,10 +83,12 @@ _CLASSIFY_SYSTEM = (
     "genuinamente de una ilustración de apoyo: contenido que describe un PROCESO físico/natural, "
     "un MECANISMO o estructura ESPACIAL, o una SECUENCIA visual. NO marques texto conceptual, "
     "definicional, narrativo, argumentativo, de datos/cifras ni resúmenes. Para cada sección "
-    "marcada, da un `image_prompt` en español DETALLADO que describa un diagrama que EXPLIQUE el "
-    "concepto SOLO con elementos visuales: nombra los objetos a dibujar y cómo se relacionan o "
-    "fluyen (flechas, posición, color). NO pidas texto ni etiquetas dentro de la imagen (eso va en "
-    "la slide). Devuelve SOLO las secciones que califican (puede ser ninguna)."
+    "marcada, da un `image_prompt` en español DETALLADO que describa una ilustración que EXPLIQUE "
+    "el concepto SOLO con elementos visuales: nombra los objetos a dibujar y cómo se relacionan o "
+    "fluyen (flechas, posición, color). La imagen debe entenderse SOLA, sin leyenda: NO pidas "
+    "texto ni etiquetas dentro de ella, y NO pidas pasos numerados — una secuencia se muestra "
+    "colocando las etapas en orden con flechas. Devuelve SOLO las secciones que califican (puede "
+    "ser ninguna)."
 )
 
 classify_agent = Agent(output_type=PromptedOutput(_PlanList), system_prompt=_CLASSIFY_SYSTEM)
@@ -132,6 +147,44 @@ _IDEOGRAM_NEGATIVE = (
 )
 
 
+async def _gemini_image(settings: Settings, prompt: str) -> str:
+    """Genera con Gemini (PRIMARIO). Devuelve data URI. Lanza si falla.
+
+    Pasó a ser el primario tras medirlo contra Ideogram con los mismos prompts reales: 0 de 6
+    imágenes con palabras inventadas frente a 3 de 6, y además más barato ($0.067 frente a
+    $0.090). No hace falta clave nueva: usa la `GOOGLE_API_KEY` que ya usan la percepción de
+    audio y el fallback de estructuración.
+
+    No tiene `negative_prompt`: toda la restricción va en el prompt, que ya la lleva delante.
+    La proporción y el tamaño se fijan — sin ellos la imagen sale apaisada con bandas, y el
+    tamaño es lo que clava el precio por imagen.
+    """
+    from google import genai
+    from google.genai import types
+
+    cliente = genai.Client(api_key=settings.google_api_key)
+    respuesta = await cliente.aio.models.generate_content(
+        model=settings.google_image_model,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            response_modalities=["IMAGE"],
+            image_config=types.ImageConfig(
+                aspect_ratio=settings.google_image_aspect_ratio,
+                image_size=settings.google_image_size,
+            ),
+        ),
+    )
+    for parte in respuesta.candidates[0].content.parts:
+        datos = getattr(parte, "inline_data", None)
+        if datos and datos.data:
+            crudo = datos.data if isinstance(datos.data, bytes) else base64.b64decode(datos.data)
+            tipo = datos.mime_type or "image/png"
+            return f"data:{tipo};base64,{base64.b64encode(crudo).decode('ascii')}"
+    # Gemini filtra por seguridad con más agresividad que los otros: si rechaza el prompt no
+    # devuelve imagen. Se lanza para que el respaldo tome el relevo, que es justo su razón de ser.
+    raise RuntimeError("Gemini no devolvió imagen (¿filtro de seguridad?)")
+
+
 async def _ideogram_image(settings: Settings, prompt: str) -> str:
     """Genera con Ideogram v3 (primario). Devuelve data URI. Lanza si falla."""
     async with httpx.AsyncClient(timeout=120) as client:
@@ -171,16 +224,25 @@ async def _openai_image(settings: Settings, prompt: str) -> str:
 
 
 async def _generate_image(settings: Settings, image_prompt: str) -> str:
-    """Genera la imagen (sin texto) como data URI: Ideogram primario, gpt-image-1 de fallback."""
-    prompt = image_prompt + _IMAGE_STYLE
+    """Genera la imagen como data URI. Gemini primario; Ideogram y OpenAI como respaldos.
+
+    La restricción va DELANTE del asunto a dibujar, no detrás: se midió que enterrarla al final
+    de una descripción larga la debilita.
+    """
+    prompt = _IMAGE_STYLE_PREFIX + image_prompt
+    if settings.google_api_key:
+        try:
+            return await _gemini_image(settings, prompt)
+        except Exception as exc:  # noqa: BLE001 — para esto existen los respaldos
+            logfire.warning("Gemini falló, probando Ideogram: {error}", error=str(exc))
     if settings.ideogram_api_key:
         try:
             return await _ideogram_image(settings, prompt)
-        except Exception as exc:  # noqa: BLE001 — el fallback es justamente para esto
+        except Exception as exc:  # noqa: BLE001
             logfire.warning("Ideogram falló, usando gpt-image-1: {error}", error=str(exc))
     if settings.openai_api_key:
         return await _openai_image(settings, prompt)
-    raise RuntimeError("No hay proveedor de imagen configurado (Ideogram u OpenAI).")
+    raise RuntimeError("No hay proveedor de imagen configurado (Gemini, Ideogram u OpenAI).")
 
 
 async def illustrate(
