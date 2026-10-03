@@ -58,13 +58,23 @@ def _registra(client: TestClient, email: str) -> None:
     assert r.status_code == 201
 
 
-def _guarda(client: TestClient, titulo: str = "Duendes rojos") -> dict:
-    r = client.post(
-        "/biblioteca/presentaciones",
-        data={"payload": json.dumps(PAYLOAD), "titulo": titulo, "text": TEXTO},
-    )
+def _guarda(client: TestClient, titulo: str = "Duendes rojos", payload: dict | None = None) -> dict:
+    r = _post_guardar(client, titulo, payload or PAYLOAD)
     assert r.status_code == 201, r.text
     return r.json()
+
+
+def _post_guardar(client: TestClient, titulo: str, payload: dict):
+    """El payload viaja como PARTE DE ARCHIVO, no como campo.
+
+    No es un detalle de implementación: como campo, el analizador de multipart lo topa en 1 MB y
+    una presentación con ilustraciones (son data URIs, varios megas) no se podía guardar.
+    """
+    return client.post(
+        "/biblioteca/presentaciones",
+        data={"titulo": titulo, "text": TEXTO},
+        files={"payload": ("payload.json", json.dumps(payload), "application/json")},
+    )
 
 
 # ─────────────────────────────────────────────────────────────
@@ -120,14 +130,7 @@ def test_varias_presentaciones_a_la_vez(client: TestClient) -> None:
 def test_un_payload_corrupto_no_entra(client: TestClient) -> None:
     """Validar al guardar y no al leer: lo corrupto es fácil de no notar hasta meses después."""
     _registra(client, "a@x.com")
-    r = client.post(
-        "/biblioteca/presentaciones",
-        data={
-            "payload": json.dumps({"presentation": "esto no es una presentación"}),
-            "titulo": "mala",
-            "text": TEXTO,
-        },
-    )
+    r = _post_guardar(client, "mala", {"presentation": "esto no es una presentación"})
     assert r.status_code == 422
 
 
@@ -186,11 +189,7 @@ def test_la_biblioteca_exige_cuenta(client: TestClient, metodo: str, ruta: str) 
 
 
 def test_guardar_exige_cuenta(client: TestClient) -> None:
-    r = client.post(
-        "/biblioteca/presentaciones",
-        data={"payload": json.dumps(PAYLOAD), "titulo": "t", "text": TEXTO},
-    )
-    assert r.status_code == 401
+    assert _post_guardar(client, "t", PAYLOAD).status_code == 401
 
 
 # ─────────────────────────────────────────────────────────────
@@ -574,3 +573,156 @@ def test_si_el_archivo_desaparece_se_responde_que_no_hay(client: TestClient) -> 
     (resolve_data_dir(get_settings()) / "narraciones" / f"{pid}.mp3").unlink()
 
     assert client.get(_ruta_narracion(pid)).status_code == 404
+
+
+# ─────────────────────────────────────────────────────────────
+# Actualizar en vez de duplicar
+#
+# Pulsar «Guardar» dos veces creaba dos presentaciones con el mismo nombre. Y deshabilitar el
+# botón no habría bastado: lo que hay en pantalla puede CRECER después de guardarlo, porque las
+# ilustraciones llegan en un post-pase.
+# ─────────────────────────────────────────────────────────────
+def _payload_con(titulo_seccion: str) -> dict:
+    datos = json.loads(json.dumps(PAYLOAD))
+    datos["presentation"]["sections"][0]["title"] = titulo_seccion
+    return datos
+
+
+def test_actualizar_no_crea_otra_presentacion(client: TestClient) -> None:
+    """El punto del arreglo: volver a guardar completa lo guardado, no lo duplica."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+
+    r = client.put(
+        f"/biblioteca/presentaciones/{pid}",
+        json={"payload": _payload_con("Con ilustración"), "titulo": "Duendes rojos"},
+    )
+    assert r.status_code == 204, r.text
+
+    lista = client.get("/biblioteca/presentaciones").json()["presentaciones"]
+    assert len(lista) == 1, "volver a guardar creó una presentación de más"
+    completa = client.get(f"/biblioteca/presentaciones/{pid}").json()
+    assert completa["payload"]["presentation"]["sections"][0]["title"] == "Con ilustración"
+
+
+def test_actualizar_conserva_cuándo_se_creó(client: TestClient) -> None:
+    """Es la MISMA presentación: completar lo guardado no la convierte en una nueva, y la
+    biblioteca se ordena por esa fecha."""
+    _registra(client, "a@x.com")
+    guardada = _guarda(client)
+    client.put(
+        f"/biblioteca/presentaciones/{guardada['id']}",
+        json={"payload": PAYLOAD, "titulo": "Otro nombre"},
+    )
+    completa = client.get(f"/biblioteca/presentaciones/{guardada['id']}").json()
+    assert completa["creada_en"] == guardada["creada_en"]
+    assert completa["titulo"] == "Otro nombre"
+
+
+def test_actualizar_no_toca_el_chat_ni_los_artefactos(client: TestClient) -> None:
+    """Completar la presentación no puede llevarse por delante lo que cuelga de ella."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    client.put(f"/biblioteca/presentaciones/{pid}/chat", json=CONVERSACION)
+    client.put(_ruta_deck(pid), json=DECK)
+
+    client.put(
+        f"/biblioteca/presentaciones/{pid}",
+        json={"payload": PAYLOAD, "titulo": "Duendes rojos"},
+    )
+
+    completa = client.get(f"/biblioteca/presentaciones/{pid}").json()
+    assert len(completa["chat"]) == 2
+    assert completa["tiene_deck"] is True
+
+
+def test_no_se_puede_actualizar_la_de_otro(client: TestClient) -> None:
+    """Sin esto, conocer un id ajeno bastaría para reescribir la presentación de otra persona."""
+    _registra(client, "ana@x.com")
+    ajena = _guarda(client)["id"]
+    client.post("/auth/salir")
+
+    _registra(client, "beto@x.com")
+    r = client.put(
+        f"/biblioteca/presentaciones/{ajena}",
+        json={"payload": _payload_con("Pisado"), "titulo": "Pisado"},
+    )
+    assert r.status_code == 404
+
+    client.post("/auth/salir")
+    client.post("/auth/entrar", json={"email": "ana@x.com", "contrasena": "unaclavelarga"})
+    assert client.get(f"/biblioteca/presentaciones/{ajena}").json()["titulo"] == "Duendes rojos"
+
+
+def test_actualizar_con_un_payload_corrupto_no_entra(client: TestClient) -> None:
+    """Mismo criterio que al guardar: se valida al escribir, no al leer."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    r = client.put(
+        f"/biblioteca/presentaciones/{pid}",
+        json={"payload": {"presentation": "esto no lo es"}, "titulo": "mala"},
+    )
+    assert r.status_code == 422
+
+
+def test_actualizar_exige_cuenta(client: TestClient) -> None:
+    r = client.put(
+        "/biblioteca/presentaciones/pre-loquesea",
+        json={"payload": PAYLOAD, "titulo": "t"},
+    )
+    assert r.status_code == 401
+
+
+# ─────────────────────────────────────────────────────────────
+# El payload grande: la regresión que de verdad dolía
+#
+# Las ilustraciones de apoyo son data URIs. Cuatro de ellas son ~3,5 MB, y el analizador de
+# multipart topa en 1 MB las partes que NO son archivo. Mientras el payload viajó como campo de
+# formulario, guardar una presentación ilustrada respondía 400 y la interfaz solo decía "No se
+# pudo guardar". Se vio probando contra el sistema real, no con tests: los de entonces usaban
+# payloads de laboratorio, de unos pocos cientos de bytes.
+# ─────────────────────────────────────────────────────────────
+def _payload_ilustrado(megas: int = 3) -> dict:
+    """Un payload del tamaño real de una presentación con ilustraciones."""
+    datos = json.loads(json.dumps(PAYLOAD))
+    datos["presentation"]["sections"][0]["illustration"] = {
+        "kind": "generated_illustration",
+        # Un data URI de verdad, del tamaño de verdad.
+        "image_url": "data:image/jpeg;base64," + ("A" * (megas * 1024 * 1024)),
+        "alt": "Un duende rojo sobre una tormenta",
+    }
+    return datos
+
+
+def test_se_puede_guardar_una_presentacion_con_ilustraciones(client: TestClient) -> None:
+    _registra(client, "a@x.com")
+    r = _post_guardar(client, "Con ilustraciones", _payload_ilustrado())
+    assert r.status_code == 201, f"un payload de 3 MB no entró: {r.status_code}"
+
+    completa = client.get(f"/biblioteca/presentaciones/{r.json()['id']}").json()
+    url = completa["payload"]["presentation"]["sections"][0]["illustration"]["image_url"]
+    assert len(url) > 3 * 1024 * 1024, "la ilustración se guardó recortada"
+
+
+def test_se_puede_completar_con_ilustraciones_lo_ya_guardado(client: TestClient) -> None:
+    """El caso exacto que motivó el arreglo: guardar en cuanto salen las secciones y volver a
+    pulsar cuando llegan las ilustraciones."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]  # sin ilustraciones, como cuando se guarda pronto
+
+    r = client.put(
+        f"/biblioteca/presentaciones/{pid}",
+        json={"payload": _payload_ilustrado(), "titulo": "Duendes rojos"},
+    )
+    assert r.status_code == 204, f"completar con 3 MB no entró: {r.status_code}"
+
+    completa = client.get(f"/biblioteca/presentaciones/{pid}").json()
+    assert completa["payload"]["presentation"]["sections"][0]["illustration"] is not None
+    assert len(client.get("/biblioteca/presentaciones").json()["presentaciones"]) == 1
+
+
+def test_un_payload_desmesurado_se_rechaza(client: TestClient) -> None:
+    """Sin tope, un cuerpo enorme llenaría el disco antes de que nadie lo valide."""
+    _registra(client, "a@x.com")
+    r = _post_guardar(client, "enorme", _payload_ilustrado(megas=26))
+    assert r.status_code == 413

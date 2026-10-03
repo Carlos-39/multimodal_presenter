@@ -65,6 +65,33 @@ async def guardar(
     return presentacion_id
 
 
+async def actualizar(
+    conn: aiosqlite.Connection,
+    usuario_id: str,
+    presentacion_id: str,
+    *,
+    titulo: str,
+    payload: PayloadGuardado,
+) -> bool:
+    """Reemplaza el contenido de una presentación DEL USUARIO. `False` si no es suya.
+
+    Existe porque lo que hay en pantalla puede crecer DESPUÉS de haberlo guardado: las
+    ilustraciones de apoyo llegan en un post-pase, así que quien guarda en cuanto aparecen las
+    secciones y vuelve a pulsar diez segundos más tarde está pidiendo completar lo guardado, no
+    duplicarlo.
+
+    No se toca `creada_en`: la presentación es la misma: solo se actualiza qué contiene. Y no se
+    toca el documento, que es el mismo por definición — si cambiara, sería otra presentación.
+    """
+    cur = await conn.execute(
+        "UPDATE presentaciones SET titulo = ?, version_contrato = ?, payload_json = ? "
+        "WHERE id = ? AND usuario_id = ?",
+        (titulo, VERSION_CONTRATO, payload.model_dump_json(), presentacion_id, usuario_id),
+    )
+    await conn.commit()
+    return cur.rowcount > 0
+
+
 async def listar(conn: aiosqlite.Connection, usuario_id: str) -> list[ResumenPresentacion]:
     """Las presentaciones del usuario, la más reciente primero. SIN el payload.
 

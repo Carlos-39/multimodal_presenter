@@ -72,6 +72,18 @@ class HistorialChat(_Strict):
     mensajes: list[MensajeGuardado] = Field(default_factory=list, max_length=200)
 
 
+class ActualizacionPresentacion(_Strict):
+    """Lo que se manda al completar una presentación ya guardada.
+
+    Viaja como JSON y no como formulario a propósito: un payload con ilustraciones son varios
+    megas (son data URIs), y los campos de formulario que no son archivo están topados en 1 MB por
+    el analizador de multipart. Aquí no hay documento que subir, así que no hace falta multipart.
+    """
+
+    titulo: str = Field(min_length=1, max_length=300)
+    payload: PayloadGuardado
+
+
 class ResumenPresentacion(_Strict):
     """Una fila de "mis presentaciones". Sin el payload.
 
