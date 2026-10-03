@@ -1,7 +1,7 @@
 """Exporta la telemetría de comportamiento (Hito 8) a CSV para análisis.
 
 Lee los JSONL que deja el backend (`telemetry.record_ux_event`) y produce dos archivos:
-- `telemetry_raw.csv`   — un evento por fila (auditoría, orden por sesión y `seq`).
+- `telemetry_raw.csv`   — un evento por fila (auditoría, orden por sesión y TIEMPO).
 - `telemetry_summary.csv` — una fila por sesión: los agregados que se cruzan con NASA-TLX y la
   prueba de comprensión (tiempo en resumen vs. detallado, sugeridas vs. propias, verificaciones
   de fuente por estado de grounding, etc.).
@@ -20,7 +20,7 @@ import csv
 import json
 import sys
 from collections import defaultdict
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -53,8 +53,35 @@ def _parse_ts(ts: str | None) -> datetime | None:
         return None
 
 
+_LEJANO = datetime.max.replace(tzinfo=UTC)
+
+
+def _orden(event: dict[str, Any]) -> tuple[str, datetime, int]:
+    """Clave de orden: sesión, luego TIEMPO, y `seq` solo para desempatar.
+
+    Ordenar por `seq` a secas no basta con los datos ya recogidos: el cliente antiguo reiniciaba
+    el contador en cada recarga de la pestaña mientras el id de sesión sobrevivía, así que hay
+    sesiones con varios eventos en seq 0, 1, 2… El sello de tiempo es la verdad de terreno y no
+    depende de ese detalle del cliente; `seq` queda como desempate para eventos del mismo ms.
+    """
+    return (
+        event.get("session_id", ""),
+        _parse_ts(event.get("ts")) or _LEJANO,
+        int(event.get("seq", 0) or 0),
+    )
+
+
+def _primero_por_tiempo(eventos: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """El evento más TEMPRANO de la lista (no el primero que aparezca al ordenar por `seq`)."""
+    con_ts = [(e, _parse_ts(e.get("ts"))) for e in eventos]
+    fechados = [(e, t) for e, t in con_ts if t is not None]
+    if not fechados:
+        return eventos[0] if eventos else None
+    return min(fechados, key=lambda par: par[1])[0]
+
+
 def _write_raw(events: list[dict[str, Any]], out: Path) -> None:
-    ordered = sorted(events, key=lambda e: (e.get("session_id", ""), e.get("seq", 0)))
+    ordered = sorted(events, key=_orden)
     # Reúne todas las claves de payload presentes, para columnas estables.
     data_keys: set[str] = set()
     for event in ordered:
@@ -79,7 +106,7 @@ def _summarize(events: list[dict[str, Any]], out: Path) -> list[dict[str, Any]]:
 
     rows: list[dict[str, Any]] = []
     for session_id, evs in sorted(by_session.items()):
-        evs.sort(key=lambda e: e.get("seq", 0))
+        evs.sort(key=_orden)
         data = lambda e: e.get("data") or {}  # noqa: E731 (helper local, legible)
 
         ms_summary = 0.0
@@ -107,11 +134,15 @@ def _summarize(events: list[dict[str, Any]], out: Path) -> list[dict[str, Any]]:
             by_status[data(e).get("grounding_status", "?")] += 1
             by_origin[data(e).get("origin", "?")] += 1
 
-        start = next((e for e in evs if e["name"] == "session_start"), None)
+        # Por tiempo, no por posición: una recarga en medio de la sesión mete un segundo
+        # `session_start` y reinicia `seq`, y entonces "el primero de la lista" podía ser un
+        # evento POSTERIOR en el reloj. El arranque es el más temprano; la primera pregunta,
+        # también — si no, `ms_to_first_question` mide hasta una pregunta que no es la primera.
+        arranques = [e for e in evs if e["name"] == "session_start"]
+        start = _primero_por_tiempo(arranques)
         start_ts = _parse_ts(start.get("ts")) if start else None
-        first_q = next(
-            (e for e in evs if e["name"] in ("typed_question_submit", "suggested_question_click")),
-            None,
+        first_q = _primero_por_tiempo(
+            [e for e in evs if e["name"] in ("typed_question_submit", "suggested_question_click")]
         )
         ms_to_first_q: float | str = ""
         if start_ts and first_q:
@@ -125,6 +156,9 @@ def _summarize(events: list[dict[str, Any]], out: Path) -> list[dict[str, Any]]:
                 "session_id": session_id,
                 "participant": participant,
                 "n_events": len(evs),
+                # Un `session_start` extra = una recarga de la pestaña. Se expone para que
+                # una fila con `n_events` inflado se explique sola al analizarla.
+                "n_reloads": max(0, len(arranques) - 1),
                 "n_transforms": sum(1 for e in evs if e["name"] == "transform_submit"),
                 "ms_summary": round(ms_summary),
                 "ms_detailed": round(ms_detailed),

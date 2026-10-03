@@ -149,3 +149,60 @@ def test_exportador_agrega_tiempo_por_modo() -> None:
     assert row["src_verified"] == 1
     assert row["src_from_chat"] == 1
     assert row["participant"] == "P03"
+
+
+def _ev_ts(name: str, seq: int, ts: str, data: dict | None = None) -> dict:
+    """Evento con sello de tiempo explícito (para los casos donde el ORDEN es lo que se prueba)."""
+    return {
+        "session_id": "sess-recarga",
+        "participant": "P03",
+        "name": name,
+        "ts": ts,
+        "seq": seq,
+        "data": data or {},
+    }
+
+
+def test_exportador_ordena_por_tiempo_aunque_se_repita_el_seq() -> None:
+    """Una recarga en medio de la sesión no debe falsear `ms_to_first_question`.
+
+    El id de sesión vive en `sessionStorage` y sobrevive a una recarga de la pestaña; el cliente
+    antiguo, en cambio, reiniciaba `seq` en 0. Resultado: una misma sesión con dos eventos en
+    seq 0, dos en seq 1… Ordenando por `seq` a secas, un evento POSTERIOR en el reloj (seq bajo,
+    tras la recarga) se colaba por delante de uno ANTERIOR (seq alto, antes de la recarga), y
+    "la primera pregunta" salía siendo la que no era. Aquí la pregunta real llega a los 30 s;
+    ordenando por `seq` se mediría la de los 70 s.
+
+    Se arregló en el cliente (contador persistido), pero el exportador tiene que seguir siendo
+    correcto con los JSONL YA recogidos: ordena por tiempo y toma los extremos por tiempo.
+    """
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    from export_telemetry import _summarize  # noqa: PLC0415 (script fuera del paquete)
+
+    events = [
+        # Antes de la recarga: la pregunta real, en un seq alto.
+        _ev_ts("session_start", 0, "2026-09-30T10:00:00.000Z"),
+        _ev_ts("transform_submit", 1, "2026-09-30T10:00:05.000Z", {"source_kind": "pdf"}),
+        _ev_ts("typed_question_submit", 5, "2026-09-30T10:00:30.000Z", {"question_len": 20}),
+        # Recarga: el contador vuelve a 0 con la MISMA sesión.
+        _ev_ts("session_start", 0, "2026-09-30T10:01:00.000Z"),
+        _ev_ts(
+            "suggested_question_click",
+            1,
+            "2026-09-30T10:01:10.000Z",
+            {"suggestion_index": 0, "question_len": 30},
+        ),
+    ]
+    out = Path(__file__).resolve().parent / "_tmp_recarga.csv"
+    try:
+        rows = _summarize(events, out)
+    finally:
+        out.unlink(missing_ok=True)
+
+    (row,) = rows
+    assert row["ms_to_first_question"] == 30_000  # la de las 10:00:30, no la de las 10:01:10
+    assert row["n_reloads"] == 1  # el `session_start` de más se reporta, no se esconde
+    assert row["n_typed"] == 1 and row["n_suggested"] == 1  # no se pierde ningún evento
