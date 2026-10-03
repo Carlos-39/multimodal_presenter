@@ -1,0 +1,32 @@
+import Link from "next/link";
+import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
+import type { ReactNode } from "react";
+
+/**
+ * El armazón del «making of». Deliberadamente más desnudo que la aplicación: aquí no hay nada que
+ * operar, solo que leer. Una barra fina para volver, y nada más compitiendo con el texto.
+ */
+export default function MakingOfLayout({ children }: { children: ReactNode }) {
+  return (
+    <div className="min-h-[100dvh] bg-background">
+      <header className="sticky top-0 z-10 border-b border-border bg-background/90 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 py-3">
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-foreground"
+          >
+            <ArrowLeft size={14} aria-hidden />
+            Multimodal Presenter
+          </Link>
+          <span aria-hidden className="text-muted">
+            /
+          </span>
+          <Link href="/making-of" className="text-xs text-foreground-secondary hover:text-foreground">
+            Cómo se construyó
+          </Link>
+        </div>
+      </header>
+      {children}
+    </div>
+  );
+}
