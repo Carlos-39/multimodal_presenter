@@ -33,7 +33,11 @@ from .models import ExtractionResult
 # (misma longitud), así que el índice hallado sobre el texto canónico sigue siendo válido sobre el
 # texto ORIGINAL → el resaltado del 5c se mantiene exacto. NO se toca la semántica (no minúsculas,
 # no colapso de espacios): solo se unifican variantes tipográficas de un mismo signo.
-_CANON_MAP = str.maketrans(
+#
+# Es público porque lo comparte el localizador de regiones en PDF (`pdf_locator`): la misma
+# tolerancia tipográfica tiene que valer para el texto plano y para la capa de texto de un PDF, o
+# el mismo modelo citando igual se trataría distinto según el formato de la fuente.
+CANON_MAP = str.maketrans(
     {
         "“": '"',  # “
         "”": '"',  # ”
@@ -56,7 +60,7 @@ def _find_quote(text: str, quote: str) -> int:
     idx = text.find(quote)
     if idx != -1:
         return idx
-    return text.translate(_CANON_MAP).find(quote.translate(_CANON_MAP))
+    return text.translate(CANON_MAP).find(quote.translate(CANON_MAP))
 
 
 def ground_section(
