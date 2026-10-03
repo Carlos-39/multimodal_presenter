@@ -402,3 +402,175 @@ def test_borrar_la_presentacion_se_lleva_su_chat(client: TestClient) -> None:
                 return (await cur.fetchone())["n"]
 
     assert asyncio.run(quedan()) == 0
+
+
+# ─────────────────────────────────────────────────────────────
+# Artefactos generados (F4): deck y narración
+#
+# Lo que se protege aquí no es el ahorro de una llamada al modelo: es que lo guardado sea lo
+# MISMO al volver. Regenerar da otro guion y otra voz, y una presentación que cambia sola no era
+# de nadie.
+# ─────────────────────────────────────────────────────────────
+DECK = {
+    "slides": [
+        {
+            "title": "Dónde ocurren",
+            "body": "Sobre las tormentas eléctricas intensas.",
+            "bullets": ["Muy por encima de las nubes"],
+            "source": {"document_id": "d", "quote": TEXTO},
+            "grounding": "verified",
+        }
+    ]
+}
+
+MP3 = b"ID3\x04\x00\x00\x00\x00\x00\x00" + b"\x00" * 64  # cabecera real, contenido de relleno
+
+
+def _ruta_deck(pid: str) -> str:
+    return f"/biblioteca/presentaciones/{pid}/artefactos/deck"
+
+
+def _ruta_narracion(pid: str) -> str:
+    return f"/biblioteca/presentaciones/{pid}/artefactos/narracion"
+
+
+def test_el_deck_guardado_vuelve_igual(client: TestClient) -> None:
+    """El punto de F4: al volver salen LAS MISMAS diapositivas, no unas nuevas parecidas."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+
+    assert client.put(_ruta_deck(pid), json=DECK).status_code == 204
+
+    from multimodal_presenter.schemas.transform import GeneratedDeck
+
+    vuelto = client.get(_ruta_deck(pid)).json()
+    esperado = GeneratedDeck.model_validate(DECK).model_dump(mode="json")
+    assert GeneratedDeck.model_validate(vuelto).model_dump(mode="json") == esperado
+
+
+def test_abrir_una_presentacion_dice_qué_artefactos_tiene_sin_traerlos(client: TestClient) -> None:
+    """La bandera es lo que deja que el botón diga «Abrir presentación» nada más restaurar.
+
+    Y los artefactos NO viajan ahí: un deck con ilustraciones pesa megas y puede que nadie lo
+    mire, mientras que abrir una presentación tiene que ser inmediato.
+    """
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+
+    recien = client.get(f"/biblioteca/presentaciones/{pid}").json()
+    assert (recien["tiene_deck"], recien["tiene_narracion"]) == (False, False)
+
+    client.put(_ruta_deck(pid), json=DECK)
+    client.put(_ruta_narracion(pid), content=MP3)
+
+    completa = client.get(f"/biblioteca/presentaciones/{pid}").json()
+    assert (completa["tiene_deck"], completa["tiene_narracion"]) == (True, True)
+    assert "deck" not in completa and "narracion" not in completa
+
+
+def test_guardar_el_deck_reemplaza_al_anterior(client: TestClient) -> None:
+    """Regenerar deja UN deck, no dos. Si no, abrir volvería a dar el primero para siempre."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+
+    client.put(_ruta_deck(pid), json=DECK)
+    otro = {"slides": [dict(DECK["slides"][0], title="Otro título")]}
+    client.put(_ruta_deck(pid), json=otro)
+
+    assert client.get(_ruta_deck(pid)).json()["slides"][0]["title"] == "Otro título"
+
+
+def test_un_deck_corrupto_no_entra(client: TestClient) -> None:
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    assert client.put(_ruta_deck(pid), json={"slides": []}).status_code == 422
+
+
+def test_la_narracion_vuelve_byte_a_byte(client: TestClient) -> None:
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+
+    assert client.put(_ruta_narracion(pid), content=MP3).status_code == 204
+    r = client.get(_ruta_narracion(pid))
+    assert r.status_code == 200
+    assert r.content == MP3
+    assert r.headers["content-type"] == "audio/mpeg"
+
+
+def test_lo_que_no_es_un_mp3_no_se_guarda(client: TestClient) -> None:
+    """Un archivo que no suena es peor que no tener narración: parece que sí hay."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    assert client.put(_ruta_narracion(pid), content=b"<html>no soy audio</html>").status_code == 415
+    assert client.get(_ruta_narracion(pid)).status_code == 404
+
+
+def test_una_narracion_vacia_no_se_guarda(client: TestClient) -> None:
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    assert client.put(_ruta_narracion(pid), content=b"").status_code == 400
+
+
+def test_sin_artefactos_pedirlos_da_404(client: TestClient) -> None:
+    """404 y no un cuerpo vacío: «no hay» tiene que ser distinguible de «hay y está vacío»."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    assert client.get(_ruta_deck(pid)).status_code == 404
+    assert client.get(_ruta_narracion(pid)).status_code == 404
+
+
+def test_los_artefactos_de_otro_no_se_leen_ni_se_escriben(client: TestClient) -> None:
+    """Conocer el id de una presentación ajena no puede bastar para ver su deck, oír su narración
+    ni, peor, sustituirlos por otros."""
+    _registra(client, "ana@x.com")
+    ajena = _guarda(client)["id"]
+    client.put(_ruta_deck(ajena), json=DECK)
+    client.put(_ruta_narracion(ajena), content=MP3)
+    client.post("/auth/salir")
+
+    _registra(client, "beto@x.com")
+    assert client.get(_ruta_deck(ajena)).status_code == 404
+    assert client.get(_ruta_narracion(ajena)).status_code == 404
+    otro = {"slides": [dict(DECK["slides"][0], title="Pisado")]}
+    assert client.put(_ruta_deck(ajena), json=otro).status_code == 404
+    assert client.put(_ruta_narracion(ajena), content=b"ID3\x04" + b"\x00" * 20).status_code == 404
+
+    client.post("/auth/salir")
+    client.post("/auth/entrar", json={"email": "ana@x.com", "contrasena": "unaclavelarga"})
+    assert client.get(_ruta_deck(ajena)).json()["slides"][0]["title"] == "Dónde ocurren"
+    assert client.get(_ruta_narracion(ajena)).content == MP3
+
+
+def test_los_artefactos_exigen_cuenta(client: TestClient) -> None:
+    assert client.get(_ruta_deck("pre-loquesea")).status_code == 401
+    assert client.get(_ruta_narracion("pre-loquesea")).status_code == 401
+
+
+def test_borrar_la_presentacion_se_lleva_el_mp3_del_disco(client: TestClient) -> None:
+    """El `ON DELETE CASCADE` se lleva la fila, pero un archivo no se borra solo. Y este sí se
+    puede borrar: la narración es de UNA presentación, no la comparte nadie."""
+    from multimodal_presenter.config import get_settings
+    from multimodal_presenter.storage.db import resolve_data_dir
+
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    client.put(_ruta_narracion(pid), content=MP3)
+
+    archivo = resolve_data_dir(get_settings()) / "narraciones" / f"{pid}.mp3"
+    assert archivo.is_file(), "la narración debería estar en disco antes de borrar"
+
+    client.delete(f"/biblioteca/presentaciones/{pid}")
+    assert not archivo.exists(), "un mp3 huérfano por cada presentación borrada"
+
+
+def test_si_el_archivo_desaparece_se_responde_que_no_hay(client: TestClient) -> None:
+    """Alguien puede limpiar la carpeta a mano. «No hay» deja regenerar; un error no dice nada."""
+    from multimodal_presenter.config import get_settings
+    from multimodal_presenter.storage.db import resolve_data_dir
+
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    client.put(_ruta_narracion(pid), content=MP3)
+    (resolve_data_dir(get_settings()) / "narraciones" / f"{pid}.mp3").unlink()
+
+    assert client.get(_ruta_narracion(pid)).status_code == 404

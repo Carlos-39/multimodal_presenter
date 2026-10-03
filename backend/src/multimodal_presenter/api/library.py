@@ -12,7 +12,7 @@ un acto explícito y lleva consigo lo que hace falta para que lo guardado siga s
 from __future__ import annotations
 
 import aiosqlite
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 
 from ..config import Settings, get_settings
 from ..pipeline.extraction import prepare_input
@@ -23,6 +23,8 @@ from ..schemas.library import (
     PresentacionCompleta,
     ResumenPresentacion,
 )
+from ..schemas.transform import GeneratedDeck
+from ..storage import artifacts as artefactos
 from ..storage import chat as chat_repo
 from ..storage import conectar
 from ..storage import documents as almacen
@@ -31,6 +33,21 @@ from .auth import usuario_actual
 from .routes import parse_document_inputs
 
 router = APIRouter(prefix="/biblioteca", tags=["biblioteca"])
+
+MAX_NARRACION_BYTES = 25 * 1024 * 1024
+"""Tope del mp3. Una narración de un documento normal ronda el megabyte; 25 deja muchísimo aire
+y evita que un cuerpo enorme llene el disco antes de que nadie lo mire."""
+
+
+def _parece_mp3(datos: bytes) -> bool:
+    """¿Empieza como un mp3? Etiqueta `ID3` o sincronismo de trama (`0xFFE…`).
+
+    No es una validación completa del formato y no pretende serlo: descarta lo que claramente no
+    es audio sin arrastrar una dependencia para analizar mp3.
+    """
+    return datos.startswith(b"ID3") or (
+        len(datos) >= 2 and datos[0] == 0xFF and (datos[1] & 0xE0) == 0xE0
+    )
 
 
 @router.post("/presentaciones", response_model=ResumenPresentacion, status_code=201)
@@ -111,7 +128,16 @@ async def obtener_endpoint(
         if presentacion is None:
             raise HTTPException(status_code=404, detail="No se encontró esa presentación.")
         historial = await chat_repo.historial(conn, usuario["id"], presentacion_id)
-    return presentacion.model_copy(update={"chat": historial})
+        guardados = await artefactos.cuales(conn, usuario["id"], presentacion_id)
+    return presentacion.model_copy(
+        update={
+            "chat": historial,
+            # Qué artefactos HAY, no los artefactos. Un deck con ilustraciones pesa megas y puede
+            # que nadie lo abra; saber que existe basta para no ofrecer generarlo otra vez.
+            "tiene_deck": "deck" in guardados,
+            "tiene_narracion": "narracion" in guardados,
+        }
+    )
 
 
 @router.put("/presentaciones/{presentacion_id}/chat", status_code=204)
@@ -131,6 +157,94 @@ async def guardar_chat_endpoint(
     async with conectar(settings) as conn:
         if not await chat_repo.reemplazar(conn, usuario["id"], presentacion_id, historial.mensajes):
             raise HTTPException(status_code=404, detail="No se encontró esa presentación.")
+
+
+# ─────────────────────────────────────────────────────────────
+# Artefactos generados: deck y narración
+#
+# Se guardan en vez de regenerarse, y el motivo principal no es el costo: regenerar da un
+# artefacto DISTINTO cada vez (otro guion, otra voz). Si alguien guarda "su" presentación y al
+# volver el deck es otro, no era suya.
+#
+# Cada uno tiene su endpoint en vez de uno genérico por `tipo`: uno habla JSON y el otro bytes,
+# y un endpoint que acepta ambos acaba decidiendo por el `Content-Type` qué validar — justo el
+# tipo de rama en la que se cuela que algo entre sin comprobar.
+# ─────────────────────────────────────────────────────────────
+
+
+@router.put("/presentaciones/{presentacion_id}/artefactos/deck", status_code=204)
+async def guardar_deck_endpoint(
+    presentacion_id: str,
+    deck: GeneratedDeck,
+    usuario: aiosqlite.Row = Depends(usuario_actual),
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Guarda las diapositivas generadas. Se valida contra el contrato antes de escribir."""
+    async with conectar(settings) as conn:
+        if not await artefactos.guardar_deck(conn, usuario["id"], presentacion_id, deck):
+            raise HTTPException(status_code=404, detail="No se encontró esa presentación.")
+
+
+@router.get("/presentaciones/{presentacion_id}/artefactos/deck", response_model=GeneratedDeck)
+async def deck_endpoint(
+    presentacion_id: str,
+    usuario: aiosqlite.Row = Depends(usuario_actual),
+    settings: Settings = Depends(get_settings),
+) -> GeneratedDeck:
+    """Las diapositivas guardadas. Se piden al pulsar para verlas, no al restaurar."""
+    async with conectar(settings) as conn:
+        guardado = await artefactos.deck(conn, usuario["id"], presentacion_id)
+    if guardado is None:
+        raise HTTPException(status_code=404, detail="Esa presentación no tiene diapositivas.")
+    return guardado
+
+
+@router.put("/presentaciones/{presentacion_id}/artefactos/narracion", status_code=204)
+async def guardar_narracion_endpoint(
+    presentacion_id: str,
+    request: Request,
+    usuario: aiosqlite.Row = Depends(usuario_actual),
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Guarda el mp3 de la narración, tal cual llega.
+
+    Se comprueba que de verdad sea un mp3 y que quepa en el límite. No es desconfianza del
+    frontend: es que lo que se escribe en disco con el nombre de alguien debe ser lo que dice
+    ser, y un archivo que no suena es peor que no tener narración, porque parece que sí hay.
+    """
+    audio = await request.body()
+    if not audio:
+        raise HTTPException(status_code=400, detail="No llegó audio.")
+    if len(audio) > MAX_NARRACION_BYTES:
+        raise HTTPException(status_code=413, detail="La narración es demasiado grande.")
+    if not _parece_mp3(audio):
+        raise HTTPException(status_code=415, detail="Eso no es un mp3.")
+
+    async with conectar(settings) as conn:
+        if not await artefactos.guardar_narracion(
+            conn, settings, usuario["id"], presentacion_id, audio
+        ):
+            raise HTTPException(status_code=404, detail="No se encontró esa presentación.")
+
+
+@router.get("/presentaciones/{presentacion_id}/artefactos/narracion")
+async def narracion_endpoint(
+    presentacion_id: str,
+    usuario: aiosqlite.Row = Depends(usuario_actual),
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    """El mp3 guardado. Lo pide el reproductor al pulsar, no al restaurar."""
+    async with conectar(settings) as conn:
+        audio = await artefactos.narracion(conn, settings, usuario["id"], presentacion_id)
+    if audio is None:
+        raise HTTPException(status_code=404, detail="Esa presentación no tiene narración.")
+    return Response(
+        content=audio,
+        media_type="audio/mpeg",
+        # Privada y revalidable: el audio de una presentación no cambia mientras no se regenere,
+        # pero no es inmutable como un documento (cuyo id ES su hash).
+        headers={"Cache-Control": "private, max-age=3600"},
+    )
 
 
 @router.get("/documentos/{document_id}")
@@ -176,8 +290,12 @@ async def borrar_endpoint(
     """Borra una presentación. Una biblioteca que no se puede podar acaba inservible.
 
     Los bytes del documento no se borran: el almacén es direccionable por contenido, así que
-    pueden estar compartidos con otra presentación o con otro usuario.
+    pueden estar compartidos con otra presentación o con otro usuario. El mp3 de la narración
+    sí, porque es de ESTA presentación y nadie más lo comparte.
     """
     async with conectar(settings) as conn:
+        # Antes de borrar la fila: después ya no habría cómo saber qué archivo era suyo, y el
+        # mp3 quedaría en disco sin que nada vuelva a nombrarlo.
+        await artefactos.olvidar_bytes(conn, settings, usuario["id"], presentacion_id)
         if not await repo.borrar(conn, usuario["id"], presentacion_id):
             raise HTTPException(status_code=404, detail="No se encontró esa presentación.")

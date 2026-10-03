@@ -111,3 +111,11 @@ class PresentacionCompleta(_Strict):
     """El historial de chat viene en la MISMA respuesta que la presentación, no en una segunda
     petición. Restaurar es un solo acto: con dos peticiones habría un instante en el que la
     presentación ya está en pantalla y su conversación todavía no, y ese instante se ve."""
+
+    tiene_deck: bool = False
+    """Si hay diapositivas guardadas. El deck NO viaja aquí —con ilustraciones pesa megas, y
+    abrir una presentación tiene que ser inmediato—, pero saber que existe es lo que deja que el
+    botón diga «Abrir presentación» en vez de ofrecer generarla otra vez."""
+
+    tiene_narracion: bool = False
+    """Si hay un mp3 guardado. Mismo criterio: el audio se pide al pulsar, no al restaurar."""
