@@ -847,9 +847,9 @@ export default function Page() {
           aria-hidden
           tabIndex={-1}
           onClick={() => setCuentaAbierta(false)}
-          className="flex-1 bg-black/20"
+          className="backdrop-enter flex-1 bg-black/25 backdrop-blur-[1px]"
         />
-        <div className="h-full w-80 max-w-[85vw] border-l border-border shadow-xl">
+        <div className="drawer-enter h-full w-80 max-w-[85vw] border-l border-border shadow-2xl">
           <AccountPanel
             usuario={usuario}
             onUsuario={setUsuario}
