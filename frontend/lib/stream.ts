@@ -1,3 +1,5 @@
+import { anexaDocumento } from "./documentForm";
+import type { OriginalSource } from "./types";
 import type { StreamEvent } from "./types";
 
 /**
@@ -28,13 +30,11 @@ export function parseSSE<T = StreamEvent>(buffer: string): { events: T[]; rest: 
  * endpoint no-streaming). Un fallo a mitad del stream llega como evento `error`.
  */
 export async function streamTransform(
-  text: string | null,
-  file: File | null,
+  original: OriginalSource,
   onEvent: (event: StreamEvent) => void,
 ): Promise<void> {
   const form = new FormData();
-  if (text && text.trim().length > 0) form.append("text", text.trim());
-  if (file) form.append("file", file);
+  anexaDocumento(form, original);
 
   const res = await fetch("/api/transform/stream", { method: "POST", body: form });
   if (!res.ok || !res.body) {

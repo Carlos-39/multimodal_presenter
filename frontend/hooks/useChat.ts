@@ -2,7 +2,13 @@
 
 import { useCallback, useRef, useState } from "react";
 import { fetchSuggestions, streamChat } from "@/lib/chat";
-import type { ChatResponse, ChatTurn, Section, SectionContent } from "@/lib/types";
+import type {
+  ChatResponse,
+  ChatTurn,
+  OriginalSource,
+  Section,
+  SectionContent,
+} from "@/lib/types";
 
 /**
  * Punto ÚNICO de la responsabilidad "chat" en el frontend (Hito 6): historial de sesión,
@@ -12,17 +18,7 @@ import type { ChatResponse, ChatTurn, Section, SectionContent } from "@/lib/type
  * cambio sea local (no hay historial disperso por los componentes).
  */
 
-export interface OriginalSource {
-  text: string | null;
-  file: File | null;
-  /**
-   * Solo audio: la evidencia acústica de la fase de percepción, como bloque OPACO (el frontend
-   * no la interpreta). Se reenvía al chat, a las sugeridas y al deck para que relean el MISMO
-   * documento sin volver a percibir el audio — ni pagar de nuevo, ni arriesgarse a que la
-   * anotación cambie entre turnos.
-   */
-  audioEvidence: string | null;
-}
+export type { OriginalSource };
 
 export interface ChatMessage {
   id: string;
@@ -86,9 +82,7 @@ export function useChat(original: OriginalSource | null) {
       let response: ChatResponse | null = null;
       try {
         await streamChat(
-          original.text,
-          original.file,
-          original.audioEvidence,
+          original,
           q,
           historySnapshot,
           (event) => {
@@ -136,12 +130,7 @@ export function useChat(original: OriginalSource | null) {
     async (section: Section) => {
       if (!original || requestedRef.current.has(section.id)) return;
       requestedRef.current.add(section.id);
-      const questions = await fetchSuggestions(
-        original.text,
-        original.file,
-        original.audioEvidence,
-        section,
-      );
+      const questions = await fetchSuggestions(original, section);
       setSuggestions((prev) => ({ ...prev, [section.id]: questions }));
     },
     [original],

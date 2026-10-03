@@ -1,5 +1,6 @@
+import { anexaDocumento } from "./documentForm";
 import { parseSSE } from "./stream";
-import type { ChatStreamEvent, ChatTurn, Section } from "./types";
+import type { ChatStreamEvent, ChatTurn, OriginalSource, Section } from "./types";
 
 /**
  * Llama a POST /api/chat/stream y entrega cada evento SSE a `onEvent`.
@@ -7,17 +8,14 @@ import type { ChatStreamEvent, ChatTurn, Section } from "./types";
  * (Hito 6); el backend lo cachea (prompt caching) para no reprocesarlo. Lanza si el HTTP no es OK.
  */
 export async function streamChat(
-  text: string | null,
-  file: File | null,
-  audioEvidence: string | null,
+  original: OriginalSource,
   question: string,
   history: ChatTurn[],
   onEvent: (event: ChatStreamEvent) => void,
 ): Promise<void> {
   const form = new FormData();
-  if (text && text.trim().length > 0) form.append("text", text.trim());
-  if (file) form.append("file", file);
-  if (audioEvidence) form.append("audio_evidence", audioEvidence);
+  anexaDocumento(form, original);
+  if (original.audioEvidence) form.append("audio_evidence", original.audioEvidence);
   form.append("question", question);
   form.append("history", JSON.stringify(history));
 
@@ -53,15 +51,12 @@ export async function streamChat(
  * Devuelve [] ante cualquier fallo (las sugerencias son una invitación, no deben romper nada).
  */
 export async function fetchSuggestions(
-  text: string | null,
-  file: File | null,
-  audioEvidence: string | null,
+  original: OriginalSource,
   section: Section,
 ): Promise<string[]> {
   const form = new FormData();
-  if (text && text.trim().length > 0) form.append("text", text.trim());
-  if (file) form.append("file", file);
-  if (audioEvidence) form.append("audio_evidence", audioEvidence);
+  anexaDocumento(form, original);
+  if (original.audioEvidence) form.append("audio_evidence", original.audioEvidence);
   form.append("section", JSON.stringify(section));
 
   try {

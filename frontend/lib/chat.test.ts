@@ -1,3 +1,4 @@
+import type { OriginalSource } from "./types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fetchSuggestions, streamChat } from "./chat";
 import type { ChatStreamEvent, Section } from "./types";
@@ -23,6 +24,11 @@ const SECTION: Section = {
 
 afterEach(() => vi.unstubAllGlobals());
 
+/** Origen mínimo de documento: el texto pegado, sin archivo ni documento guardado. */
+function doc(texto: string): OriginalSource {
+  return { text: texto, file: null, audioEvidence: null, documentId: null };
+}
+
 describe("streamChat", () => {
   it("entrega los eventos SSE en orden y termina en done", async () => {
     vi.stubGlobal(
@@ -36,14 +42,14 @@ describe("streamChat", () => {
       ),
     );
     const events: ChatStreamEvent[] = [];
-    await streamChat("doc", null, null, "¿?", [], (e) => events.push(e));
+    await streamChat(doc("doc"), "¿?", [], (e) => events.push(e));
     expect(events.map((e) => e.type)).toEqual(["text", "text", "done"]);
     expect(events[1]).toMatchObject({ type: "text", text: "Hola" });
   });
 
   it("lanza si el HTTP no es OK (para que el llamador muestre el error)", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => sseResponse([], false, 400)));
-    await expect(streamChat("d", null, null, "q", [], () => {})).rejects.toThrow();
+    await expect(streamChat(doc("d"), "q", [], () => {})).rejects.toThrow();
   });
 });
 
@@ -71,13 +77,18 @@ describe("reenvío de la evidencia acústica (audio)", () => {
 
   it("streamChat adjunta la evidencia cuando el documento es audio", async () => {
     const visto = capturarForm();
-    await streamChat(null, null, '{"segments":[]}', "¿quién lo dijo?", [], () => {});
+    await streamChat(
+      { text: null, file: null, audioEvidence: '{"segments":[]}', documentId: null },
+      "¿quién lo dijo?",
+      [],
+      () => {},
+    );
     expect(visto.form?.get("audio_evidence")).toBe('{"segments":[]}');
   });
 
   it("streamChat NO adjunta nada cuando no hay audio (texto y PDF intactos)", async () => {
     const visto = capturarForm();
-    await streamChat("un documento", null, null, "¿?", [], () => {});
+    await streamChat(doc("un documento"), "¿?", [], () => {});
     expect(visto.form?.has("audio_evidence")).toBe(false);
   });
 
@@ -90,7 +101,10 @@ describe("reenvío de la evidencia acústica (audio)", () => {
         return { ok: true, json: async () => ({ questions: [] }) };
       }),
     );
-    await fetchSuggestions(null, null, '{"segments":[]}', SECTION);
+    await fetchSuggestions(
+      { text: null, file: null, audioEvidence: '{"segments":[]}', documentId: null },
+      SECTION,
+    );
     expect((form as FormData | null)?.get("audio_evidence")).toBe('{"segments":[]}');
   });
 });
@@ -101,7 +115,7 @@ describe("fetchSuggestions", () => {
       "fetch",
       vi.fn(async () => ({ ok: true, json: async () => ({ questions: ["a?", "b?"] }) })),
     );
-    expect(await fetchSuggestions("d", null, null, SECTION)).toEqual(["a?", "b?"]);
+    expect(await fetchSuggestions(doc("d"), SECTION)).toEqual(["a?", "b?"]);
   });
 
   it("devuelve [] ante un fallo (las sugerencias no deben romper nada)", async () => {
@@ -111,6 +125,6 @@ describe("fetchSuggestions", () => {
         throw new Error("network");
       }),
     );
-    expect(await fetchSuggestions("d", null, null, SECTION)).toEqual([]);
+    expect(await fetchSuggestions(doc("d"), SECTION)).toEqual([]);
   });
 });

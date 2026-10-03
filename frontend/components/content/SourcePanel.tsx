@@ -4,9 +4,16 @@ import { useEffect, useMemo, useRef } from "react";
 import { X } from "@phosphor-icons/react";
 import { formatTimestamp } from "@/lib/audio";
 import { highlightSegments } from "@/lib/highlight";
-import type { CitedRegion, GroundingStatus, SourceKind, SourceReference } from "@/lib/types";
+import type {
+  CitedRegion,
+  GroundingStatus,
+  OriginalSource,
+  SourceKind,
+  SourceReference,
+} from "@/lib/types";
 import { ImageExplanation } from "./ImageExplanation";
 import { PdfRegionView } from "./PdfRegionView";
+import { urlDelDocumento } from "@/lib/documentForm";
 
 /**
  * Panel de documento fuente (atribución interactiva, Punto 4 · Hito 5c). Lo comparten la
@@ -25,12 +32,6 @@ import { PdfRegionView } from "./PdfRegionView";
  *   de la percepción del modelo y no es verificable contra la señal: el estado es `unverified`
  *   y la UI no finge lo contrario (misma honestidad que el aviso de `not_found` del 8A.1).
  */
-interface OriginalSource {
-  text: string | null;
-  file: File | null;
-  audioEvidence: string | null; // opaca aquí: el panel no la usa, viaja con el documento
-}
-
 interface SourcePanelProps {
   original: OriginalSource;
   sourceKind: SourceKind;
@@ -63,19 +64,26 @@ export function SourcePanel({
   // pero el `<audio>` carga sus metadatos más tarde y se encontraba la URL revocada
   // (`MEDIA_ELEMENT_ERROR: Format error`). Solo se manifestaba en desarrollo; aun así, depender
   // de ese orden de carga era frágil para los tres tipos de fuente.
-  const fileUrl = useMemo(
-    () => (original.file ? URL.createObjectURL(original.file) : null),
-    [original.file],
-  );
+  // Con `File` se crea un object URL como siempre; en una presentación RESTAURADA no hay archivo
+  // y se apunta al endpoint que sirve el documento guardado. Sin esto, lo guardado se podría leer
+  // pero no VERIFICAR — y poder verificar es lo que este proyecto promete.
+  const fuente = useMemo(() => urlDelDocumento(original), [original]);
+  const fileUrl = fuente?.url ?? null;
   // Se revoca la URL ANTERIOR cuando cambia el documento, NO al cerrar el panel: cerrar y
   // reabrir la fuente del mismo archivo debe seguir funcionando. La última queda viva hasta
   // que se descarga la página, que es cuando el navegador la libera igual.
   const urlPrevia = useRef<string | null>(null);
+  const eraObjeto = useRef(false);
   useEffect(() => {
     const anterior = urlPrevia.current;
+    const anteriorEraObjeto = eraObjeto.current;
     urlPrevia.current = fileUrl;
-    if (anterior && anterior !== fileUrl) URL.revokeObjectURL(anterior);
-  }, [fileUrl]);
+    eraObjeto.current = fuente?.esObjeto ?? false;
+    // Solo se revocan los object URL. La URL del documento guardado es una ruta normal del
+    // backend: revocarla no haría nada, pero pedirlo sobre algo que no es un object URL es
+    // justamente el tipo de llamada que luego nadie entiende por qué está ahí.
+    if (anteriorEraObjeto && anterior && anterior !== fileUrl) URL.revokeObjectURL(anterior);
+  }, [fileUrl, fuente]);
 
   return (
     <aside className="section-enter flex h-full w-full flex-col bg-surface">
