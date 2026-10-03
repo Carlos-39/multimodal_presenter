@@ -1,0 +1,68 @@
+import { CaretDown } from "@phosphor-icons/react/dist/ssr";
+
+/**
+ * Preguntas frecuentes.
+ *
+ * Aquí es donde van los límites del sistema, y no en una sección propia: dicho al pasar en medio
+ * de la portada frena a quien todavía no sabe qué es esto; dicho aquí lo contesta quien ya se lo
+ * está preguntando. No se suaviza ninguno — lo que cambia es dónde se cuenta.
+ *
+ * Son `<details>` nativos: funcionan con el teclado y con un lector de pantalla sin que haya que
+ * construir nada, y abren aunque el JavaScript no llegue a cargar.
+ */
+const PREGUNTAS: { p: string; r: string }[] = [
+  {
+    p: "¿Se inventa cosas?",
+    r: "Cada sección trae la frase del documento de la que salió, y se comprueba que exista de verdad. Cuando una afirmación no se puede anclar a una cita exacta, la aplicación lo dice y retira el enlace a la fuente en vez de enseñar una cita que no está. Es la diferencia entre decir «no pude verificar esto» y fingir que sí.",
+  },
+  {
+    p: "¿Hace falta crear una cuenta?",
+    r: "No. Sin cuenta funciona todo: transformar, preguntar, generar diapositivas y escuchar la narración. Entrar sirve para una cosa, guardar lo que hiciste y volver a ello otro día, con su documento y su conversación.",
+  },
+  {
+    p: "¿Qué formatos acepta?",
+    r: "Texto pegado, PDF, imágenes (PNG, JPEG, WEBP) y grabaciones de audio en los formatos habituales, incluido el del grabador del móvil. El audio tiene un tope de quince minutos, que no es un número redondo: es el techo real de la anotación que produce el modelo que escucha.",
+  },
+  {
+    p: "¿Qué pasa con un PDF escaneado?",
+    r: "Te lleva a la página donde está la cita, y ahí se queda. Señalar la frase exacta haría falta reconocer el texto dentro de la imagen, y eso no se hace. Es menos de lo que ofrece un PDF con texto, y se dice en vez de disimularlo.",
+  },
+  {
+    p: "¿Las imágenes que genera salen del documento?",
+    r: "No, y por eso llevan siempre una etiqueta encima que lo dice, de forma permanente. Son una ayuda para entender, nunca una prueba. La aplicación solo las genera cuando el documento no trae material visual propio y el contenido se beneficia de verlo.",
+  },
+  {
+    p: "¿Qué pasa con mis documentos?",
+    r: "Sin cuenta no se guarda nada: todo vive en tu navegador mientras dura la visita. Con cuenta se guarda solo lo que pulsas guardar, y únicamente tú puedes abrirlo.",
+  },
+];
+
+export function Preguntas() {
+  return (
+    <section className="border-t border-border">
+      <div className="mx-auto max-w-3xl px-5 py-20">
+        <h2 className="font-serif text-[1.75rem] leading-tight text-foreground sm:text-[2.25rem]">
+          Preguntas frecuentes
+        </h2>
+
+        <div className="mt-9">
+          {PREGUNTAS.map(({ p, r }) => (
+            <details key={p} className="group border-b border-border first:border-t">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-left [&::-webkit-details-marker]:hidden">
+                <span className="font-serif text-[1.0625rem] leading-snug text-foreground">
+                  {p}
+                </span>
+                <CaretDown
+                  size={15}
+                  aria-hidden
+                  className="shrink-0 text-muted transition-transform group-open:rotate-180"
+                />
+              </summary>
+              <p className="max-w-[64ch] pb-5 text-sm leading-6 text-foreground-secondary">{r}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
