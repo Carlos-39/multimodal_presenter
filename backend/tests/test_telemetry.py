@@ -206,3 +206,48 @@ def test_exportador_ordena_por_tiempo_aunque_se_repita_el_seq() -> None:
     assert row["ms_to_first_question"] == 30_000  # la de las 10:00:30, no la de las 10:01:10
     assert row["n_reloads"] == 1  # el `session_start` de más se reporta, no se esconde
     assert row["n_typed"] == 1 and row["n_suggested"] == 1  # no se pierde ningún evento
+
+
+def test_exportador_separa_el_tiempo_de_la_presentacion_generada() -> None:
+    """El tiempo en la presentación generada no se le suma a un modo de lectura.
+
+    En esa vista el nivel de detalle no filtra nada (tiene sus propias diapositivas), así que
+    contarlo como "resumen" o "detallado" sería atribuirlo a un modo que no estaba actuando — y
+    ese reparto es una medida central de la RQ3. El reloj del cliente lo trata como un tramo
+    propio, reusando el mismo evento para que la suma siga cubriendo la sesión completa.
+    """
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    from export_telemetry import _summarize  # noqa: PLC0415 (script fuera del paquete)
+
+    events = [
+        _event("session_start", 0),
+        _event("detail_mode_change", 1, {"from": "summary", "to": "detailed", "ms_in_from": 4000}),
+        # Abre la presentación generada: cierra el tramo de "detallado"…
+        _event("detail_mode_change", 2, {"from": "detailed", "to": "deck", "ms_in_from": 6000}),
+        _event("source_open", 3, {"origin": "deck", "grounding_status": "unverified"}),
+        # …y al salir vuelve a "detallado", reportando lo que duró el deck.
+        _event("detail_mode_change", 4, {"from": "deck", "to": "detailed", "ms_in_from": 9000}),
+        _event("view_change", 5, {"to": "slides"}),
+        _event("session_end", 6, {"final_mode": "detailed", "ms_in_final_mode": 1000}),
+    ]
+    out = Path(__file__).resolve().parent / "_tmp_deck.csv"
+    try:
+        (row,) = _summarize(events, out)
+    finally:
+        out.unlink(missing_ok=True)
+
+    assert row["ms_summary"] == 4000
+    assert row["ms_detailed"] == 7000  # 6000 + 1000: el deck NO entra aquí
+    assert row["ms_deck"] == 9000  # su propio tramo, reportado aparte
+    # El reparto es entre los dos modos de LECTURA; el deck queda fuera del denominador.
+    assert row["pct_detailed"] == 64  # 7000 / 11000
+    # Entrar y salir del deck usa el mismo evento, pero no es un cambio de nivel de detalle.
+    assert row["n_detail_toggles"] == 1
+    assert row["n_deck_opens"] == 1
+    assert row["n_slides_opens"] == 1
+    # Y el clic en la fuente desde una diapositiva generada ya no se cuenta como si fuera del chat.
+    assert row["src_from_deck"] == 1
+    assert row["src_from_chat"] == 0

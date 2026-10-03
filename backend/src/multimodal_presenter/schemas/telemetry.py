@@ -18,6 +18,7 @@ TelemetryEventName = Literal[
     "session_start",
     "transform_submit",
     "detail_mode_change",
+    "view_change",
     "suggested_question_click",
     "typed_question_submit",
     "source_open",

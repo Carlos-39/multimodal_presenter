@@ -58,6 +58,9 @@ function synthGrounding(sourceKind: SourceKind, entries: SectionGrounding[]): Gr
   };
 }
 
+/** Tramo del reloj de modo. `deck` es un tramo PROPIO, no un nivel de detalle: ver `modeBucketRef`. */
+type ModeBucket = DetailLevel | "deck";
+
 export default function Page() {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -97,8 +100,13 @@ export default function Page() {
 
   // Telemetría (Hito 8): relojes de interacción. Los refs se mutan SOLO en manejadores de evento
   // (nunca en render/efecto), coherente con la regla de hooks del proyecto.
-  const modeEnteredAtRef = useRef<number | null>(null); // cuándo entró al modo actual (se fija al montar)
+  const modeEnteredAtRef = useRef<number | null>(null); // cuándo entró al tramo actual (se fija al montar)
   const detailLevelRef = useRef<DetailLevel>(DEFAULT_DETAIL_LEVEL); // espejo para el cierre de sesión
+  // El reloj reparte TODO el tiempo de la sesión en tramos, sin huecos ni solapes. La presentación
+  // generada es un tramo PROPIO: en esa vista el nivel de detalle no filtra nada (tiene sus propias
+  // diapositivas), así que sumar ese tiempo a "resumen" o "detallado" sería atribuirlo a un modo
+  // que no estaba actuando — y el reparto resumen/detallado es una medida central de la RQ3.
+  const modeBucketRef = useRef<ModeBucket>(DEFAULT_DETAIL_LEVEL);
   const sourceOpenedAtRef = useRef<number | null>(null); // cuándo se abrió el panel de fuente
 
   // Escala 2 (Hito 5e): paneles opcionales abiertos, el más reciente al final (recencia).
@@ -109,26 +117,68 @@ export default function Page() {
 
   // Presentación GENERADA en diapositivas (guion propio desde la fuente): pieza nueva, bajo demanda.
   const [deckOpen, setDeckOpen] = useState(false);
+  // PUNTO ÚNICO para mostrar/ocultar la presentación generada: cierra el tramo de reloj anterior y
+  // abre el nuevo. Se encauza aquí porque esta vista se abre y se cierra desde SEIS sitios (el
+  // botón, el final de la generación asíncrona, elegir sección en el rail, cambiar de vista,
+  // documento nuevo) y bastaba olvidar uno para que el tiempo quedara atribuido al tramo erróneo.
+  // Cierra el tramo de modo en curso y abre el siguiente, reportando cuánto duró el que se deja.
+  // El evento y su payload no cambian: solo se amplía el vocabulario de `from`/`to` con `deck`, así
+  // el reparto sigue cubriendo la sesión completa sin huecos. Estable (solo refs) a propósito.
+  const cerrarTramo = useCallback((siguiente: ModeBucket, ordinal: number | null) => {
+    const ahora = Date.now();
+    const desde = modeEnteredAtRef.current ?? ahora;
+    track("detail_mode_change", {
+      from: modeBucketRef.current,
+      to: siguiente,
+      ms_in_from: ahora - desde,
+      section_ordinal: ordinal,
+    });
+    modeEnteredAtRef.current = ahora;
+    modeBucketRef.current = siguiente;
+  }, []);
+
+  const deckVisibleRef = useRef(false); // espejo de `deckOpen` para decidir sin leer estado
+  const setDeckVisible = useCallback((abierto: boolean) => {
+    if (deckVisibleRef.current === abierto) return; // sin cambio de vista no se mueve el reloj
+    deckVisibleRef.current = abierto;
+    // Al salir se vuelve al nivel de detalle vigente, que pudo cambiar mientras el deck estaba
+    // abierto (el control sigue visible ahí aunque no afecte a esa vista).
+    cerrarTramo(abierto ? "deck" : detailLevelRef.current, null);
+    setDeckOpen(abierto);
+  }, [cerrarTramo]);
   const [deck, setDeck] = useState<GeneratedDeck | null>(null);
   const [deckStatus, setDeckStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
-  const toggleSlides = useCallback(() => {
-    setSlidesOpen((v) => !v);
-    setDeckOpen(false); // vistas mutuamente excluyentes
+  // PUNTO ÚNICO para la vista de slides, por lo mismo que el deck: también se cierra desde otros
+  // sitios (al abrir la presentación generada, o con un documento nuevo), y un espejo que no pasara
+  // por aquí se desincronizaría del estado — el toggle acabaría invirtiendo el valor equivocado.
+  const slidesVisibleRef = useRef(false);
+  const setSlidesVisible = useCallback((abierto: boolean) => {
+    if (slidesVisibleRef.current === abierto) return;
+    slidesVisibleRef.current = abierto;
+    // Marca de USO, sin reloj propio: en la vista de slides el nivel de detalle SÍ actúa (decide
+    // qué secciones son diapositivas), así que ese tiempo pertenece a su tramo de resumen/detallado.
+    // Lo que no se sabía era si alguien la abría; eso es lo que registra esto.
+    track("view_change", { to: abierto ? "slides" : "document" });
+    setSlidesOpen(abierto);
   }, []);
+  const toggleSlides = useCallback(() => {
+    setSlidesVisible(!slidesVisibleRef.current);
+    setDeckVisible(false); // vistas mutuamente excluyentes
+  }, [setSlidesVisible, setDeckVisible]);
 
   // "Presentación": genera el deck on-demand. Mejor UX: NO se abre la vista hasta que el deck está
   // COMPLETO (generarlo tarda); mientras tanto el usuario se queda en su contenido y el botón
   // muestra "Generando…". Solo al terminar se cambia a la vista. Falla visible (Reintentar).
   const toggleDeck = useCallback(() => {
     if (deckOpen) {
-      setDeckOpen(false);
+      setDeckVisible(false);
       return;
     }
     if (deck) {
       // ya generado → abrir de una
-      setSlidesOpen(false);
-      setDeckOpen(true);
+      setSlidesVisible(false);
+      setDeckVisible(true);
       return;
     }
     if (deckStatus === "loading" || !original) return;
@@ -137,11 +187,11 @@ export default function Page() {
       .then((d) => {
         setDeck(d);
         setDeckStatus("ready");
-        setSlidesOpen(false);
-        setDeckOpen(true); // recién ahora se muestra, ya completo
+        setSlidesVisible(false);
+        setDeckVisible(true); // recién ahora se muestra, ya completo
       })
       .catch(() => setDeckStatus("error"));
-  }, [deckOpen, deck, deckStatus, original]);
+  }, [deckOpen, deck, deckStatus, original, setDeckVisible, setSlidesVisible]);
 
   const openPanel = useCallback((id: PanelId) => {
     setOpenOrder((prev) => [...prev.filter((p) => p !== id), id]);
@@ -183,14 +233,32 @@ export default function Page() {
     },
     [openPanel],
   );
-  const openChatSource = useCallback(
-    (source: SourceReference, gstatus: GroundingStatus, startS: number | null = null) => {
-      setActiveSource({ source, status: gstatus, key: `chat-${source.quote}`, startS });
+  // Abrir una cita suelta (chat o diapositiva generada): mismo panel, distinto ORIGEN. El origen
+  // se separa porque es una medida de la RQ3 (¿desde dónde verifica la gente?) y la presentación
+  // generada reusaba este manejador, así que sus clics se contaban como si vinieran del chat.
+  const openLooseSource = useCallback(
+    (
+      origin: "chat" | "deck",
+      source: SourceReference,
+      gstatus: GroundingStatus,
+      startS: number | null,
+    ) => {
+      setActiveSource({ source, status: gstatus, key: `${origin}-${source.quote}`, startS });
       sourceOpenedAtRef.current = Date.now();
-      track("source_open", { origin: "chat", grounding_status: gstatus });
+      track("source_open", { origin, grounding_status: gstatus });
       openPanel("source");
     },
     [openPanel],
+  );
+  const openChatSource = useCallback(
+    (source: SourceReference, gstatus: GroundingStatus, startS: number | null = null) =>
+      openLooseSource("chat", source, gstatus, startS),
+    [openLooseSource],
+  );
+  const openDeckSource = useCallback(
+    (source: SourceReference, gstatus: GroundingStatus, startS: number | null = null) =>
+      openLooseSource("deck", source, gstatus, startS),
+    [openLooseSource],
   );
 
   function resetForRun(text: string | null, file: File | null) {
@@ -210,8 +278,8 @@ export default function Page() {
     setTranscript(null);
     illustrationRunRef.current += 1; // invalida ilustraciones en camino del documento anterior
     setIllustrationsPending(false);
-    setSlidesOpen(false); // documento nuevo → vuelve a la vista de scroll
-    setDeckOpen(false);
+    setSlidesVisible(false); // documento nuevo → vuelve a la vista de scroll
+    setDeckVisible(false);
     setDeck(null);
     setDeckStatus("idle");
     setOpenOrder((prev) => prev.filter((p) => p !== "source")); // cierra la fuente; conserva el chat
@@ -395,7 +463,9 @@ export default function Page() {
     const onHide = () => {
       const enteredAt = modeEnteredAtRef.current ?? Date.now();
       track("session_end", {
-        final_mode: detailLevelRef.current,
+        // El tramo final puede ser la presentación generada, no solo un nivel de detalle: si se
+        // reportara `detailLevelRef` se le sumaría a "detallado" un tiempo que no se pasó ahí.
+        final_mode: modeBucketRef.current,
         ms_in_final_mode: Date.now() - enteredAt,
       });
       flush();
@@ -414,19 +484,14 @@ export default function Page() {
 
   function handleDetailLevelChange(level: DetailLevel) {
     // Punto ÚNICO de interacción (Punto 11): instrumenta el tiempo REAL en cada modo. El cliente
-    // lleva el reloj de "cuándo entré a este modo" y reporta cuánto duró el modo que deja.
+    // lleva el reloj de "cuándo entré a este tramo" y reporta cuánto duró el que deja.
     if (level === detailLevel) return; // clic redundante: no cuenta como cambio
-    const now = Date.now();
-    const enteredAt = modeEnteredAtRef.current ?? now;
-    track("detail_mode_change", {
-      from: detailLevel,
-      to: level,
-      ms_in_from: now - enteredAt,
-      section_ordinal: ordinalOf(effectiveActiveId),
-    });
-    modeEnteredAtRef.current = now;
     detailLevelRef.current = level;
     setDetailLevel(level);
+    // Con la presentación generada abierta el control sigue visible pero no cambia nada de lo que
+    // se ve, así que no hay tramo que cerrar: se guarda el nivel y se aplica al volver al contenido.
+    if (modeBucketRef.current === "deck") return;
+    cerrarTramo(level, ordinalOf(effectiveActiveId));
   }
 
   const hasContent = sections.length > 0;
@@ -437,7 +502,7 @@ export default function Page() {
   // vez de dejar el clic sin efecto.
   function handleSelectSection(id: string) {
     setActiveSectionId(id);
-    if (deckOpen) setDeckOpen(false);
+    if (deckOpen) setDeckVisible(false);
   }
 
   return (
@@ -503,7 +568,7 @@ export default function Page() {
         {deckOpen && deck ? (
           // Presentación GENERADA (guion propio desde la fuente). Solo se muestra cuando está
           // COMPLETA (la generación ocurre antes, con el botón en "Generando…").
-          <DeckView deck={deck} onOpenSource={openChatSource} />
+          <DeckView deck={deck} onOpenSource={openDeckSource} />
         ) : slidesOpen && hasContent ? (
           // Modo slides (Hito 5h Parte 2): re-vista del MISMO contenido ya generado; el núcleo
           // fijo y las columnas (fuente/chat) siguen disponibles.
