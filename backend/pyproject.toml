@@ -20,6 +20,7 @@ dependencies = [
     # AGPL-3.0, por el mismo criterio que ya se había aplicado en `experiments/common.py`.
     "pypdfium2>=5.13.0",
     "rapidfuzz>=3.14",
+    "aiosqlite>=0.22.1",
 ]
 
 [dependency-groups]
