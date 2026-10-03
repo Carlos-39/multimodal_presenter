@@ -103,7 +103,7 @@ export function SourcePanel({
             sourceKey={sourceKey}
           />
         ) : sourceKind === "pdf" ? (
-          <PdfSource url={fileUrl} page={source.page} />
+          <PdfSource url={fileUrl} page={source.page} fileName={original.file?.name ?? null} />
         ) : sourceKind === "audio" ? (
           <AudioSource
             url={fileUrl}
@@ -170,15 +170,33 @@ function TextSource({
   );
 }
 
-function PdfSource({ url, page }: { url: string | null; page: number | null }) {
+function PdfSource({
+  url,
+  page,
+  fileName,
+}: {
+  url: string | null;
+  page: number | null;
+  fileName: string | null;
+}) {
   if (!url) return <PanelMessage>No hay documento disponible.</PanelMessage>;
   const src = page ? `${url}#page=${page}` : url;
   // El <iframe>#page=N depende del visor nativo del navegador y NO funciona en la mayoría de
-  // móviles ni en navegadores sin visor embebido. El enlace es la salida siempre utilizable.
+  // móviles ni en navegadores sin visor embebido. De ahí las dos salidas del encabezado:
+  //
+  // - "Abrir en pestaña nueva": lo natural en escritorio.
+  // - "Descargar": la salida fiable donde la anterior no lo es. Abrir una URL `blob:` en una
+  //   pestaña nueva depende del navegador —algunos lo bloquean y en móvil es justo donde menos
+  //   se puede confiar—, que es precisamente el escenario para el que se creó este enlace en el
+  //   5f. El atributo `download` no depende de que exista un visor.
+  //
+  // Se AÑADE la descarga en vez de reemplazar el enlace: lo que ya funciona en escritorio sigue
+  // igual, y quien no pueda abrirlo tiene una salida que no falla.
+  const nombreDescarga = fileName || "documento.pdf";
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2 text-xs">
-        <span className="text-muted">
+        <span className="min-w-0 truncate text-muted">
           {page ? (
             <>
               Referencia: página <span className="tabular">{page}</span>
@@ -187,14 +205,26 @@ function PdfSource({ url, page }: { url: string | null; page: number | null }) {
             "Documento PDF"
           )}
         </span>
-        <a
-          href={src}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="shrink-0 text-accent underline decoration-1 underline-offset-2 hover:text-accent-hover"
-        >
-          Abrir PDF en pestaña nueva
-        </a>
+        <span className="flex shrink-0 items-center gap-2">
+          <a
+            href={src}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent underline decoration-1 underline-offset-2 hover:text-accent-hover"
+          >
+            Abrir en pestaña nueva
+          </a>
+          <span className="text-border" aria-hidden>
+            ·
+          </span>
+          <a
+            href={url}
+            download={nombreDescarga}
+            className="text-muted underline decoration-1 underline-offset-2 hover:text-foreground"
+          >
+            Descargar
+          </a>
+        </span>
       </div>
       <iframe src={src} title="Documento fuente (PDF)" className="min-h-0 flex-1 border-0" />
     </div>
