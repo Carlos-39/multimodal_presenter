@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { DetailLevel } from "@/lib/detail";
 import type { NarrationStatus } from "@/hooks/useNarration";
 import type { GroundingReport, Section } from "@/lib/types";
@@ -39,6 +40,15 @@ interface AppShellProps {
   slidesAvailable: boolean;
   onToggleSlides: () => void;
   deckOpen: boolean;
+  /**
+   * Controles que no pertenecen a la vista del documento (hoy: guardar y la cuenta).
+   *
+   * Es un hueco y no props concretas porque el armazón no tiene por qué saber que existen las
+   * cuentas. Y van AQUÍ, dentro de la fila de controles, no flotando encima: un botón `fixed`
+   * queda fuera de este `flex`, nada le reserva sitio y en ventanas estrechas se monta sobre el
+   * de al lado. Pasó con «Entrar» sobre «Chat».
+   */
+  acciones?: ReactNode;
   deckReady: boolean; // la presentación ya se generó
   deckAvailable: boolean;
   deckLoading: boolean;
@@ -71,6 +81,7 @@ export function AppShell({
   slidesAvailable,
   onToggleSlides,
   deckOpen,
+  acciones,
   deckReady,
   deckAvailable,
   deckLoading,
@@ -142,7 +153,15 @@ export function AppShell({
                     : "border-border text-foreground-secondary hover:text-foreground"
               }`}
             >
-              {deckLoading ? "Generando…" : deckError ? "Reintentar" : "Presentación"}
+              {/* "Abriendo" cuando ya existe: traerla del servidor no es generarla, y decir
+                  "Generando" haría dudar de si se están rehaciendo las diapositivas. */}
+              {deckLoading
+                ? deckReady
+                  ? "Abriendo…"
+                  : "Generando…"
+                : deckError
+                  ? "Reintentar"
+                  : "Presentación"}
             </button>
             <button
               type="button"
@@ -158,6 +177,9 @@ export function AppShell({
             </button>
             <ThemeToggle />
           </div>
+          {acciones ? (
+            <div className="flex items-center gap-2 border-border sm:border-l sm:pl-3">{acciones}</div>
+          ) : null}
         </div>
       </header>
 

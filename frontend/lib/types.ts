@@ -160,6 +160,24 @@ export interface CitedRegion {
   boxes: RegionBox[];
 }
 
+export interface OriginalSource {
+  text: string | null;
+  file: File | null;
+  /**
+   * Solo audio: la evidencia acústica de la fase de percepción, como bloque OPACO (el frontend
+   * no la interpreta). Se reenvía al chat, a las sugeridas y al deck para que relean el MISMO
+   * documento sin volver a percibir el audio — ni pagar de nuevo, ni arriesgarse a que la
+   * anotación cambie entre turnos.
+   */
+  audioEvidence: string | null;
+  /**
+   * Solo en una presentación RESTAURADA: el documento vive en el almacén del backend, no en el
+   * navegador. Es lo que permite seguir usándola —chat, deck, panel de fuente— sin tener el
+   * `File`, que es justo lo que no se tiene al abrirla desde otro equipo al día siguiente.
+   */
+  documentId: string | null;
+}
+
 export interface GroundingReport {
   source_kind: SourceKind;
   sections: SectionGrounding[];

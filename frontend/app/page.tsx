@@ -18,10 +18,25 @@ import { olvidarPaginas } from "@/lib/pdfPage";
 import { fetchIllustrations } from "@/lib/illustrations";
 import { fetchSummary } from "@/lib/summary";
 import { streamTransform } from "@/lib/stream";
-import { useChat, type OriginalSource } from "@/hooks/useChat";
+import { useChat } from "@/hooks/useChat";
 import { useNarration } from "@/hooks/useNarration";
 import { DEFAULT_DETAIL_LEVEL, visibleSections, type DetailLevel } from "@/lib/detail";
 import { initTelemetry, track, flush } from "@/lib/telemetry";
+import {
+  abrirPresentacion,
+  deckGuardado as deckDeLaBiblioteca,
+  guardarChat,
+  guardarDeck,
+  guardarNarracion,
+  guardarPresentacion,
+  quienSoy,
+  textoDelDocumento,
+  urlDeLaNarracion,
+  type MensajeGuardado,
+  type Usuario,
+} from "@/lib/account";
+import { AccountButton } from "@/components/shell/AccountButton";
+import { AccountPanel } from "@/components/shell/AccountPanel";
 import type { PanelId } from "@/lib/workspace";
 import type {
   ChartNote,
@@ -29,6 +44,7 @@ import type {
   GeneratedDeck,
   GroundingReport,
   GroundingStatus,
+  OriginalSource,
   Section,
   SectionGrounding,
   SemanticCoherenceReport,
@@ -88,18 +104,47 @@ export default function Page() {
   // Solo audio: lo que oyó la fase de percepción (ver StreamEvent "transcript").
   const [transcript, setTranscript] = useState<string | null>(null);
 
+  // Cuenta: OPCIONAL. Sin ella todo sigue funcionando igual — las sesiones de evaluación del
+  // Hito 8 corren sin login. Entrar añade guardar y volver, nada más.
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [cuentaAbierta, setCuentaAbierta] = useState(false);
+  const [guardando, setGuardando] = useState<"idle" | "guardando" | "guardada" | "error">("idle");
+
+  // Qué presentación guardada se está viendo, o `null` si lo de pantalla no está guardado. Es lo
+  // único que hace falta para que el chat se persista: sin presentación no hay dónde, y entonces
+  // el chat se comporta igual que antes (que es como corren las sesiones del Hito 8).
+  //
+  // En un ref y no en estado porque lo lee el aviso de "turno terminado" del chat. En estado,
+  // cada vez que cambiara habría que reconstruir ese callback y con él `send`, que el panel de
+  // chat recibe como prop; el ref lo deja estable.
+  const presentacionIdRef = useRef<string | null>(null);
+
   // Ilustraciones de apoyo en camino (post-pase del 5h): solo para avisar en pantalla.
   const [illustrationsPending, setIllustrationsPending] = useState(false);
   const illustrationRunRef = useRef(0); // descarta el resultado de un documento anterior
 
-  // Chat (Hito 6): historial de sesión + streaming + sugerencias, aislado en un hook.
-  const chat = useChat(original);
+  // Chat (Hito 6): historial + streaming + sugerencias, aislado en un hook.
+  //
+  // El hook no sabe que existen cuentas: avisa de cada turno terminado y aquí se decide si hay
+  // dónde guardarlo. Así el chat sin cuenta queda exactamente como estaba, sin una rama que
+  // mantener en dos sitios.
+  const alTerminarTurno = useCallback((mensajes: MensajeGuardado[]) => {
+    const id = presentacionIdRef.current;
+    if (id) void guardarChat(id, mensajes);
+  }, []);
+  const chat = useChat(original, { alTerminarTurno });
 
   // Presentación actual (título + secciones completas) y narración (Hito 5g Parte 3). La narración
   // es independiente del toggle resumen/detallado y de la sección activa; solo se reinicia con un
   // documento nuevo (lo hace `resetForRun`, desde el manejador de transformación — no en efecto).
   const presentation = useMemo(() => ({ title, sections }), [title, sections]);
-  const narration = useNarration(presentation);
+  // Mismo reparto que el chat: el hook avisa del mp3 que acaba de generar y aquí se decide si hay
+  // dónde guardarlo. Sin cuenta nadie escucha y la narración funciona igual que antes.
+  const alGenerarNarracion = useCallback((audio: Blob) => {
+    const id = presentacionIdRef.current;
+    if (id) void guardarNarracion(id, audio);
+  }, []);
+  const narration = useNarration(presentation, { alGenerar: alGenerarNarracion });
 
   // Telemetría (Hito 8): relojes de interacción. Los refs se mutan SOLO en manejadores de evento
   // (nunca en render/efecto), coherente con la regla de hooks del proyecto.
@@ -151,6 +196,10 @@ export default function Page() {
   }, [cerrarTramo]);
   const [deck, setDeck] = useState<GeneratedDeck | null>(null);
   const [deckStatus, setDeckStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  // Hay un deck guardado que todavía no se ha traído. No se descarga al restaurar porque con
+  // ilustraciones pesa megas y puede que nadie lo abra; saber que existe basta para que el botón
+  // diga «Abrir presentación» en vez de ofrecer generarla otra vez.
+  const [deckGuardado, setDeckGuardado] = useState(false);
 
   // PUNTO ÚNICO para la vista de slides, por lo mismo que el deck: también se cierra desde otros
   // sitios (al abrir la presentación generada, o con un documento nuevo), y un espejo que no pasara
@@ -186,15 +235,26 @@ export default function Page() {
     }
     if (deckStatus === "loading" || !original) return;
     setDeckStatus("loading");
-    fetchDeck(original.text, original.file, original.audioEvidence)
+
+    // Si ya hay uno guardado se TRAE, no se genera. Generarlo otra vez daría otras diapositivas:
+    // quien guardó esta presentación guardó estas, no unas parecidas.
+    const id = presentacionIdRef.current;
+    const pedir = deckGuardado && id ? deckDeLaBiblioteca(id) : fetchDeck(original);
+
+    pedir
       .then((d) => {
         setDeck(d);
         setDeckStatus("ready");
         setSlidesVisible(false);
         setDeckVisible(true); // recién ahora se muestra, ya completo
+        // Recién generado y con dónde guardarlo: se guarda para que la próxima vez sea el mismo.
+        if (!deckGuardado && id) {
+          void guardarDeck(id, d);
+          setDeckGuardado(true);
+        }
       })
       .catch(() => setDeckStatus("error"));
-  }, [deckOpen, deck, deckStatus, original, setDeckVisible, setSlidesVisible]);
+  }, [deckOpen, deck, deckStatus, deckGuardado, original, setDeckVisible, setSlidesVisible]);
 
   const openPanel = useCallback((id: PanelId) => {
     setOpenOrder((prev) => [...prev.filter((p) => p !== id), id]);
@@ -288,7 +348,10 @@ export default function Page() {
 
   function resetForRun(text: string | null, file: File | null) {
     olvidarPaginas(original?.file ?? null); // suelta las páginas dibujadas del documento anterior
-    chat.reset(); // nuevo documento → nuevo chat (historial de sesión limpio)
+    chat.reset(); // nuevo documento → nuevo chat (y nada que persistir hasta que se guarde)
+    // Documento nuevo: lo de pantalla ya no es la presentación guardada. Sin esto, la
+    // conversación del documento nuevo se escribiría encima de la del anterior.
+    presentacionIdRef.current = null;
     narration.reset(); // nuevo documento → se descarta la narración cacheada
     setError(null);
     setTitle("");
@@ -308,9 +371,90 @@ export default function Page() {
     setDeckVisible(false);
     setDeck(null);
     setDeckStatus("idle");
+    setDeckGuardado(false);
     setOpenOrder((prev) => prev.filter((p) => p !== "source")); // cierra la fuente; conserva el chat
-    setOriginal({ text, file, audioEvidence: null }); // la evidencia llega con el stream
+    setOriginal({ text, file, audioEvidence: null, documentId: null }); // la evidencia llega con el stream
     setSourceKind(sourceKindOf(file));
+  }
+
+  /** Guarda lo que hay en pantalla, con el documento del que salió y la conversación que ya hubo. */
+  async function guardar() {
+    if (!original || sections.length === 0) return;
+    setGuardando("guardando");
+    try {
+      const guardada = await guardarPresentacion(
+        title || "Sin título",
+        {
+          presentation: { title, sections },
+          grounding: displayGrounding ?? synthGrounding(sourceKind, entries),
+          chart_notes: chartNotes,
+          transcript,
+          audio_evidence: original.audioEvidence,
+        },
+        { text: original.text, file: original.file },
+      );
+      // Desde aquí cada turno nuevo se va guardando solo. Y lo que YA se había preguntado antes
+      // de pulsar «Guardar» también cuenta: si no, guardar justo después de una conversación
+      // larga la perdería entera, que es el momento en que más duele.
+      presentacionIdRef.current = guardada.id;
+      alTerminarTurno(chat.historialGuardable());
+      // Y lo que ya se había generado: quien pulsa «Guardar» después de hacerse la presentación
+      // en diapositivas espera guardarla, no guardar la orden de volver a generarla.
+      if (deck) {
+        void guardarDeck(guardada.id, deck);
+        setDeckGuardado(true);
+      }
+      const audio = narration.audioGenerado();
+      if (audio) void guardarNarracion(guardada.id, audio);
+      setGuardando("guardada");
+    } catch {
+      setGuardando("error");
+    }
+  }
+
+  /** Restaura una presentación guardada: el mismo estado que dejaría una generación.
+   *
+   * Pasa por `resetForRun` igual que una transformación nueva, en vez de asignar campo por campo.
+   * Si se restaurara por un camino propio, cada estado que alguien añada después habría que
+   * acordarse de limpiarlo también aquí — y lo que se olvide quedaría del documento anterior.
+   */
+  async function restaurar(id: string) {
+    const g = await abrirPresentacion(id);
+    // Las fuentes de TEXTO se traen enteras: el panel de fuente las resalta carácter a carácter,
+    // así que no le sirve una URL. Las binarias sí se resuelven por URL cuando hagan falta.
+    const texto = g.source_kind === "text" ? await textoDelDocumento(g.document_id) : null;
+    resetForRun(null, null);
+    setOriginal({
+      text: texto,
+      file: null,
+      audioEvidence: g.payload.audio_evidence ?? null,
+      // El documento vive en el almacén: esto es lo que deja seguir usándola sin tener el archivo.
+      documentId: g.document_id,
+    });
+    setSourceKind(g.source_kind);
+    setTitle(g.payload.presentation.title);
+    setSections(g.payload.presentation.sections);
+    setEntries(g.payload.grounding.sections);
+    setAggGrounding(g.payload.grounding);
+    setChartNotes((g.payload.chart_notes ?? []) as ChartNote[]);
+    setTranscript(g.payload.transcript ?? null);
+    setActiveSectionId(g.payload.presentation.sections[0]?.id ?? null);
+    setStatus("done");
+    setSummaryStatus("idle");
+    setGuardando("idle");
+    setCuentaAbierta(false);
+    // Después de `resetForRun`, que acaba de vaciar el chat. Vuelve la conversación tal como
+    // quedó, con sus anclas, y desde aquí los turnos nuevos se siguen guardando en esta misma.
+    presentacionIdRef.current = g.id;
+    chat.restaurar(g.chat);
+
+    // Los artefactos generados NO se descargan aquí: el deck puede pesar megas y el mp3 puede que
+    // nadie lo escuche. Se deja dicho que existen —con eso el botón ofrece abrir en vez de
+    // generar— y se traen al pulsar.
+    setDeckGuardado(g.tiene_deck);
+    if (g.tiene_narracion) {
+      narration.restaurar(urlDeLaNarracion(g.id), g.payload.presentation);
+    }
   }
 
   function applyNonStreaming(data: TransformResponse) {
@@ -357,6 +501,9 @@ export default function Page() {
     // Marca el inicio de la interacción con un documento (segmenta la sesión). Solo el TIPO de
     // fuente, nunca el contenido ni el nombre del archivo (privacidad, Hito 8).
     const sk: SourceKind = sourceKindOf(file);
+    // El documento que se va a transformar, en la forma que entiende el punto único de envío.
+    // Aquí siempre viene del navegador: `documentId` es para las presentaciones RESTAURADAS.
+    const origen: OriginalSource = { text, file, audioEvidence: null, documentId: null };
     track("transform_submit", { source_kind: sk });
     resetForRun(text, file);
     setStatus("streaming");
@@ -370,7 +517,7 @@ export default function Page() {
     // la diferencia es que el adelanto del audio tarda un poco más, no que no exista.
     setSummaryStatus("loading");
     if (sk !== "audio") {
-      fetchSummary(text, file)
+      fetchSummary(origen)
         .then((s) => {
           setSummary(s);
           setSummaryStatus("done");
@@ -382,7 +529,7 @@ export default function Page() {
     let docTitle = "";
     const collected: Section[] = []; // copia local de las secciones (para el post-pase de ilustraciones)
     try {
-      await streamTransform(text, file, (event) => {
+      await streamTransform(origen, (event) => {
         if (event.type === "transcript") {
           // Lo que la fase de percepción oyó. Alimenta el panel de fuente (transcripción con
           // la cita resaltada) y, de paso, el adelanto: ya es TEXTO, así que el modelo liviano
@@ -391,7 +538,7 @@ export default function Page() {
           // La evidencia se adjunta al DOCUMENTO: desde aquí el chat, las sugeridas y el deck
           // la reenvían solas, sin que ningún componente tenga que saber que existe.
           setOriginal((prev) => (prev ? { ...prev, audioEvidence: event.evidence } : prev));
-          fetchSummary(event.text, null)
+          fetchSummary({ text: event.text, file: null, audioEvidence: null, documentId: null })
             .then((s) => {
               setSummary(s);
               setSummaryStatus("done");
@@ -423,7 +570,7 @@ export default function Page() {
       if (received === 0) {
         // El streaming no arrancó → fallback gracioso al endpoint no-streaming.
         try {
-          const data = await postTransform(text, file);
+          const data = await postTransform(origen);
           applyNonStreaming(data);
           setStatus("done");
           void fetchAndMergeIllustrations(data.presentation, sk === "text");
@@ -490,6 +637,10 @@ export default function Page() {
   // Telemetría (Hito 8): arranca la sesión al montar y la cierra al ocultarse la pestaña,
   // reportando el último tramo de modo abierto (que ningún cambio llegó a cerrar).
   useEffect(() => {
+    void quienSoy().then(setUsuario);
+  }, []);
+
+  useEffect(() => {
     initTelemetry();
     modeEnteredAtRef.current = Date.now(); // línea base del primer modo (resumen, al montar)
     const onHide = () => {
@@ -538,6 +689,7 @@ export default function Page() {
   }
 
   return (
+    <>
     <AppShell
       sections={visible}
       grounding={displayGrounding}
@@ -551,7 +703,34 @@ export default function Page() {
       slidesAvailable={hasContent}
       onToggleSlides={toggleSlides}
       deckOpen={deckOpen}
-      deckReady={deck !== null}
+      acciones={
+        <>
+          {hasContent && usuario ? (
+            <button
+              type="button"
+              onClick={() => void guardar()}
+              disabled={guardando === "guardando"}
+              className="rounded-md border border-border px-2.5 py-1 text-xs text-foreground-secondary transition-colors hover:border-border-strong hover:text-foreground disabled:opacity-50"
+            >
+              {guardando === "guardando"
+                ? "Guardando…"
+                : guardando === "guardada"
+                  ? "Guardada"
+                  : guardando === "error"
+                    ? "No se pudo guardar"
+                    : "Guardar"}
+            </button>
+          ) : null}
+          <AccountButton
+            usuario={usuario}
+            abierto={cuentaAbierta}
+            onClick={() => setCuentaAbierta(!cuentaAbierta)}
+          />
+        </>
+      }
+      // «Ya existe», en memoria o guardada: una presentación restaurada ofrece abrirla, no
+      // generar otra vez la que ya está hecha.
+      deckReady={deck !== null || deckGuardado}
       deckAvailable={hasContent && original !== null}
       deckLoading={deckStatus === "loading"}
       deckError={deckStatus === "error"}
@@ -653,5 +832,39 @@ export default function Page() {
         )}
       </Workspace>
     </AppShell>
+
+    {/* El CAJÓN de cuenta: esto sí es una capa superpuesta, porque un cajón se desliza sobre el
+        contenido y lo devuelve al cerrarse. El botón que lo abre NO vive aquí — está en la fila de
+        controles de la cabecera, donde el `flex` le reserva sitio. Cuando flotaba también él, en
+        ventanas estrechas se montaba encima de «Chat». */}
+    {cuentaAbierta ? (
+      <div className="fixed inset-0 z-40 flex justify-end">
+        {/* El fondo oscurecido cierra al tocar fuera, pero se oculta a los lectores de pantalla:
+            anunciaba "Cerrar el panel de cuenta" igual que la X del cajón, y oír dos veces la
+            misma acción obliga a probar cuál es cuál. La X ya la ofrece. */}
+        <button
+          type="button"
+          aria-hidden
+          tabIndex={-1}
+          onClick={() => setCuentaAbierta(false)}
+          className="backdrop-enter flex-1 bg-black/25 backdrop-blur-[1px]"
+        />
+        <div className="drawer-enter h-full w-80 max-w-[85vw] border-l border-border shadow-2xl">
+          <AccountPanel
+            usuario={usuario}
+            onUsuario={setUsuario}
+            onAbrir={(id) => void restaurar(id)}
+            onBorrada={(id) => {
+              // Si se borró la que se está viendo, ya no hay dónde guardar su conversación. Sin
+              // esto el chat seguiría mandando turnos contra un id que no existe: se perderían
+              // en silencio, con la app aparentando que los guarda.
+              if (presentacionIdRef.current === id) presentacionIdRef.current = null;
+            }}
+            onCerrar={() => setCuentaAbierta(false)}
+          />
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }

@@ -101,6 +101,11 @@ class Settings(BaseSettings):
     telemetry_enabled: bool = True
     telemetry_dir: str | None = None
 
+    # Persistencia (login + multi-sesión). `data_dir` vacío → carpeta por defecto FUERA de
+    # OneDrive, igual que la telemetría y por el mismo motivo medido: OneDrive sincronizando un
+    # archivo que se escribe en caliente corrompe bases SQLite.
+    data_dir: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

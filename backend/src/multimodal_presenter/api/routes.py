@@ -47,6 +47,7 @@ from ..schemas.transform import (
     TransformResponse,
 )
 from ..telemetry import record_ux_event, resolve_telemetry_dir
+from .auth import usuario_opcional
 
 router = APIRouter(tags=["pipeline"])
 
@@ -121,12 +122,32 @@ def _parse_audio_evidence(
         ) from exc
 
 
-async def _parse_inputs(
-    text: str | None, file: UploadFile | None, settings: Settings
+async def parse_document_inputs(
+    text: str | None,
+    file: UploadFile | None,
+    settings: Settings,
+    document_id: str | None = None,
+    usuario: object | None = None,
 ) -> tuple[str | None, bytes | None, str | None, str | None]:
-    """Valida la entrada (al menos uno; tipo/tamaño del archivo). Lanza HTTPException."""
+    """Valida la entrada (al menos una; tipo/tamaño del archivo). Lanza HTTPException.
+
+    Pública porque es el ÚNICO sitio por el que entra un documento al sistema: los ocho endpoints
+    que reciben uno pasan por aquí. Eso es lo que permite que una presentación guardada siga
+    sirviendo —chat, deck, panel de fuente— tocando una función en lugar de ocho.
+
+    Tres formas de traer el documento, por orden: el archivo subido, el texto pegado, o un
+    `document_id` del almacén. La tercera es la que hace falta cuando alguien abre una
+    presentación guardada desde otro navegador, donde ya no existe el `File` original.
+
+    **El `document_id` exige cuenta Y propiedad.** Sin esa comprobación bastaría conocer un id
+    —que es un hash del contenido, pero aun así— para leer el documento de otra persona.
+    """
     text_value = text.strip() if text else None
     has_file = file is not None and file.filename
+
+    if not text_value and not has_file and document_id:
+        return await _documento_del_almacen(document_id, usuario, settings)
+
     if not text_value and not has_file:
         raise HTTPException(status_code=400, detail="Debes enviar texto, un archivo, o ambos.")
 
@@ -143,11 +164,41 @@ async def _parse_inputs(
     return text_value, binary, media_type, filename
 
 
+async def _documento_del_almacen(
+    document_id: str, usuario: object | None, settings: Settings
+) -> tuple[str | None, bytes | None, str | None, str | None]:
+    """Carga un documento guardado, comprobando antes que quien lo pide es su dueño."""
+    from ..storage import conectar
+    from ..storage import documents as almacen
+    from ..storage import presentations as repo
+
+    if usuario is None:
+        raise HTTPException(status_code=401, detail="Necesitas iniciar sesión para usar esto.")
+
+    async with conectar(settings) as conn:
+        if not await repo.tiene_documento(conn, usuario["id"], document_id):
+            # 404 y no 403: decir "existe pero no es tuyo" ya es contar algo.
+            raise HTTPException(status_code=404, detail="No se encontró ese documento.")
+        fila = await almacen.metadatos(conn, document_id)
+
+    contenido = await almacen.leer(settings, document_id)
+    if fila is None or contenido is None:
+        raise HTTPException(status_code=404, detail="No se encontró ese documento.")
+
+    if fila["source_kind"] == "text":
+        # Las fuentes de texto se guardan como bytes igual que las demás, pero el pipeline las
+        # espera como texto: se devuelven por el carril que les corresponde.
+        return contenido.decode("utf-8"), None, None, None
+    return None, contenido, fila["media_type"], fila["nombre_archivo"]
+
+
 @router.post("/transform", response_model=TransformResponse)
 async def transform_endpoint(
     response: Response,
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
+    document_id: str | None = Form(default=None),
+    usuario: object | None = Depends(usuario_opcional),
     model: Model = Depends(get_model),
     perception_model: Model | None = Depends(get_perception_model),
     settings: Settings = Depends(get_settings),
@@ -157,7 +208,9 @@ async def transform_endpoint(
     Si el archivo es audio, pasa primero por la Fase 0 (percepción) y lo que entra al
     pipeline de estructuración es la `AudioEvidence`. Para texto/PDF/imagen no cambia nada.
     """
-    text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    text_value, binary, media_type, filename = await parse_document_inputs(
+        text, file, settings, document_id, usuario
+    )
     _need_audio_provider(media_type, perception_model)
 
     result = await transform(
@@ -185,6 +238,8 @@ async def transform_endpoint(
 async def transform_stream_endpoint(
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
+    document_id: str | None = Form(default=None),
+    usuario: object | None = Depends(usuario_opcional),
     model: Model = Depends(get_model),
     perception_model: Model | None = Depends(get_perception_model),
     settings: Settings = Depends(get_settings),
@@ -195,7 +250,9 @@ async def transform_stream_endpoint(
     Un fallo del modelo a mitad del stream se emite como evento `error` (no una presentación
     silenciosamente incompleta).
     """
-    text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    text_value, binary, media_type, filename = await parse_document_inputs(
+        text, file, settings, document_id, usuario
+    )
     _need_audio_provider(media_type, perception_model)
 
     async def event_source():
@@ -231,6 +288,8 @@ def _parse_history(raw: str) -> list[ChatTurn]:
 async def chat_stream_endpoint(
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
+    document_id: str | None = Form(default=None),
+    usuario: object | None = Depends(usuario_opcional),
     question: str = Form(),
     history: str = Form(default="[]"),
     audio_evidence: str | None = Form(default=None),
@@ -242,7 +301,9 @@ async def chat_stream_endpoint(
     El texto se emite en vivo; el ancla verificada y los componentes interactivos van en el
     evento final `done`. Un fallo se emite como `error` (nunca una respuesta a medias 'lista').
     """
-    text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    text_value, binary, media_type, filename = await parse_document_inputs(
+        text, file, settings, document_id, usuario
+    )
     question_value = question.strip()
     if not question_value:
         raise HTTPException(status_code=400, detail="La pregunta no puede estar vacía.")
@@ -274,12 +335,16 @@ async def chat_suggestions_endpoint(
     section: str = Form(),
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
+    document_id: str | None = Form(default=None),
+    usuario: object | None = Depends(usuario_opcional),
     audio_evidence: str | None = Form(default=None),
     model: Model = Depends(get_model),
     settings: Settings = Depends(get_settings),
 ) -> SuggestionsResponse:
     """Preguntas sugeridas específicas a una sección (Punto 9). Relee el documento (cacheado)."""
-    text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    text_value, binary, media_type, filename = await parse_document_inputs(
+        text, file, settings, document_id, usuario
+    )
     evidencia = _parse_audio_evidence(media_type, audio_evidence, "Las preguntas sugeridas")
     try:
         section_obj = Section.model_validate_json(section)
@@ -300,6 +365,8 @@ async def chat_suggestions_endpoint(
 async def summary_endpoint(
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
+    document_id: str | None = Form(default=None),
+    usuario: object | None = Depends(usuario_opcional),
     model: Model = Depends(get_summary_model),
     settings: Settings = Depends(get_settings),
 ) -> SummaryResponse:
@@ -309,7 +376,9 @@ async def summary_endpoint(
     mientras el pipeline completo (Sonnet) trabaja. Es un extra no crítico; si falla, el frontend
     lo muestra como tal y la transformación sigue su curso.
     """
-    text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    text_value, binary, media_type, filename = await parse_document_inputs(
+        text, file, settings, document_id, usuario
+    )
     if is_audio(media_type):
         raise HTTPException(
             status_code=415,
@@ -357,6 +426,8 @@ async def narration_endpoint(
 )
 async def pdf_page_endpoint(
     file: UploadFile | None = File(default=None),
+    document_id: str | None = Form(default=None),
+    usuario: object | None = Depends(usuario_opcional),
     page: int = Form(...),
     settings: Settings = Depends(get_settings),
 ) -> Response:
@@ -371,7 +442,9 @@ async def pdf_page_endpoint(
     guarda documentos. El frontend memoriza la imagen por página, así que abrir y cerrar la misma
     fuente no vuelve a subir nada.
     """
-    _text, binary, media_type, _filename = await _parse_inputs(None, file, settings)
+    _text, binary, media_type, _filename = await parse_document_inputs(
+        None, file, settings, document_id, usuario
+    )
     if binary is None or media_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Se requiere un archivo PDF.")
     if page < 1:
@@ -396,6 +469,8 @@ async def pdf_page_endpoint(
 async def explain_image_endpoint(
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
+    document_id: str | None = Form(default=None),
+    usuario: object | None = Depends(usuario_opcional),
     page: int | None = Form(default=None),
     context: str | None = Form(default=None),
     model: Model = Depends(get_model),
@@ -407,7 +482,9 @@ async def explain_image_endpoint(
     en lenguaje accesible. La atribución es la propia imagen (se muestra junto a ella en el
     `SourcePanel`). En fuentes de texto o de audio no hay imagen real que explicar → 400.
     """
-    text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    text_value, binary, media_type, filename = await parse_document_inputs(
+        text, file, settings, document_id, usuario
+    )
     if is_audio(media_type):
         raise HTTPException(status_code=400, detail="Un audio no tiene imagen que explicar.")
     extraction = prepare_input(
@@ -449,6 +526,8 @@ async def transcribe_endpoint(
 async def deck_endpoint(
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
+    document_id: str | None = Form(default=None),
+    usuario: object | None = Depends(usuario_opcional),
     audio_evidence: str | None = Form(default=None),
     model: Model = Depends(get_model),
     settings: Settings = Depends(get_settings),
@@ -459,7 +538,9 @@ async def deck_endpoint(
     la vista de slides del 5h (re-composición sin generación). Si no hay clave de OpenAI, el deck se
     genera igual pero sin imágenes de apoyo (degradación honesta, no falla).
     """
-    text_value, binary, media_type, filename = await _parse_inputs(text, file, settings)
+    text_value, binary, media_type, filename = await parse_document_inputs(
+        text, file, settings, document_id, usuario
+    )
     evidencia = _parse_audio_evidence(media_type, audio_evidence, "La presentación")
     extraction = prepare_input(
         text=text_value,

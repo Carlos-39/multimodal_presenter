@@ -1,28 +1,34 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import type { MensajeGuardado } from "@/lib/account";
 import { fetchSuggestions, streamChat } from "@/lib/chat";
-import type { ChatResponse, ChatTurn, Section, SectionContent } from "@/lib/types";
+import type {
+  ChatResponse,
+  ChatTurn,
+  OriginalSource,
+  Section,
+  SectionContent,
+} from "@/lib/types";
 
 /**
  * Punto ÚNICO de la responsabilidad "chat" en el frontend (Hito 6): historial de sesión,
- * streaming de cada turno y caché/prefetch de preguntas sugeridas. El historial vive solo en
- * memoria (se pierde al recargar) — decisión temporal consciente: el futuro login traerá su
- * modelo de sesión/usuario y ESE hito reemplaza este almacenamiento. Aislarlo aquí hace que ese
- * cambio sea local (no hay historial disperso por los componentes).
+ * streaming de cada turno y caché/prefetch de preguntas sugeridas.
+ *
+ * El historial ya NO se pierde al recargar. La nota que había aquí decía que vivía solo en memoria
+ * "hasta que exista login, y ESE hito reemplaza este almacenamiento"; el hito del login llegó y
+ * esto es su parte. Haberlo tenido aislado en un hook es lo que hizo el cambio local: el hook
+ * avisa de cada turno terminado y `page` decide si hay dónde guardarlo.
+ *
+ * Quién persiste y quién no está repartido así a propósito: este hook no sabe que existen cuentas
+ * ni presentaciones guardadas. Sin cuenta nadie escucha el aviso y el chat se comporta igual que
+ * antes, que es lo que exigen las sesiones de evaluación del Hito 8.
+ *
+ * Lo que NO se guarda, y es deliberado: los turnos que fallaron (un error de red no es parte de la
+ * conversación) y las preguntas sugeridas (son una invitación, se vuelven a pedir y son baratas).
  */
 
-export interface OriginalSource {
-  text: string | null;
-  file: File | null;
-  /**
-   * Solo audio: la evidencia acústica de la fase de percepción, como bloque OPACO (el frontend
-   * no la interpreta). Se reenvía al chat, a las sugeridas y al deck para que relean el MISMO
-   * documento sin volver a percibir el audio — ni pagar de nuevo, ni arriesgarse a que la
-   * anotación cambie entre turnos.
-   */
-  audioEvidence: string | null;
-}
+export type { OriginalSource };
 
 export interface ChatMessage {
   id: string;
@@ -48,12 +54,19 @@ function textOf(content: SectionContent, fallback: string): string {
   }
 }
 
-export function useChat(original: OriginalSource | null) {
+export function useChat(
+  original: OriginalSource | null,
+  { alTerminarTurno }: { alTerminarTurno?: (mensajes: MensajeGuardado[]) => void } = {},
+) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<"idle" | "streaming" | "error">("idle");
   const [suggestions, setSuggestions] = useState<Record<string, string[]>>({});
 
   const historyRef = useRef<ChatTurn[]>([]); // historial canónico que viaja al backend
+  // Lo mismo, en la forma en que se GUARDA: con la respuesta completa y su ancla. Se construye
+  // turno a turno igual que `historyRef` en vez de derivarse de `messages`, y eso no es
+  // duplicación: `messages` lleva también los turnos que fallaron, que no son conversación.
+  const guardableRef = useRef<MensajeGuardado[]>([]);
   const requestedRef = useRef<Set<string>>(new Set()); // sugerencias ya pedidas (evita duplicados)
   const counterRef = useRef(0);
   const nextId = () => `m${counterRef.current++}`;
@@ -65,6 +78,31 @@ export function useChat(original: OriginalSource | null) {
     setSuggestions({});
     setStatus("idle");
     historyRef.current = [];
+    guardableRef.current = [];
+    requestedRef.current = new Set();
+  }, []);
+
+  /**
+   * Deja el chat como quedó en una presentación guardada.
+   *
+   * Los identificadores llevan prefijo `g` y los nuevos `m`: dos mensajes con la misma clave
+   * hacen que React reconcilie el que no toca. Ya pasó una vez en el panel de fuente y los
+   * visores se apilaban; no vale la pena volver a averiguarlo.
+   */
+  const restaurar = useCallback((guardados: MensajeGuardado[]) => {
+    setMessages(
+      guardados.map((m, i) => ({
+        id: `g${i}`,
+        role: m.rol,
+        text: m.texto,
+        response: m.respuesta ?? undefined,
+        status: "done" as const,
+      })),
+    );
+    historyRef.current = guardados.map((m) => ({ role: m.rol, text: m.texto }));
+    guardableRef.current = guardados;
+    setSuggestions({});
+    setStatus("idle");
     requestedRef.current = new Set();
   }, []);
 
@@ -86,9 +124,7 @@ export function useChat(original: OriginalSource | null) {
       let response: ChatResponse | null = null;
       try {
         await streamChat(
-          original.text,
-          original.file,
-          original.audioEvidence,
+          original,
           q,
           historySnapshot,
           (event) => {
@@ -118,7 +154,15 @@ export function useChat(original: OriginalSource | null) {
           { role: "user", text: q },
           { role: "assistant", text: answerText },
         ];
+        guardableRef.current = [
+          ...guardableRef.current,
+          { rol: "user", texto: q },
+          { rol: "assistant", texto: answerText, respuesta: finalResponse },
+        ];
         setStatus("idle");
+        // El aviso va DESPUÉS de fijar el estado: si guardar falla, lo que se ve en pantalla ya
+        // es correcto. Quien escuche decide si hay dónde guardarlo; sin cuenta, nadie escucha.
+        alTerminarTurno?.(guardableRef.current);
       } catch (error) {
         const message = error instanceof Error ? error.message : "La generación se interrumpió.";
         setMessages((prev) =>
@@ -127,7 +171,7 @@ export function useChat(original: OriginalSource | null) {
         setStatus("error");
       }
     },
-    [original, status],
+    [original, status, alTerminarTurno],
   );
 
   // Prefetch en segundo plano: al mostrar una sección en detalle, sus sugerencias se piden una
@@ -136,16 +180,28 @@ export function useChat(original: OriginalSource | null) {
     async (section: Section) => {
       if (!original || requestedRef.current.has(section.id)) return;
       requestedRef.current.add(section.id);
-      const questions = await fetchSuggestions(
-        original.text,
-        original.file,
-        original.audioEvidence,
-        section,
-      );
+      const questions = await fetchSuggestions(original, section);
       setSuggestions((prev) => ({ ...prev, [section.id]: questions }));
     },
     [original],
   );
 
-  return { messages, status, suggestions, send, prefetchSuggestions, reset };
+  /**
+   * El historial en la forma en que se guarda, leído en el momento de pedirlo.
+   *
+   * Es una función y no un valor porque se consulta al pulsar «Guardar», no al renderizar: lo
+   * que hay que guardar es la conversación de ese instante.
+   */
+  const historialGuardable = useCallback(() => guardableRef.current, []);
+
+  return {
+    messages,
+    status,
+    suggestions,
+    send,
+    prefetchSuggestions,
+    reset,
+    restaurar,
+    historialGuardable,
+  };
 }

@@ -335,3 +335,44 @@ body {
     max-height: 30cqw;
   }
 }
+
+/*
+ * El cajón de cuenta. Entra deslizándose desde el borde y el fondo se funde detrás.
+ *
+ * No es decoración: un panel que APARECE de golpe sobre el contenido no dice de dónde salió ni
+ * que el contenido sigue ahí debajo. El deslizamiento sí, y por eso cerrar tocando fuera resulta
+ * evidente sin explicarlo. Como el resto de animaciones del proyecto, corre una sola vez al
+ * montarse y desaparece si se prefiere menos movimiento.
+ */
+@keyframes drawer-enter {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.drawer-enter {
+  animation: drawer-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.backdrop-enter {
+  animation: backdrop-enter 0.28s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer-enter,
+  .backdrop-enter {
+    animation: none;
+  }
+}
