@@ -81,3 +81,20 @@ docs/diseno/
 .DS_Store
 Thumbs.db
 *.swp
+
+# ─────────────────────────────────────────────────────────────
+# Bitácora de hitos: se versiona en SU PROPIO repositorio
+# ─────────────────────────────────────────────────────────────
+# `docs/Registro_de_Hitos.md` es la bitácora larga del proyecto y nunca viaja al remoto. Vivía
+# trackeada aquí y bloqueada por un hook `pre-push`, pero eso dejaba `develop` local impusheable
+# para siempre: cada rama cortada de él arrastraba esos commits como ancestros. Peor todavía,
+# obligaba a dejar el commit del Registro fuera de la rama que se sube, y cuando el PR se mergeaba
+# ese commit se quedaba solo en una rama local que luego moría — así se perdieron cuatro entradas
+# sin que nadie lo notara.
+#
+# Ahora la versiona `.registro.git`, un repositorio aparte sobre el mismo árbol de trabajo. El
+# archivo NO se movió (README e Inventario lo siguen referenciando igual): lo que vive aparte es
+# el `.git`. Se opera con `.\registro.ps1 <comando de git>`.
+docs/Registro_de_Hitos.md
+.registro.git/
+registro.ps1
