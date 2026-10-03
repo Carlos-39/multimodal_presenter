@@ -99,6 +99,8 @@ export interface GeneratedSlide {
   bullets: string[];
   source: SourceReference | null;
   grounding: GroundingStatus;
+  /** Solo audio: momento de la cita, para que el reproductor del panel arranque ahí. */
+  start_s: number | null;
   is_synthesis: boolean;
   illustration: GeneratedIllustration | null;
 }

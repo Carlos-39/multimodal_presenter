@@ -174,6 +174,10 @@ class GeneratedSlide(_Strict):
     bullets: list[str] = Field(default_factory=list)
     source: SourceReference | None = None
     grounding: GroundingStatus = "not_found"
+    start_s: float | None = Field(default=None, ge=0)
+    """Solo audio: momento del que viene la cita, igual que en `SectionGrounding` y en la
+    respuesta del chat. Sin esto, abrir la fuente desde una diapositiva arrancaba el reproductor
+    en 0:00 en vez de en la cita — una inconsistencia entre vistas del mismo documento."""
     is_synthesis: bool = False
     illustration: GeneratedIllustration | None = None
 

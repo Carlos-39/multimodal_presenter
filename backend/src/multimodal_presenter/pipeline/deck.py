@@ -111,12 +111,14 @@ async def generate_deck(
         # Trazabilidad por slide (mix honesto).
         source = None
         grounding = "not_found"
+        start_s = None
         is_synthesis = False
         if plan.synthesis or not plan.source_quote:
             is_synthesis = True
         else:
-            # El deck no transporta el momento (sus slides no tienen reproductor propio).
-            source, grounding, _ = ground_quote(plan.source_quote, plan.source_page, extraction)
+            source, grounding, start_s = ground_quote(
+                plan.source_quote, plan.source_page, extraction
+            )
 
         # Apoyo visual: reusa el generador de ilustraciones (con etiqueta obligatoria), acotado.
         illustration = None
@@ -137,6 +139,7 @@ async def generate_deck(
                 bullets=plan.bullets[:6],
                 source=source,
                 grounding=grounding,
+                start_s=start_s,
                 is_synthesis=is_synthesis,
                 illustration=illustration,
             )
