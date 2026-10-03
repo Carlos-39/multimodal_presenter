@@ -72,7 +72,9 @@ export function GeneratePanel({
             <div className="mt-2.5" role="status">
               <div className="progress-indeterminate" aria-hidden />
               <p className="mt-2 text-xs leading-4 text-muted">
-                Puedes seguir leyendo: se abrirá sola al terminar.
+                {deckReady
+                  ? "Recuperando las diapositivas que guardaste."
+                  : "Puedes seguir leyendo: se abrirá sola al terminar."}
               </p>
             </div>
           ) : null}
@@ -92,7 +94,9 @@ export function GeneratePanel({
           >
             {deckLoading ? <CircleNotch size={14} className="animate-spin" aria-hidden /> : null}
             {deckLoading
-              ? "Generando…"
+              ? deckReady
+                ? "Abriendo…"
+                : "Generando…"
               : deckOpen
                 ? "Volver al documento"
                 : deckReady

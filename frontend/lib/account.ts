@@ -9,7 +9,13 @@
  * navegador la manda sola. Eso es justamente lo que impide que un XSS se la lleve.
  */
 
-import type { ChatResponse, GroundingReport, Presentation, SourceKind } from "./types";
+import type {
+  ChatResponse,
+  GeneratedDeck,
+  GroundingReport,
+  Presentation,
+  SourceKind,
+} from "./types";
 
 export interface Usuario {
   id: string;
@@ -50,6 +56,13 @@ export interface PresentacionCompleta extends ResumenPresentacion {
   payload: PayloadGuardado;
   /** La conversación viene en la MISMA respuesta: restaurar es un solo acto, no dos. */
   chat: MensajeGuardado[];
+  /**
+   * Qué artefactos HAY, no los artefactos. Un deck con ilustraciones pesa megas y puede que
+   * nadie lo abra; abrir una presentación tiene que ser inmediato. Saber que existe basta para
+   * que el botón diga «Abrir presentación» en vez de ofrecer generarla otra vez.
+   */
+  tiene_deck: boolean;
+  tiene_narracion: boolean;
 }
 
 async function json<T>(res: Response): Promise<T> {
@@ -173,6 +186,52 @@ export async function textoDelDocumento(documentId: string): Promise<string | nu
   } catch {
     return null; // sin el texto el resto sigue usable; el panel lo dirá por sí mismo
   }
+}
+
+/**
+ * Guarda el deck generado de una presentación.
+ *
+ * No lanza, por lo mismo que el chat: lo que se está viendo ya está bien, y si el guardado falla
+ * lo peor que pasa es que la próxima vez haya que generarlo otra vez.
+ */
+export async function guardarDeck(presentacionId: string, deck: GeneratedDeck): Promise<void> {
+  try {
+    await fetch(`/api/biblioteca/presentaciones/${presentacionId}/artefactos/deck`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(deck),
+    });
+  } catch {
+    // ver arriba
+  }
+}
+
+/** El deck guardado. Se pide al pulsar para verlo, no al restaurar: puede pesar megas. */
+export async function deckGuardado(presentacionId: string): Promise<GeneratedDeck> {
+  return json(await fetch(`/api/biblioteca/presentaciones/${presentacionId}/artefactos/deck`));
+}
+
+/** Guarda el mp3 de la narración tal cual. No lanza, por lo mismo que el deck. */
+export async function guardarNarracion(presentacionId: string, audio: Blob): Promise<void> {
+  try {
+    await fetch(`/api/biblioteca/presentaciones/${presentacionId}/artefactos/narracion`, {
+      method: "PUT",
+      headers: { "content-type": "audio/mpeg" },
+      body: audio,
+    });
+  } catch {
+    // ver arriba
+  }
+}
+
+/**
+ * De dónde leer la narración guardada.
+ *
+ * Es una URL y no los bytes: el reproductor se la pasa a un `<audio>`, que descarga por su cuenta
+ * y puede empezar a sonar antes de tener el archivo entero.
+ */
+export function urlDeLaNarracion(presentacionId: string): string {
+  return `/api/biblioteca/presentaciones/${presentacionId}/artefactos/narracion`;
 }
 
 export async function borrarPresentacion(id: string): Promise<void> {

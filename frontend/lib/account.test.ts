@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { guardarChat, textoDelDocumento } from "./account";
+import { guardarChat, guardarNarracion, textoDelDocumento, urlDeLaNarracion } from "./account";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -41,5 +41,40 @@ describe("textoDelDocumento", () => {
     // Sin el texto el resto sigue usable y el panel de fuente lo dice por sí mismo; lanzar aquí
     // dejaría la presentación restaurada sin montar.
     expect(await textoDelDocumento("doc-1")).toBeNull();
+  });
+});
+
+describe("artefactos guardados", () => {
+  it("sube el mp3 como audio, no envuelto en un formulario", async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 204 }) as unknown as Response);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const audio = new Blob([new Uint8Array([0x49, 0x44, 0x33])], { type: "audio/mpeg" });
+    await guardarNarracion("pre-1", audio);
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/biblioteca/presentaciones/pre-1/artefactos/narracion");
+    expect(init.method).toBe("PUT");
+    // Bytes tal cual: el backend los escribe en disco como mp3, así que envolverlos en un
+    // multipart solo añadiría una capa que habría que deshacer.
+    expect(init.body).toBe(audio);
+  });
+
+  it("no lanza si subir la narración falla", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("sin red");
+      }),
+    );
+    // Lo que se está escuchando ya está bien; lo peor que pasa es volver a generarla.
+    await expect(guardarNarracion("pre-1", new Blob())).resolves.toBeUndefined();
+  });
+
+  it("la narración se referencia por URL, para que el reproductor la descargue él", () => {
+    // Devolver los bytes obligaría a esperar el archivo entero antes de que suene nada.
+    expect(urlDeLaNarracion("pre-1")).toBe(
+      "/api/biblioteca/presentaciones/pre-1/artefactos/narracion",
+    );
   });
 });

@@ -142,7 +142,15 @@ export function AppShell({
                     : "border-border text-foreground-secondary hover:text-foreground"
               }`}
             >
-              {deckLoading ? "Generando…" : deckError ? "Reintentar" : "Presentación"}
+              {/* "Abriendo" cuando ya existe: traerla del servidor no es generarla, y decir
+                  "Generando" haría dudar de si se están rehaciendo las diapositivas. */}
+              {deckLoading
+                ? deckReady
+                  ? "Abriendo…"
+                  : "Generando…"
+                : deckError
+                  ? "Reintentar"
+                  : "Presentación"}
             </button>
             <button
               type="button"

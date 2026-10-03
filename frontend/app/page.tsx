@@ -24,10 +24,14 @@ import { DEFAULT_DETAIL_LEVEL, visibleSections, type DetailLevel } from "@/lib/d
 import { initTelemetry, track, flush } from "@/lib/telemetry";
 import {
   abrirPresentacion,
+  deckGuardado as deckDeLaBiblioteca,
   guardarChat,
+  guardarDeck,
+  guardarNarracion,
   guardarPresentacion,
   quienSoy,
   textoDelDocumento,
+  urlDeLaNarracion,
   type MensajeGuardado,
   type Usuario,
 } from "@/lib/account";
@@ -133,7 +137,13 @@ export default function Page() {
   // es independiente del toggle resumen/detallado y de la sección activa; solo se reinicia con un
   // documento nuevo (lo hace `resetForRun`, desde el manejador de transformación — no en efecto).
   const presentation = useMemo(() => ({ title, sections }), [title, sections]);
-  const narration = useNarration(presentation);
+  // Mismo reparto que el chat: el hook avisa del mp3 que acaba de generar y aquí se decide si hay
+  // dónde guardarlo. Sin cuenta nadie escucha y la narración funciona igual que antes.
+  const alGenerarNarracion = useCallback((audio: Blob) => {
+    const id = presentacionIdRef.current;
+    if (id) void guardarNarracion(id, audio);
+  }, []);
+  const narration = useNarration(presentation, { alGenerar: alGenerarNarracion });
 
   // Telemetría (Hito 8): relojes de interacción. Los refs se mutan SOLO en manejadores de evento
   // (nunca en render/efecto), coherente con la regla de hooks del proyecto.
@@ -185,6 +195,10 @@ export default function Page() {
   }, [cerrarTramo]);
   const [deck, setDeck] = useState<GeneratedDeck | null>(null);
   const [deckStatus, setDeckStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  // Hay un deck guardado que todavía no se ha traído. No se descarga al restaurar porque con
+  // ilustraciones pesa megas y puede que nadie lo abra; saber que existe basta para que el botón
+  // diga «Abrir presentación» en vez de ofrecer generarla otra vez.
+  const [deckGuardado, setDeckGuardado] = useState(false);
 
   // PUNTO ÚNICO para la vista de slides, por lo mismo que el deck: también se cierra desde otros
   // sitios (al abrir la presentación generada, o con un documento nuevo), y un espejo que no pasara
@@ -220,15 +234,26 @@ export default function Page() {
     }
     if (deckStatus === "loading" || !original) return;
     setDeckStatus("loading");
-    fetchDeck(original)
+
+    // Si ya hay uno guardado se TRAE, no se genera. Generarlo otra vez daría otras diapositivas:
+    // quien guardó esta presentación guardó estas, no unas parecidas.
+    const id = presentacionIdRef.current;
+    const pedir = deckGuardado && id ? deckDeLaBiblioteca(id) : fetchDeck(original);
+
+    pedir
       .then((d) => {
         setDeck(d);
         setDeckStatus("ready");
         setSlidesVisible(false);
         setDeckVisible(true); // recién ahora se muestra, ya completo
+        // Recién generado y con dónde guardarlo: se guarda para que la próxima vez sea el mismo.
+        if (!deckGuardado && id) {
+          void guardarDeck(id, d);
+          setDeckGuardado(true);
+        }
       })
       .catch(() => setDeckStatus("error"));
-  }, [deckOpen, deck, deckStatus, original, setDeckVisible, setSlidesVisible]);
+  }, [deckOpen, deck, deckStatus, deckGuardado, original, setDeckVisible, setSlidesVisible]);
 
   const openPanel = useCallback((id: PanelId) => {
     setOpenOrder((prev) => [...prev.filter((p) => p !== id), id]);
@@ -345,6 +370,7 @@ export default function Page() {
     setDeckVisible(false);
     setDeck(null);
     setDeckStatus("idle");
+    setDeckGuardado(false);
     setOpenOrder((prev) => prev.filter((p) => p !== "source")); // cierra la fuente; conserva el chat
     setOriginal({ text, file, audioEvidence: null, documentId: null }); // la evidencia llega con el stream
     setSourceKind(sourceKindOf(file));
@@ -371,6 +397,14 @@ export default function Page() {
       // larga la perdería entera, que es el momento en que más duele.
       presentacionIdRef.current = guardada.id;
       alTerminarTurno(chat.historialGuardable());
+      // Y lo que ya se había generado: quien pulsa «Guardar» después de hacerse la presentación
+      // en diapositivas espera guardarla, no guardar la orden de volver a generarla.
+      if (deck) {
+        void guardarDeck(guardada.id, deck);
+        setDeckGuardado(true);
+      }
+      const audio = narration.audioGenerado();
+      if (audio) void guardarNarracion(guardada.id, audio);
       setGuardando("guardada");
     } catch {
       setGuardando("error");
@@ -412,6 +446,14 @@ export default function Page() {
     // quedó, con sus anclas, y desde aquí los turnos nuevos se siguen guardando en esta misma.
     presentacionIdRef.current = g.id;
     chat.restaurar(g.chat);
+
+    // Los artefactos generados NO se descargan aquí: el deck puede pesar megas y el mp3 puede que
+    // nadie lo escuche. Se deja dicho que existen —con eso el botón ofrece abrir en vez de
+    // generar— y se traen al pulsar.
+    setDeckGuardado(g.tiene_deck);
+    if (g.tiene_narracion) {
+      narration.restaurar(urlDeLaNarracion(g.id), g.payload.presentation);
+    }
   }
 
   function applyNonStreaming(data: TransformResponse) {
@@ -660,7 +702,9 @@ export default function Page() {
       slidesAvailable={hasContent}
       onToggleSlides={toggleSlides}
       deckOpen={deckOpen}
-      deckReady={deck !== null}
+      // «Ya existe», en memoria o guardada: una presentación restaurada ofrece abrirla, no
+      // generar otra vez la que ya está hecha.
+      deckReady={deck !== null || deckGuardado}
       deckAvailable={hasContent && original !== null}
       deckLoading={deckStatus === "loading"}
       deckError={deckStatus === "error"}
