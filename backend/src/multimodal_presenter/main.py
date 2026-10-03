@@ -4,19 +4,41 @@ Hito 0: la app levanta, responde un health check y emite trazas verificables a
 Logfire. Nada de pipeline, modelo ni lógica de negocio todavía (eso es Hito 2+).
 """
 
+from contextlib import asynccontextmanager
+
 import logfire
 from fastapi import FastAPI
 
 from .api.routes import router as pipeline_router
 from .config import get_settings
 from .observability import configure_observability
+from .storage import migrar
 
 settings = get_settings()
 
 # Observabilidad primero, para que la instrumentación de FastAPI la use.
 configure_observability(settings)
 
+
+@asynccontextmanager
+async def ciclo_de_vida(_app: FastAPI):
+    """Deja el esquema al día antes de atender la primera petición.
+
+    Se hace al arrancar y no en el primer uso para que un esquema a medias se note al levantar la
+    aplicación, no delante de alguien que está intentando entrar. Es idempotente: arrancar dos
+    veces no hace nada la segunda.
+
+    La persistencia es OPCIONAL: la aplicación entera sigue funcionando sin cuenta, que es como
+    corren las sesiones de evaluación del Hito 8. Esto solo prepara el sitio donde guardar.
+    """
+    aplicadas = await migrar(settings)
+    if aplicadas:
+        logfire.info("esquema actualizado: {versiones}", versiones=aplicadas)
+    yield
+
+
 app = FastAPI(
+    lifespan=ciclo_de_vida,
     title=settings.app_name,
     version="0.1.0",
     description="Transformador de información multimodal — trabajo de grado (Univalle).",

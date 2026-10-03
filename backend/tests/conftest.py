@@ -4,6 +4,7 @@ import copy
 import io
 import json
 import os
+import tempfile
 import wave
 
 import pytest
@@ -14,6 +15,12 @@ from pydantic_ai.models.test import TestModel
 # carga antes que cualquier módulo de test. La app real (uvicorn) sí lee el token del .env.
 os.environ["LOGFIRE_TOKEN"] = ""
 os.environ["PYDANTIC_AI_NO_BANNER"] = "1"  # sin el banner de PydanticAI en la salida de tests
+
+# La persistencia vive en disco y la app migra al arrancar, así que levantar la app en un test
+# crearía la base REAL de quien corre los tests. Se apunta a una carpeta temporal de la sesión,
+# por el mismo motivo que se vacían las claves: un test no puede tocar datos de verdad.
+# Se pone ANTES de importar la app, igual que el token de Logfire.
+os.environ["DATA_DIR"] = tempfile.mkdtemp(prefix="mmp-tests-")
 
 # Claves que el CI NO tiene y que la máquina del autor SÍ tiene en su `.env`.
 _CLAVES_DE_API = (
