@@ -29,7 +29,7 @@ from pathlib import Path
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as raw
-from PIL import Image, ImageDraw
+from PIL import ImageDraw
 
 ESCALA = 2  # render a 2x: suficiente para mirar el encuadre sin archivos enormes
 SALIDA = Path(__file__).resolve().parent / "outputs" / "spike_regiones"
@@ -56,9 +56,7 @@ def _a_dispositivo(page, w_px: int, h_px: int, x: float, y: float) -> tuple[int,
     cual sea el recorte o el giro, el motor responde dónde cae el punto EN LA IMAGEN que dibujó.
     """
     dx, dy = ctypes.c_int(), ctypes.c_int()
-    raw.FPDF_PageToDevice(
-        page.raw, 0, 0, w_px, h_px, 0, x, y, ctypes.byref(dx), ctypes.byref(dy)
-    )
+    raw.FPDF_PageToDevice(page.raw, 0, 0, w_px, h_px, 0, x, y, ctypes.byref(dx), ctypes.byref(dy))
     return dx.value, dy.value
 
 
@@ -126,7 +124,10 @@ def localizar(page, cita: str, w_px: int, h_px: int) -> tuple[list[Rect], str]:
     """Peldaño 1 de la escalera (búsqueda exacta). El spike solo valida la GEOMETRÍA."""
     tp = page.get_textpage()
     if not cita.strip():
-        return [], ""  # página sin capa de texto: nada que localizar (degradaría a fidelidad de página)
+        return (
+            [],
+            "",
+        )  # página sin capa de texto: nada que localizar (degradaría a fidelidad de página)
     buscador = tp.search(cita, match_case=False, match_whole_word=False)
     hallazgo = buscador.get_next()
     if hallazgo is None:
@@ -185,9 +186,24 @@ def main() -> None:
         ("duendes_rojos", base.parent / "docs" / "ejemplos" / "duendes_rojos.pdf", 2, None),
         ("attention_2col", base / "tests" / "fixtures" / "local" / "1706.03762v7.pdf", 1, None),
         ("attention_tabla", base / "tests" / "fixtures" / "local" / "1706.03762v7.pdf", 7, None),
-        ("ipcc_es", base / "tests" / "fixtures" / "local" / "IPCC_AR6_WG1_SPM_Spanish.pdf", 5, None),
-        ("cropbox_recortado", base / "experiments" / "data" / "documents" / "doc_estres.pdf", 9, None),
-        ("cropbox_recortado2", base / "experiments" / "data" / "documents" / "doc_estres.pdf", 84, None),
+        (
+            "ipcc_es",
+            base / "tests" / "fixtures" / "local" / "IPCC_AR6_WG1_SPM_Spanish.pdf",
+            5,
+            None,
+        ),
+        (
+            "cropbox_recortado",
+            base / "experiments" / "data" / "documents" / "doc_estres.pdf",
+            9,
+            None,
+        ),
+        (
+            "cropbox_recortado2",
+            base / "experiments" / "data" / "documents" / "doc_estres.pdf",
+            84,
+            None,
+        ),
         # El caso que de verdad estresa el agrupado por línea: una cita que CRUZA el salto de
         # columna. Si se agrupara por altura parecida, la última línea de la columna izquierda y
         # la primera de la derecha se fundirían en un rectángulo enorme que cruza la página.
@@ -200,7 +216,9 @@ def main() -> None:
         ("rotado_90", rotado, 2, None),
     ]
 
-    print(f"{'caso':<20} {'pág':>4} {'rot':>4} {'crop=media':>11} {'rects':>6} {'match':>6}  salida")
+    print(
+        f"{'caso':<20} {'pág':>4} {'rot':>4} {'crop=media':>11} {'rects':>6} {'match':>6}  salida"
+    )
     for nombre, ruta, npag, cita_fija in casos:
         if not ruta.exists():
             print(f"{nombre:<20}  (falta {ruta})")
@@ -215,7 +233,9 @@ def main() -> None:
         rects, recuperado = localizar(page, cita, w_px, h_px)
         destino = SALIDA / f"{nombre}_p{npag + 1}.png"
         iw, ih = dibujar(page, rects, destino)
-        crop_igual = [round(v,1) for v in page.get_cropbox()] == [round(v,1) for v in page.get_mediabox()]
+        crop_igual = [round(v, 1) for v in page.get_cropbox()] == [
+            round(v, 1) for v in page.get_mediabox()
+        ]
         ok = "sí" if recuperado.strip() else "NO"
         print(
             f"{nombre:<20} {npag + 1:>4} {page.get_rotation():>4} {str(crop_igual):>11} "
