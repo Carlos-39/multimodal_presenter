@@ -260,3 +260,145 @@ def test_sin_nada_sigue_siendo_400(client: TestClient) -> None:
     with pytest.raises(HTTPException) as exc:
         _entrada(client, None)
     assert exc.value.status_code == 400
+
+
+# ─────────────────────────────────────────────────────────────
+# Historial de chat (F3): cierra el pendiente del Hito 6
+# ─────────────────────────────────────────────────────────────
+RESPUESTA = {
+    "content": {"content_type": "text", "text": "Por encima de las nubes de tormenta."},
+    "source": {"document_id": "d", "quote": TEXTO},
+    "grounding": "verified",
+}
+
+CONVERSACION = {
+    "mensajes": [
+        {"rol": "user", "texto": "¿Dónde ocurren?"},
+        {
+            "rol": "assistant",
+            "texto": "Por encima de las nubes de tormenta.",
+            "respuesta": RESPUESTA,
+        },
+    ]
+}
+
+
+def test_el_chat_se_guarda_y_vuelve_con_la_presentacion(client: TestClient) -> None:
+    """El punto de F3: la conversación sobrevive a recargar, y vuelve CON su presentación."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+
+    r = client.put(f"/biblioteca/presentaciones/{pid}/chat", json=CONVERSACION)
+    assert r.status_code == 204, r.text
+
+    completa = client.get(f"/biblioteca/presentaciones/{pid}").json()
+    assert [m["rol"] for m in completa["chat"]] == ["user", "assistant"]
+    # El ancla es lo que importa de verdad: una respuesta restaurada sin su cita sería una
+    # afirmación sin respaldo, justo lo que el proyecto dice no hacer.
+    assert completa["chat"][1]["respuesta"]["source"]["quote"] == TEXTO
+    assert completa["chat"][1]["respuesta"]["grounding"] == "verified"
+
+
+def test_una_presentacion_recien_guardada_no_trae_chat(client: TestClient) -> None:
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    assert client.get(f"/biblioteca/presentaciones/{pid}").json()["chat"] == []
+
+
+def test_guardar_el_chat_reemplaza_y_no_acumula(client: TestClient) -> None:
+    """Es la razón de que sea `PUT`: mandarlo dos veces no puede duplicar la conversación."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+
+    client.put(f"/biblioteca/presentaciones/{pid}/chat", json=CONVERSACION)
+    client.put(f"/biblioteca/presentaciones/{pid}/chat", json=CONVERSACION)
+
+    assert len(client.get(f"/biblioteca/presentaciones/{pid}").json()["chat"]) == 2
+
+
+def test_el_orden_de_la_conversacion_se_conserva(client: TestClient) -> None:
+    """Un historial desordenado no es el historial: las respuestas contestan a otra pregunta."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    turnos = [{"rol": "user", "texto": f"pregunta {i}"} for i in range(10)]
+
+    client.put(f"/biblioteca/presentaciones/{pid}/chat", json={"mensajes": turnos})
+    guardados = client.get(f"/biblioteca/presentaciones/{pid}").json()["chat"]
+    assert [m["texto"] for m in guardados] == [t["texto"] for t in turnos]
+
+
+def test_vaciar_el_chat(client: TestClient) -> None:
+    """Empezar una conversación nueva sobre lo mismo tiene que poder borrar la anterior."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    client.put(f"/biblioteca/presentaciones/{pid}/chat", json=CONVERSACION)
+
+    client.put(f"/biblioteca/presentaciones/{pid}/chat", json={"mensajes": []})
+    assert client.get(f"/biblioteca/presentaciones/{pid}").json()["chat"] == []
+
+
+def test_una_respuesta_corrupta_no_entra(client: TestClient) -> None:
+    """Igual que el payload de la presentación: se valida al guardar, no al leer."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    r = client.put(
+        f"/biblioteca/presentaciones/{pid}/chat",
+        json={"mensajes": [{"rol": "assistant", "texto": "t", "respuesta": {"grounding": "no"}}]},
+    )
+    assert r.status_code == 422
+
+
+def test_un_mensaje_del_usuario_no_lleva_respuesta_anclada(client: TestClient) -> None:
+    """El rol dice quién habla; una pregunta con ancla sería un estado que no existe."""
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    r = client.put(
+        f"/biblioteca/presentaciones/{pid}/chat",
+        json={"mensajes": [{"rol": "user", "texto": "¿?", "respuesta": RESPUESTA}]},
+    )
+    assert r.status_code == 422
+
+
+def test_el_chat_de_otro_no_se_puede_escribir(client: TestClient) -> None:
+    """Sin esto, conocer un id de presentación bastaría para meter mensajes en la de otra
+    persona — y quedarían indistinguibles de los suyos."""
+    _registra(client, "ana@x.com")
+    ajena = _guarda(client)["id"]
+    client.put(f"/biblioteca/presentaciones/{ajena}/chat", json=CONVERSACION)
+    client.post("/auth/salir")
+
+    _registra(client, "beto@x.com")
+    r = client.put(f"/biblioteca/presentaciones/{ajena}/chat", json={"mensajes": []})
+    assert r.status_code == 404
+
+    client.post("/auth/salir")
+    client.post("/auth/entrar", json={"email": "ana@x.com", "contrasena": "unaclavelarga"})
+    assert len(client.get(f"/biblioteca/presentaciones/{ajena}").json()["chat"]) == 2
+
+
+def test_el_chat_exige_cuenta(client: TestClient) -> None:
+    r = client.put("/biblioteca/presentaciones/pre-loquesea/chat", json={"mensajes": []})
+    assert r.status_code == 401
+
+
+def test_borrar_la_presentacion_se_lleva_su_chat(client: TestClient) -> None:
+    """Depende de `PRAGMA foreign_keys` (va APAGADO por defecto en SQLite): sin él, el borrado en
+    cascada no hace nada y la conversación queda huérfana en la base."""
+    import asyncio
+
+    from multimodal_presenter.config import get_settings
+    from multimodal_presenter.storage import conectar
+
+    _registra(client, "a@x.com")
+    pid = _guarda(client)["id"]
+    client.put(f"/biblioteca/presentaciones/{pid}/chat", json=CONVERSACION)
+    assert client.delete(f"/biblioteca/presentaciones/{pid}").status_code == 204
+
+    async def quedan() -> int:
+        async with conectar(get_settings()) as conn:
+            async with conn.execute(
+                "SELECT COUNT(*) AS n FROM mensajes_chat WHERE presentacion_id = ?", (pid,)
+            ) as cur:
+                return (await cur.fetchone())["n"]
+
+    assert asyncio.run(quedan()) == 0

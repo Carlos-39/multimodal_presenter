@@ -17,11 +17,13 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, Upl
 from ..config import Settings, get_settings
 from ..pipeline.extraction import prepare_input
 from ..schemas.library import (
+    HistorialChat,
     ListaPresentaciones,
     PayloadGuardado,
     PresentacionCompleta,
     ResumenPresentacion,
 )
+from ..storage import chat as chat_repo
 from ..storage import conectar
 from ..storage import documents as almacen
 from ..storage import presentations as repo
@@ -94,17 +96,41 @@ async def obtener_endpoint(
     usuario: aiosqlite.Row = Depends(usuario_actual),
     settings: Settings = Depends(get_settings),
 ) -> PresentacionCompleta:
-    """Una presentación guardada, con el `document_id` para seguir usándola.
+    """Una presentación guardada, con el `document_id` y su conversación, para seguir usándola.
 
     404 tanto si no existe como si es de otra persona: distinguir los dos casos revelaría qué
     identificadores están en uso, igual que el error de inicio de sesión no dice si el correo
     existe.
+
+    El historial de chat viaja en esta MISMA respuesta. Con una segunda petición habría un
+    instante en el que la presentación ya está en pantalla y su conversación todavía no, y ese
+    instante se ve: parecería que se perdió.
     """
     async with conectar(settings) as conn:
         presentacion = await repo.obtener(conn, usuario["id"], presentacion_id)
-    if presentacion is None:
-        raise HTTPException(status_code=404, detail="No se encontró esa presentación.")
-    return presentacion
+        if presentacion is None:
+            raise HTTPException(status_code=404, detail="No se encontró esa presentación.")
+        historial = await chat_repo.historial(conn, usuario["id"], presentacion_id)
+    return presentacion.model_copy(update={"chat": historial})
+
+
+@router.put("/presentaciones/{presentacion_id}/chat", status_code=204)
+async def guardar_chat_endpoint(
+    presentacion_id: str,
+    historial: HistorialChat,
+    usuario: aiosqlite.Row = Depends(usuario_actual),
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Deja guardada la conversación de una presentación tal como está ahora.
+
+    `PUT` y no `POST` porque reemplaza: el cliente manda el historial completo y eso es lo que
+    queda. Añadir turno a turno sería más barato, pero el historial podría derivar de la
+    conversación real —un reintento duplica, una petición perdida deja un hueco— y un historial
+    con huecos es peor que ninguno, porque parece completo.
+    """
+    async with conectar(settings) as conn:
+        if not await chat_repo.reemplazar(conn, usuario["id"], presentacion_id, historial.mensajes):
+            raise HTTPException(status_code=404, detail="No se encontró esa presentación.")
 
 
 @router.get("/documentos/{document_id}")

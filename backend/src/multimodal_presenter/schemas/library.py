@@ -8,8 +8,11 @@ usuario dentro del contrato acabaría en un prompt por una ruta perfectamente no
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal
 
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from .chat import ChatResponse
 from .presentation import Presentation
 from .transform import ChartNote, GroundingReport, SourceKind
 
@@ -35,6 +38,38 @@ class PayloadGuardado(_Strict):
     chart_notes: list[ChartNote] = Field(default_factory=list)
     transcript: str | None = None
     audio_evidence: str | None = None
+
+
+class MensajeGuardado(_Strict):
+    """Un mensaje del chat tal como se guarda.
+
+    Lleva el `ChatResponse` COMPLETO y no solo el texto. El historial que viaja al modelo sí es
+    solo texto (`ChatTurn`), pero lo que hay que poder volver a mostrar es la respuesta con su
+    ancla: una respuesta restaurada sin su cita sería afirmación sin respaldo, que es exactamente
+    lo que este proyecto dice no hacer.
+    """
+
+    rol: Literal["user", "assistant"]
+    texto: str = Field(min_length=1)
+    respuesta: ChatResponse | None = None
+
+    @model_validator(mode="after")
+    def _solo_el_asistente_responde(self) -> MensajeGuardado:
+        if self.rol == "user" and self.respuesta is not None:
+            raise ValueError("un mensaje del usuario no lleva respuesta anclada")
+        return self
+
+
+class HistorialChat(_Strict):
+    """El historial completo de una presentación.
+
+    Se manda COMPLETO y reemplaza al guardado, en vez de añadir un turno cada vez. Así lo
+    almacenado es siempre una foto de lo que se está viendo y no puede derivar: añadiendo, un
+    reintento duplicaría un turno y una petición perdida dejaría un hueco, y el historial dejaría
+    de coincidir con la conversación que de verdad ocurrió.
+    """
+
+    mensajes: list[MensajeGuardado] = Field(default_factory=list, max_length=200)
 
 
 class ResumenPresentacion(_Strict):
@@ -72,3 +107,7 @@ class PresentacionCompleta(_Strict):
     media_type: str | None
     creada_en: str
     payload: PayloadGuardado
+    chat: list[MensajeGuardado] = Field(default_factory=list)
+    """El historial de chat viene en la MISMA respuesta que la presentación, no en una segunda
+    petición. Restaurar es un solo acto: con dos peticiones habría un instante en el que la
+    presentación ya está en pantalla y su conversación todavía no, y ese instante se ve."""
