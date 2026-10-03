@@ -15,7 +15,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from .presentation import SectionContent, SourceReference
-from .transform import GroundingStatus
+from .transform import CitedRegion, GroundingStatus
 
 
 class _Strict(BaseModel):
@@ -88,6 +88,10 @@ class ChatResponse(_Strict):
     """Solo audio: momento del que viene la cita, para que el reproductor del panel salte ahí.
     Análogo a `SourceReference.page` en PDF. Localiza, NO verifica: el estado sigue siendo
     `unverified`."""
+
+    region: CitedRegion | None = None
+    """Solo PDF: dónde está la cita dentro de la página. Mismo campo que en `SectionGrounding`,
+    para que verificar desde el chat sea tan preciso como desde el contenido."""
 
 
 class SuggestionsResponse(_Strict):

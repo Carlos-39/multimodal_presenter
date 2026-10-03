@@ -35,6 +35,46 @@ GroundingStatus = Literal["verified", "unverified", "not_found"]
 SourceKind = Literal["text", "pdf", "image", "audio"]
 
 
+class RegionBox(_Strict):
+    """Un recuadro dentro de la página, en fracciones 0-1 con origen arriba-izquierda.
+
+    En fracciones y no en píxeles a propósito: el frontend solo multiplica por el tamaño de su
+    contenedor y posiciona en porcentaje. Nunca calcula escalas ni aplica rotaciones — eso ya se
+    resolvió en el backend, con el mismo motor que dibuja la página, así que el recuadro no puede
+    descuadrarse respecto a lo que se ve.
+    """
+
+    x0: float = Field(ge=0, le=1)
+    y0: float = Field(ge=0, le=1)
+    x1: float = Field(ge=0, le=1)
+    y1: float = Field(ge=0, le=1)
+
+
+class CitedRegion(_Strict):
+    """Dónde está la cita DENTRO de la página citada. Un recuadro por renglón.
+
+    Sube el PDF de fidelidad de PÁGINA (5c: "te llevo a la página 7") a fidelidad de REGIÓN. Es
+    el cuarto nivel del mismo esquema honesto que ya usan el texto (offsets exactos) y el audio
+    (momento, A1).
+
+    **No existe el valor "página" aquí**, y es deliberado: la fidelidad de página es la AUSENCIA
+    del campo (`region = None`). Así el estado contradictorio —"solo sé la página" pero con
+    recuadros dentro— no se puede ni representar, y un cliente que ignore el campo se comporta
+    exactamente como antes de que existiera.
+
+    **Localizar no es verificar** (mismo criterio que `start_s` en audio): encontrar la cita en la
+    capa de texto NO cambia `GroundingStatus`, que sigue siendo `unverified` para PDF. Lo que se
+    gana es poder señalar dónde mirar, no una afirmación de que el contenido quedó verificado.
+    """
+
+    quality: Literal["exact", "approximate"]
+    """`exact`: la cita está literal (salvo variantes tipográficas y de espaciado).
+    `approximate`: se halló un pasaje muy parecido; el recuadro señala una zona, no la frase. La
+    UI debe decirlo — marcar como exacto algo aproximado sería la sobre-afirmación del 8A.1."""
+
+    boxes: list[RegionBox] = Field(min_length=1)
+
+
 class SectionGrounding(_Strict):
     """Estado de anclaje a fuente de una sección."""
 
@@ -47,6 +87,10 @@ class SectionGrounding(_Strict):
     """Momento del audio del que viene la cita, para que el reproductor salte ahí — el
     análogo exacto de `page` en PDF. Se obtiene LOCALIZANDO la cita en la transcripción de la
     Fase 0, no verificándola contra la señal: el estado sigue siendo `unverified`."""
+
+    region: CitedRegion | None = None
+    """Solo PDF con capa de texto: dónde está la cita dentro de `page`. `None` = fidelidad de
+    página, el comportamiento de siempre. Hermano de `start_s`, no parte de `SourceReference`."""
 
 
 class GroundingReport(_Strict):
@@ -178,6 +222,10 @@ class GeneratedSlide(_Strict):
     """Solo audio: momento del que viene la cita, igual que en `SectionGrounding` y en la
     respuesta del chat. Sin esto, abrir la fuente desde una diapositiva arrancaba el reproductor
     en 0:00 en vez de en la cita — una inconsistencia entre vistas del mismo documento."""
+    region: CitedRegion | None = None
+    """Solo PDF: dónde está la cita dentro de la página, igual que en `SectionGrounding`. Sin
+    esto, abrir la fuente desde una diapositiva daría menos precisión que desde una sección del
+    contenido — una inconsistencia entre vistas del mismo documento."""
     is_synthesis: bool = False
     illustration: GeneratedIllustration | None = None
 
