@@ -35,6 +35,7 @@ import {
   type MensajeGuardado,
   type Usuario,
 } from "@/lib/account";
+import { AccountButton } from "@/components/shell/AccountButton";
 import { AccountPanel } from "@/components/shell/AccountPanel";
 import type { PanelId } from "@/lib/workspace";
 import type {
@@ -702,6 +703,31 @@ export default function Page() {
       slidesAvailable={hasContent}
       onToggleSlides={toggleSlides}
       deckOpen={deckOpen}
+      acciones={
+        <>
+          {hasContent && usuario ? (
+            <button
+              type="button"
+              onClick={() => void guardar()}
+              disabled={guardando === "guardando"}
+              className="rounded-md border border-border px-2.5 py-1 text-xs text-foreground-secondary transition-colors hover:border-border-strong hover:text-foreground disabled:opacity-50"
+            >
+              {guardando === "guardando"
+                ? "Guardando…"
+                : guardando === "guardada"
+                  ? "Guardada"
+                  : guardando === "error"
+                    ? "No se pudo guardar"
+                    : "Guardar"}
+            </button>
+          ) : null}
+          <AccountButton
+            usuario={usuario}
+            abierto={cuentaAbierta}
+            onClick={() => setCuentaAbierta(!cuentaAbierta)}
+          />
+        </>
+      }
       // «Ya existe», en memoria o guardada: una presentación restaurada ofrece abrirla, no
       // generar otra vez la que ya está hecha.
       deckReady={deck !== null || deckGuardado}
@@ -807,65 +833,38 @@ export default function Page() {
       </Workspace>
     </AppShell>
 
-    {/* Cuenta y biblioteca. Van FUERA del Workspace, que arbitra las columnas de contenido: la
-        cuenta no es una vista del documento, y meterla ahí la habría hecho competir por espacio
-        con la fuente y el chat. Es un cajón que se abre y se cierra. */}
-    <div className="pointer-events-none fixed inset-0 z-40 flex justify-end">
-      {cuentaAbierta ? (
-        <>
-          {/* El fondo oscurecido cierra al tocar fuera, pero se oculta a los lectores de
-              pantalla: anunciaba "Cerrar el panel de cuenta" igual que la X del panel, y oír dos
-              veces la misma acción obliga a probar cuál es cuál. La X ya la ofrece. */}
-          <button
-            type="button"
-            aria-hidden
-            tabIndex={-1}
-            onClick={() => setCuentaAbierta(false)}
-            className="pointer-events-auto flex-1 bg-black/20"
+    {/* El CAJÓN de cuenta: esto sí es una capa superpuesta, porque un cajón se desliza sobre el
+        contenido y lo devuelve al cerrarse. El botón que lo abre NO vive aquí — está en la fila de
+        controles de la cabecera, donde el `flex` le reserva sitio. Cuando flotaba también él, en
+        ventanas estrechas se montaba encima de «Chat». */}
+    {cuentaAbierta ? (
+      <div className="fixed inset-0 z-40 flex justify-end">
+        {/* El fondo oscurecido cierra al tocar fuera, pero se oculta a los lectores de pantalla:
+            anunciaba "Cerrar el panel de cuenta" igual que la X del cajón, y oír dos veces la
+            misma acción obliga a probar cuál es cuál. La X ya la ofrece. */}
+        <button
+          type="button"
+          aria-hidden
+          tabIndex={-1}
+          onClick={() => setCuentaAbierta(false)}
+          className="flex-1 bg-black/20"
+        />
+        <div className="h-full w-80 max-w-[85vw] border-l border-border shadow-xl">
+          <AccountPanel
+            usuario={usuario}
+            onUsuario={setUsuario}
+            onAbrir={(id) => void restaurar(id)}
+            onBorrada={(id) => {
+              // Si se borró la que se está viendo, ya no hay dónde guardar su conversación. Sin
+              // esto el chat seguiría mandando turnos contra un id que no existe: se perderían
+              // en silencio, con la app aparentando que los guarda.
+              if (presentacionIdRef.current === id) presentacionIdRef.current = null;
+            }}
+            onCerrar={() => setCuentaAbierta(false)}
           />
-          <div className="pointer-events-auto h-full w-80 max-w-[85vw] border-l border-border shadow-xl">
-            <AccountPanel
-              usuario={usuario}
-              onUsuario={setUsuario}
-              onAbrir={(id) => void restaurar(id)}
-              onBorrada={(id) => {
-                // Si se borró la que se está viendo, ya no hay dónde guardar su conversación. Sin
-                // esto el chat seguiría mandando turnos contra un id que no existe: se perderían
-                // en silencio, con la app aparentando que los guarda.
-                if (presentacionIdRef.current === id) presentacionIdRef.current = null;
-              }}
-              onCerrar={() => setCuentaAbierta(false)}
-            />
-          </div>
-        </>
-      ) : (
-        <div className="pointer-events-auto absolute right-3 top-2.5 flex items-center gap-2">
-          {hasContent && usuario ? (
-            <button
-              type="button"
-              onClick={() => void guardar()}
-              disabled={guardando === "guardando"}
-              className="rounded-md border border-border bg-surface px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-surface-sunken disabled:opacity-50"
-            >
-              {guardando === "guardando"
-                ? "Guardando…"
-                : guardando === "guardada"
-                  ? "Guardada"
-                  : guardando === "error"
-                    ? "No se pudo guardar"
-                    : "Guardar"}
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => setCuentaAbierta(true)}
-            className="max-w-[12rem] truncate rounded-md border border-border bg-surface px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-surface-sunken"
-          >
-            {usuario ? usuario.email : "Entrar"}
-          </button>
         </div>
-      )}
-    </div>
+      </div>
+    ) : null}
     </>
   );
 }
