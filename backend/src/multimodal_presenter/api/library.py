@@ -12,7 +12,7 @@ un acto explícito y lleva consigo lo que hace falta para que lo guardado siga s
 from __future__ import annotations
 
 import aiosqlite
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
 
 from ..config import Settings, get_settings
 from ..pipeline.extraction import prepare_input
@@ -105,6 +105,40 @@ async def obtener_endpoint(
     if presentacion is None:
         raise HTTPException(status_code=404, detail="No se encontró esa presentación.")
     return presentacion
+
+
+@router.get("/documentos/{document_id}")
+async def documento_endpoint(
+    document_id: str,
+    usuario: aiosqlite.Row = Depends(usuario_actual),
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    """Sirve los BYTES de un documento guardado.
+
+    Sin esto, una presentación restaurada se podría leer pero no verificar: el panel de fuente, el
+    visor de página y la vista del PDF necesitan el documento, y el navegador que la abre mañana
+    ya no tiene el archivo. Guardar la presentación sin poder recuperar su fuente traicionaría lo
+    que este proyecto afirma.
+
+    Exige propiedad, igual que el camino por `document_id` del pipeline: un id es un hash del
+    contenido, pero aun así conocerlo no puede bastar para leer el documento de otra persona.
+    """
+    async with conectar(settings) as conn:
+        if not await repo.tiene_documento(conn, usuario["id"], document_id):
+            raise HTTPException(status_code=404, detail="No se encontró ese documento.")
+        fila = await almacen.metadatos(conn, document_id)
+
+    contenido = await almacen.leer(settings, document_id)
+    if fila is None or contenido is None:
+        raise HTTPException(status_code=404, detail="No se encontró ese documento.")
+
+    tipo = fila["media_type"] or "text/plain; charset=utf-8"
+    return Response(
+        content=contenido,
+        media_type=tipo,
+        # El contenido de un id NUNCA cambia: es un hash de esos mismos bytes.
+        headers={"Cache-Control": "private, max-age=86400, immutable"},
+    )
 
 
 @router.delete("/presentaciones/{presentacion_id}", status_code=204)
