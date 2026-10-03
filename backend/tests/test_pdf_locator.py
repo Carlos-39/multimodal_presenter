@@ -2,7 +2,7 @@
 
 Lo que estos tests fijan, por orden de importancia:
 
-1. **Que degrada, nunca falla.** Una cita que no se encuentra devuelve `calidad: "pagina"`, que
+1. **Que degrada, nunca falla.** Una cita que no se encuentra devuelve `calidad: "page"`, que
    es el comportamiento que el sistema ya tenía. Es lo que permite activar esto sin arriesgar
    nada de lo que ya funciona.
 2. **Que no inventa precisión.** Un recuadro equivocado es peor que ningún recuadro: señalaría
@@ -99,7 +99,7 @@ def localizador():
 # ─────────────────────────────────────────────────────────────
 def test_cita_exacta_en_un_renglon(localizador) -> None:
     r = localizador.localizar("descargas electricas que ocurren", 1)
-    assert r.calidad == "exacta"
+    assert r.calidad == "exact"
     assert len(r.regiones) == 1
 
 
@@ -108,7 +108,7 @@ def test_cita_que_cruza_un_salto_de_renglon(localizador) -> None:
     r = localizador.localizar(
         "entre los cincuenta y los noventa kilometros de altura sobre la superficie", 1
     )
-    assert r.calidad == "exacta"
+    assert r.calidad == "exact"
     assert len(r.regiones) == 2
     primera, segunda = r.regiones
     assert segunda.y0 > primera.y0  # la segunda va debajo
@@ -122,7 +122,7 @@ def test_comillas_tipograficas_y_tildes_siguen_siendo_exactas() -> None:
     pdf = _pdf(["La NASA lo llama un fenomeno “frio” porque no transporta calor."])
     with PdfLocator(pdf) as loc:
         r = loc.localizar('lo llama un fenomeno "frio" porque', 1)
-    assert r.calidad == "exacta"
+    assert r.calidad == "exact"
     assert len(r.regiones) == 1
 
 
@@ -131,7 +131,7 @@ def test_guion_de_corte_de_linea() -> None:
     pdf = _pdf(["El estudio midio la biodiver-", "sidad de la region durante dos anios."])
     with PdfLocator(pdf) as loc:
         r = loc.localizar("midio la biodiversidad de la region", 1)
-    assert r.calidad == "exacta"
+    assert r.calidad == "exact"
     assert len(r.regiones) == 2  # sigue estando en dos renglones
 
 
@@ -142,7 +142,7 @@ def test_parafrasis_cercana_cae_en_aproximada(localizador) -> None:
         "superficie",
         1,
     )
-    assert r.calidad == "aproximada"
+    assert r.calidad == "approximate"
     assert r.regiones
 
 
@@ -151,13 +151,13 @@ def test_parafrasis_lejana_degrada_a_pagina(localizador) -> None:
     r = localizador.localizar(
         "La mesosfera va de cincuenta a noventa kilometros por encima del suelo terrestre", 1
     )
-    assert r.calidad == "pagina"
+    assert r.calidad == "page"
     assert r.regiones == ()
 
 
 def test_cita_inexistente_degrada_limpio(localizador) -> None:
     r = localizador.localizar("El precio del cafe subio un quince por ciento en el trimestre", 1)
-    assert r.calidad == "pagina"
+    assert r.calidad == "page"
     assert r.regiones == ()
 
 
@@ -176,7 +176,7 @@ def test_cita_inexistente_degrada_limpio(localizador) -> None:
 )
 def test_entradas_imposibles_degradan_sin_lanzar(localizador, cita: str, pagina: int) -> None:
     r = localizador.localizar(cita, pagina)
-    assert r.calidad == "pagina"
+    assert r.calidad == "page"
     assert r.regiones == ()
 
 
@@ -185,7 +185,7 @@ def test_pagina_sin_capa_de_texto_degrada() -> None:
     pdf = _pdf(TEXTO, paginas_extra=1)
     with PdfLocator(pdf) as loc:
         vacia = loc.localizar("cualquier cosa", 2)
-    assert vacia.calidad == "pagina"
+    assert vacia.calidad == "page"
 
 
 def test_pasaje_demasiado_largo_degrada() -> None:
@@ -197,7 +197,7 @@ def test_pasaje_demasiado_largo_degrada() -> None:
     pdf = _pdf(lineas)
     with PdfLocator(pdf) as loc:
         r = loc.localizar(" ".join(lineas), 1)
-    assert r.calidad == "pagina"
+    assert r.calidad == "page"
     assert r.regiones == ()
 
 
@@ -222,7 +222,7 @@ def test_pagina_rotada_sigue_localizando(grados: int) -> None:
         r = loc.localizar(
             "entre los cincuenta y los noventa kilometros de altura sobre la superficie", 1
         )
-    assert r.calidad == "exacta"
+    assert r.calidad == "exact"
     assert len(r.regiones) == 2  # dos renglones, igual que sin rotar
     for region in r.regiones:
         assert 0.0 <= region.x0 < region.x1 <= 1.0
@@ -233,7 +233,7 @@ def test_rotacion_90_una_sola_linea_funciona() -> None:
     """Con `/Rotate 90` la GEOMETRÍA es correcta: el recuadro cae donde debe."""
     with PdfLocator(_rotar(_pdf(TEXTO), 90)) as loc:
         r = loc.localizar("descargas electricas que ocurren", 1)
-    assert r.calidad == "exacta"
+    assert r.calidad == "exact"
     assert len(r.regiones) == 1
     region = r.regiones[0]
     assert 0.0 <= region.x0 < region.x1 <= 1.0
@@ -253,7 +253,7 @@ def test_rotacion_90_varias_lineas_degrada_en_vez_de_mentir() -> None:
         r = loc.localizar(
             "entre los cincuenta y los noventa kilometros de altura sobre la superficie", 1
         )
-    assert r.calidad == "pagina"
+    assert r.calidad == "page"
     assert r.regiones == ()
 
 
@@ -270,7 +270,7 @@ def test_cita_que_cruza_un_salto_de_columna_no_funde_las_regiones() -> None:
     )
     with PdfLocator(pdf) as loc:
         r = loc.localizar("y el cierre de la seccion. Segunda columna que", 1)
-    assert r.calidad == "exacta"
+    assert r.calidad == "exact"
     # Tres renglones: el final del segundo de la izquierda, el tercero, y el primero de la derecha.
     assert len(r.regiones) == 3
     # Ninguna región cruza la página entera: eso sería la fusión que se quiere evitar.

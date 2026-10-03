@@ -17,13 +17,15 @@ capa de texto NO cambia el estado de grounding: sigue siendo `unverified`. Lo qu
 poder señalar dónde mirar, no una afirmación de que el contenido quedó verificado.
 
 **Alcance declarado, no limitación oculta:** solo PDFs con capa de texto nativa. Los escaneados
-(sin texto extraíble) degradan a `calidad: "pagina"` — exactamente el comportamiento de hoy. No
+(sin texto extraíble) degradan a `calidad: "page"` — exactamente el comportamiento de hoy. No
 se hace OCR: es una decisión de alcance consciente.
 """
 
 from __future__ import annotations
 
 import ctypes
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Literal
 
@@ -31,14 +33,15 @@ import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_raw
 from rapidfuzz import fuzz
 
-from .validation import CANON_MAP
+from ..schemas.transform import CitedRegion, RegionBox
+from .canon import CANON_MAP
 
-Calidad = Literal["exacta", "aproximada", "pagina"]
+Calidad = Literal["exact", "approximate", "page"]
 """Nivel de fidelidad alcanzado al localizar la cita en la página.
 
-- `exacta`     → la cita está, literal (salvo variantes tipográficas y de espaciado).
-- `aproximada` → se encontró un pasaje muy parecido; el recuadro señala una zona, no la frase.
-- `pagina`     → no se pudo localizar. Es el comportamiento de siempre, no un error.
+- `exact`       → la cita está, literal (salvo variantes tipográficas y de espaciado).
+- `approximate` → se encontró un pasaje muy parecido; el recuadro señala una zona, no la frase.
+- `page`        → no se pudo localizar. Es el comportamiento de siempre, no un error.
 """
 
 # Umbral del peldaño difuso. La investigación daba 85-90 y se toma el extremo CONSERVADOR: en
@@ -100,7 +103,7 @@ class Localizacion:
     @classmethod
     def solo_pagina(cls) -> Localizacion:
         """Degradación honesta: se sabe la página, no el sitio dentro de ella."""
-        return cls(calidad="pagina", regiones=())
+        return cls(calidad="page", regiones=())
 
 
 def _normalizar(texto: str) -> tuple[str, list[int]]:
@@ -164,7 +167,7 @@ def _rango_normalizado(texto_norm: str, cita_norm: str) -> tuple[int, int, Calid
 
     idx = texto_norm.find(cita_norm)
     if idx != -1:
-        return idx, idx + len(cita_norm), "exacta"
+        return idx, idx + len(cita_norm), "exact"
 
     alineacion = fuzz.partial_ratio_alignment(cita_norm, texto_norm)
     if alineacion is None or alineacion.score < UMBRAL_DIFUSO:
@@ -172,7 +175,7 @@ def _rango_normalizado(texto_norm: str, cita_norm: str) -> tuple[int, int, Calid
     inicio, fin = alineacion.dest_start, alineacion.dest_end
     if fin <= inicio:
         return None
-    return inicio, fin, "aproximada"
+    return inicio, fin, "approximate"
 
 
 def _agrupar_en_lineas(
@@ -237,7 +240,7 @@ class PdfLocator:
     def localizar(self, cita: str, pagina: int) -> Localizacion:
         """Localiza `cita` en la página `pagina` (1-based, como `SourceReference.page`).
 
-        Nunca lanza: cualquier cosa que no se pueda localizar degrada a `calidad: "pagina"`, que
+        Nunca lanza: cualquier cosa que no se pueda localizar degrada a `calidad: "page"`, que
         es el comportamiento que el sistema ya tenía. Una cita sin recuadro no rompe nada; un
         recuadro equivocado sí rompería la confianza, que es lo que este proyecto cuida.
         """
@@ -324,3 +327,45 @@ class PdfLocator:
             page.raw, 0, 0, ancho, alto, 0, x, y, ctypes.byref(dx), ctypes.byref(dy)
         )
         return dx.value, dy.value
+
+
+@contextmanager
+def abrir_localizador(source_kind: str, binario: bytes | None) -> Iterator[PdfLocator | None]:
+    """Abre un localizador para la fuente, o `None` si no aplica. Siempre suelta el documento.
+
+    Devolver `None` en vez de lanzar es lo que permite que el resto del pipeline no se llene de
+    condicionales: quien lo usa pregunta una vez y el resto del código es el mismo para todas las
+    fuentes. Solo PDF; texto, imagen y audio tienen sus propias fidelidades.
+    """
+    if source_kind != "pdf" or not binario:
+        yield None
+        return
+    try:
+        localizador = PdfLocator(binario)
+    except Exception:  # noqa: BLE001 — un PDF que no abre degrada a fidelidad de página
+        yield None
+        return
+    try:
+        yield localizador
+    finally:
+        localizador.close()
+
+
+def region_de_cita(
+    localizador: PdfLocator | None, cita: str | None, pagina: int | None
+) -> CitedRegion | None:
+    """Traduce el resultado del localizador al contrato público. `None` = fidelidad de página.
+
+    Aquí es donde `calidad: "page"` deja de existir: en el contrato la fidelidad de página es la
+    AUSENCIA del campo, así que el estado contradictorio ("solo sé la página" con recuadros
+    dentro) no llega a ser representable.
+    """
+    if localizador is None or not cita or pagina is None:
+        return None
+    hallazgo = localizador.localizar(cita, pagina)
+    if hallazgo.calidad == "page" or not hallazgo.regiones:
+        return None
+    return CitedRegion(
+        quality=hallazgo.calidad,
+        boxes=[RegionBox(x0=r.x0, y0=r.y0, x1=r.x1, y1=r.y1) for r in hallazgo.regiones],
+    )
