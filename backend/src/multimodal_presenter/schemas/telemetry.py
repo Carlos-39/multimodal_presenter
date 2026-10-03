@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 TelemetryEventName = Literal[
     "session_start",
@@ -62,8 +62,31 @@ class TelemetryEvent(BaseModel):
 
 
 class TelemetryBatch(BaseModel):
-    """Lote de eventos (el frontend los envía agrupados, no uno por request)."""
+    """Lote de eventos (el frontend los envía agrupados, no uno por request).
+
+    Los eventos entran SIN tipar y se validan **uno por uno** en `valid_events()`, a propósito.
+    Con `list[TelemetryEvent]` un solo evento malo invalidaba el request completo y se perdían
+    hasta 50 eventos buenos del mismo lote, en silencio: el frontend es fire-and-forget y no se
+    enteraba. En una sesión de evaluación que no se puede repetir, eso es perder datos de verdad
+    (se vio al añadir un evento nuevo mientras el backend seguía corriendo con el schema viejo:
+    el lote entero respondía 422).
+
+    La barrera de privacidad NO se relaja: cada evento pasa por el mismo `TelemetryEvent`
+    estricto, así que un string largo (contenido colado) se sigue rechazando. Lo único que cambia
+    es que ese rechazo ya no se lleva por delante a los eventos vecinos.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
-    events: list[TelemetryEvent] = Field(min_length=1, max_length=100)
+    events: list[dict] = Field(min_length=1, max_length=100)
+
+    def valid_events(self) -> tuple[list[TelemetryEvent], int]:
+        """Devuelve (eventos válidos, cuántos se descartaron)."""
+        validos: list[TelemetryEvent] = []
+        descartados = 0
+        for crudo in self.events:
+            try:
+                validos.append(TelemetryEvent.model_validate(crudo))
+            except ValidationError:
+                descartados += 1
+        return validos, descartados

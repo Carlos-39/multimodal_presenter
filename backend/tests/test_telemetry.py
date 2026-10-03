@@ -74,31 +74,59 @@ def test_batch_se_escribe_al_jsonl(tmp_path) -> None:
     assert written[0]["ts"] == "2026-09-30T10:00:00.000Z"
 
 
-def test_privacidad_rechaza_string_largo(tmp_path) -> None:
-    """Un valor largo en el payload (contenido colado) se rechaza server-side (422)."""
+def test_privacidad_descarta_string_largo(tmp_path) -> None:
+    """Un valor largo en el payload (contenido colado) NO se escribe nunca.
+
+    La garantía de privacidad es que no llegue a disco, no que el request falle: el descarte es
+    por evento (ver `test_un_evento_malo_no_tumba_el_lote`).
+    """
     client = _client(tmp_path)
     colado = {"events": [_event("typed_question_submit", 0, {"texto": "x" * 200})]}
     response = client.post("/telemetry", json=colado)
-    assert response.status_code == 422
-    assert _read_jsonl(tmp_path) == []  # nada se escribió
+    assert response.status_code == 204
+    assert _read_jsonl(tmp_path) == []  # nada se escribió: la barrera sigue en pie
 
 
-def test_privacidad_rechaza_campo_extra(tmp_path) -> None:
+def test_privacidad_descarta_campo_extra(tmp_path) -> None:
     client = _client(tmp_path)
     malo = _event("session_start", 0)
     malo["ip_address"] = "1.2.3.4"  # no forma parte del sobre → extra="forbid"
-    response = client.post("/telemetry", json={"events": [malo]})
-    assert response.status_code == 422
+    assert client.post("/telemetry", json={"events": [malo]}).status_code == 204
+    assert _read_jsonl(tmp_path) == []
 
 
 def test_lote_vacio_es_422(tmp_path) -> None:
+    """El lote vacío sí es un 422: es el SOBRE el que está mal, no un evento de dentro."""
     client = _client(tmp_path)
     assert client.post("/telemetry", json={"events": []}).status_code == 422
 
 
-def test_nombre_de_evento_invalido_es_422(tmp_path) -> None:
+def test_nombre_de_evento_invalido_se_descarta(tmp_path) -> None:
     client = _client(tmp_path)
-    assert client.post("/telemetry", json={"events": [_event("hackeo", 0)]}).status_code == 422
+    assert client.post("/telemetry", json={"events": [_event("hackeo", 0)]}).status_code == 204
+    assert _read_jsonl(tmp_path) == []
+
+
+def test_un_evento_malo_no_tumba_el_lote(tmp_path) -> None:
+    """Los eventos buenos del lote se guardan aunque venga uno malo con ellos.
+
+    Con `list[TelemetryEvent]` el request entero respondía 422 y se perdían hasta 50 eventos
+    buenos, en silencio (el frontend es fire-and-forget). Se vio de verdad al añadir un evento
+    nuevo mientras el backend seguía corriendo con el schema anterior. En una sesión de
+    evaluación que no se puede repetir, eso es perder datos.
+    """
+    client = _client(tmp_path)
+    lote = {
+        "events": [
+            _event("session_start", 0),
+            _event("inventado", 1),  # nombre que este backend no conoce
+            _event("typed_question_submit", 2, {"texto": "x" * 200}),  # contenido colado
+            _event("source_open", 3, {"origin": "section", "grounding_status": "verified"}),
+        ]
+    }
+    assert client.post("/telemetry", json=lote).status_code == 204
+    guardados = _read_jsonl(tmp_path)
+    assert [e["name"] for e in guardados] == ["session_start", "source_open"]
 
 
 def test_disco_apagado_no_escribe_pero_responde_204(tmp_path) -> None:

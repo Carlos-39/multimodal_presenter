@@ -9,6 +9,7 @@
 
 import json
 
+import logfire
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
@@ -469,6 +470,16 @@ async def telemetry_endpoint(
     telemetría, el frontend no espera cuerpo y no debe bloquearse por ella.
     """
     jsonl_dir = resolve_telemetry_dir(settings)
-    for event in batch.events:
+    eventos, descartados = batch.valid_events()
+    if descartados:
+        # Se traza y se sigue: antes un evento malo invalidaba el lote entero y se perdían los
+        # buenos que venían con él (ver `TelemetryBatch`). Perder un evento es aceptable; perder
+        # 50 de una sesión irrepetible, no.
+        logfire.warn(
+            "telemetría: {descartados} de {total} eventos descartados por el schema",
+            descartados=descartados,
+            total=len(batch.events),
+        )
+    for event in eventos:
         record_ux_event(event, jsonl_dir=jsonl_dir)
     return Response(status_code=204)
