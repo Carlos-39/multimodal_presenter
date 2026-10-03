@@ -1,5 +1,6 @@
-import { CircleNotch, Pause, Play, Stop } from "@phosphor-icons/react/dist/ssr";
-import type { NarrationStatus } from "@/hooks/useNarration";
+import { CircleNotch, Pause, Play, Rewind, FastForward, Stop } from "@phosphor-icons/react/dist/ssr";
+import { formatTimestamp } from "@/lib/audio";
+import { NARRATION_SKIP_S, type NarrationStatus } from "@/hooks/useNarration";
 
 /**
  * Controles de la narración tipo audiolibro (núcleo fijo, Punto 8 · Hito 5g Parte 3). Viven
@@ -7,19 +8,39 @@ import type { NarrationStatus } from "@/hooks/useNarration";
  *
  * Reproduce una narración generada aparte (guion sintetizado, NO el texto en pantalla). Nunca
  * autoplay: solo arranca si el usuario pulsa reproducir. Si el TTS falla, se dice (honestidad).
+ *
+ * La barra de progreso y los saltos de ±15 s solo aparecen cuando hay algo que recorrer (es
+ * decir, cuando ya se conoce la duración): antes de reproducir no hay nada sobre lo que saltar,
+ * y mostrar una barra vacía prometería un control que todavía no existe.
  */
 interface AudioControlsProps {
   status: NarrationStatus;
   available: boolean; // hay contenido que narrar
+  currentTime: number;
+  duration: number;
   onPlay: () => void;
   onPause: () => void;
   onStop: () => void;
+  onSeek: (segundos: number) => void;
+  onSkip: (delta: number) => void;
 }
 
-export function AudioControls({ status, available, onPlay, onPause, onStop }: AudioControlsProps) {
+export function AudioControls({
+  status,
+  available,
+  currentTime,
+  duration,
+  onPlay,
+  onPause,
+  onStop,
+  onSeek,
+  onSkip,
+}: AudioControlsProps) {
   const playing = status === "playing";
   const loading = status === "loading";
   const disabled = !available || loading;
+  // Hay audio cargado y medido: solo entonces tiene sentido ofrecer recorrerlo.
+  const recorrible = duration > 0 && (playing || status === "paused");
 
   return (
     <div className="mt-2.5">
@@ -38,6 +59,28 @@ export function AudioControls({ status, available, onPlay, onPause, onStop }: Au
           ) : (
             <Play size={15} weight="fill" aria-hidden />
           )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onSkip(-NARRATION_SKIP_S)}
+          disabled={!recorrible}
+          aria-label={`Retroceder ${NARRATION_SKIP_S} segundos`}
+          title={`Retroceder ${NARRATION_SKIP_S} s`}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-sunken hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted"
+        >
+          <Rewind size={14} weight="fill" aria-hidden />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onSkip(NARRATION_SKIP_S)}
+          disabled={!recorrible}
+          aria-label={`Adelantar ${NARRATION_SKIP_S} segundos`}
+          title={`Adelantar ${NARRATION_SKIP_S} s`}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-sunken hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted"
+        >
+          <FastForward size={14} weight="fill" aria-hidden />
         </button>
 
         <button
@@ -68,6 +111,27 @@ export function AudioControls({ status, available, onPlay, onPause, onStop }: Au
                     : "Pulsa para escuchar"}
         </span>
       </div>
+
+      {recorrible ? (
+        <div className="mt-2.5 flex items-center gap-2">
+          <span className="tabular shrink-0 text-[0.6875rem] text-muted">
+            {formatTimestamp(currentTime)}
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={duration}
+            step={1}
+            value={Math.min(currentTime, duration)}
+            onChange={(e) => onSeek(Number(e.target.value))}
+            aria-label="Posición de la narración"
+            className="h-1 min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-surface-sunken accent-accent"
+          />
+          <span className="tabular shrink-0 text-[0.6875rem] text-muted">
+            {formatTimestamp(duration)}
+          </span>
+        </div>
+      ) : null}
 
       {loading ? <div className="progress-indeterminate mt-2.5" aria-hidden /> : null}
 

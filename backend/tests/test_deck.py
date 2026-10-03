@@ -88,3 +88,63 @@ def test_deck_sin_clave_openai_genera_sin_imagenes(monkeypatch, input_text: str)
     assert r.status_code == 200  # degrada honestamente: deck sin imágenes
     slides = r.json()["slides"]
     assert all(s["illustration"] is None for s in slides)
+
+
+def test_deck_sobre_audio_lleva_el_momento_de_la_cita(wav_bytes: bytes) -> None:
+    """El deck transporta `start_s` igual que las secciones y el chat.
+
+    Sin esto, abrir la fuente desde una diapositiva de un documento de audio arrancaba el
+    reproductor en 0:00 en vez de en la cita: la misma fuente se comportaba distinto según la
+    vista. También cubre la rama de SÍNTESIS, donde no hay cita y `start_s` debe quedar en None
+    (si no se inicializara, esa rama reventaría).
+    """
+    import asyncio
+
+    from multimodal_presenter.config import get_settings as _get_settings
+    from multimodal_presenter.pipeline.extraction import prepare_input
+    from multimodal_presenter.schemas.audio import AudioEvidence
+
+    cita = "las ventas subieron un veinte por ciento"
+    evidencia = AudioEvidence.model_validate(
+        {
+            "segments": [
+                {
+                    "speaker": "hablante 1",
+                    "text": cita,
+                    "start_s": 4.5,
+                    "end_s": 9.0,
+                    "emphasis": [],
+                    "delivery": "neutro",
+                    "pause_before": "ninguna",
+                    "confidence": "alta",
+                }
+            ],
+            "non_verbal_events": [],
+            "acoustic_context": {
+                "quality": "clara",
+                "background_noise": "",
+                "intelligibility_risk": False,
+                "at_risk_items": [],
+            },
+            "speaker_count": 1,
+            "perceived_structure": [],
+            "language": "es",
+        }
+    )
+    payload = {
+        "slides": [
+            {"title": "Con cita", "bullets": ["x"], "source_quote": cita, "synthesis": False},
+            {"title": "Síntesis", "bullets": ["y"], "source_quote": None, "synthesis": True},
+        ]
+    }
+    extraction = prepare_input(binary=wav_bytes, media_type="audio/wav", audio_evidence=evidencia)
+    ajustes = _get_settings().model_copy(update={"ideogram_api_key": None, "openai_api_key": None})
+    resultado = asyncio.run(
+        deck.generate_deck(TestModel(custom_output_text=json.dumps(payload)), ajustes, extraction)
+    )
+
+    anclada, sintesis = resultado.slides
+    assert anclada.grounding == "unverified"  # audio: se localiza, no se verifica
+    assert anclada.start_s == 4.5
+    assert sintesis.is_synthesis is True
+    assert sintesis.start_s is None

@@ -22,7 +22,7 @@ import { SourceCitation, UnanchoredNotice } from "./SourceCitation";
  */
 interface DeckViewProps {
   deck: GeneratedDeck;
-  onOpenSource: (source: SourceReference, status: GroundingStatus) => void;
+  onOpenSource: (source: SourceReference, status: GroundingStatus, startS: number | null) => void;
   initialIndex?: number; // diapositiva en la que se abre (0-based)
 }
 
@@ -73,9 +73,9 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
   }
 
   // El panel de fuente vive fuera de la pantalla completa: se sale primero para poder verlo.
-  function openSource(source: SourceReference, status: GroundingStatus) {
+  function openSource(source: SourceReference, status: GroundingStatus, startS: number | null) {
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
-    onOpenSource(source, status);
+    onOpenSource(source, status, startS);
   }
 
   return (
@@ -169,7 +169,7 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
               {slide.is_synthesis ? (
                 <span className="text-muted">Síntesis del documento, sin cita exacta</span>
               ) : slide.source && slide.grounding !== "not_found" ? (
-                <SourceCitation onOpen={() => openSource(slide.source!, slide.grounding)}>
+                <SourceCitation onOpen={() => openSource(slide.source!, slide.grounding, slide.start_s)}>
                   {truncate(slide.source.quote)}
                 </SourceCitation>
               ) : (

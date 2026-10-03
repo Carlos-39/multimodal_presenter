@@ -464,6 +464,10 @@ export default function Page() {
       onNarrationPlay={narration.play}
       onNarrationPause={narration.pause}
       onNarrationStop={narration.stop}
+      narrationCurrentTime={narration.currentTime}
+      narrationDuration={narration.duration}
+      onNarrationSeek={narration.seek}
+      onNarrationSkip={narration.skip}
     >
       {/* Escala 2 (Hito 5e): Workspace arbitra contenido + columnas opcionales (fuente, chat).
           El contenido es el slot fijo; las columnas solo cambian al abrir/cerrar un panel. */}

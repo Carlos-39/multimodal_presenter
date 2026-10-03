@@ -13,6 +13,7 @@ Nivel barato (determinista): grounding de fuentes, adaptado al tipo de fuente.
 Nivel LLM (coherencia semántica): interfaz real ya cableada, hoy no-op. TODO(Hito2.1).
 """
 
+import logfire
 from pydantic_ai import Agent, BinaryContent, ToolOutput
 from pydantic_ai.models import Model
 
@@ -152,14 +153,64 @@ def build_grounding_report(source_kind: str, entries: list[SectionGrounding]) ->
     )
 
 
+class SectionIdDeduper:
+    """Garantiza que los ids de sección sean ÚNICOS, de forma determinista.
+
+    El `Section.id` lo genera el LLM y el contrato no puede exigir unicidad por sección (una
+    sección sola no sabe de las demás). Cuando el modelo repite un id, dos cosas se rompen a la
+    vez, y ninguna de forma ruidosa:
+
+    1. **El join del grounding queda ambiguo:** `SectionGrounding.section_id` apunta a
+       `Section.id`, así que con ids repetidos no se sabe qué entrada corresponde a qué sección.
+    2. **El frontend puede PERDER una sección:** React usa el id como `key` de la lista y, con
+       claves repetidas, su propia documentación advierte que puede omitir o duplicar hijos.
+
+    Se observó con documentos reales (ids `sec-1` y `s1` repetidos), de forma intermitente: con
+    unos documentos pasa y con otros no, lo que lo hace más difícil de ver, no menos grave.
+
+    **Por qué se CORRIGE y no se rechaza.** Rechazar en el contrato obligaría a reintentar toda
+    la generación por un id repetido, y si el modelo insiste el usuario se queda sin nada. Es el
+    mismo criterio que la regla de isomorfismo (Hito 5a): lo determinista se corrige en código,
+    de forma reproducible, en vez de tumbar el resultado. El renombrado se traza en Logfire —se
+    corrige, no se esconde.
+
+    Es stateful a propósito: el mismo objeto recorre toda la presentación, y en streaming vive
+    durante todo el stream, para que el id ya emitido cuente al deduplicar los siguientes.
+    """
+
+    def __init__(self) -> None:
+        self._vistos: set[str] = set()
+
+    def ensure_unique(self, section: Section) -> tuple[Section, str | None]:
+        """Devuelve (sección con id único, id original si hubo que renombrar)."""
+        if section.id not in self._vistos:
+            self._vistos.add(section.id)
+            return section, None
+
+        original = section.id
+        sufijo = 2
+        while f"{original}-{sufijo}" in self._vistos:
+            sufijo += 1
+        nuevo = f"{original}-{sufijo}"
+        self._vistos.add(nuevo)
+        logfire.info("id de sección repetido: {original} → {nuevo}", original=original, nuevo=nuevo)
+        return section.model_copy(update={"id": nuevo}), original
+
+
 def verify_grounding(
     presentation: Presentation, extraction: ExtractionResult
 ) -> tuple[Presentation, GroundingReport]:
-    """Verifica el anclaje a fuente de toda la presentación y arma el reporte."""
+    """Verifica el anclaje a fuente de toda la presentación y arma el reporte.
+
+    Antes de anclar, se garantizan ids únicos: el grounding referencia las secciones por id,
+    así que un id repetido haría ambiguo el propio reporte (ver `SectionIdDeduper`).
+    """
+    deduper = SectionIdDeduper()
     new_sections: list[Section] = []
     entries: list[SectionGrounding] = []
     for section in presentation.sections:
-        new_section, entry = ground_section(section, extraction)
+        unica, _renombrada = deduper.ensure_unique(section)
+        new_section, entry = ground_section(unica, extraction)
         new_sections.append(new_section)
         entries.append(entry)
     report = build_grounding_report(extraction.source_kind, entries)

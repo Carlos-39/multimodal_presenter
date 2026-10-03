@@ -30,7 +30,12 @@ from .extraction import prepare_input
 from .isomorphism import isomorphize_section
 from .perception import run_perception
 from .structuring import build_model_input, structuring_agent
-from .validation import build_grounding_report, ground_section, verify_semantic_coherence
+from .validation import (
+    SectionIdDeduper,
+    build_grounding_report,
+    ground_section,
+    verify_semantic_coherence,
+)
 
 StreamEvent = StreamTranscript | StreamStart | StreamSection | StreamDone | StreamError
 
@@ -87,8 +92,11 @@ async def transform_stream(
     title_sent = False
 
     def finalize(section: Section) -> StreamSection:
-        # Fase 3 por sección: grounding (offsets/estado) + isomorfismo (corrige/degrada).
-        grounded, entry = ground_section(section, extraction)
+        # Fase 3 por sección: id único + grounding (offsets/estado) + isomorfismo.
+        # El deduper vive durante TODO el stream, así que un id ya emitido cuenta al
+        # deduplicar los siguientes (ver SectionIdDeduper).
+        unica, _renombrada = deduper.ensure_unique(section)
+        grounded, entry = ground_section(unica, extraction)
         iso, note = isomorphize_section(grounded)
         sections.append(iso)
         entries.append(entry)
@@ -118,6 +126,7 @@ async def transform_stream(
             audio_evidence=evidence,
         )
         emitter = SectionEmitter()
+        deduper = SectionIdDeduper()
 
         with logfire.span("fase2.estructuracion.stream"):
             async with structuring_agent.run_stream(

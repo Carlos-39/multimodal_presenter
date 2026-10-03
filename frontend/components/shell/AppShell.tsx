@@ -49,6 +49,10 @@ interface AppShellProps {
   onNarrationPlay: () => void;
   onNarrationPause: () => void;
   onNarrationStop: () => void;
+  narrationCurrentTime: number;
+  narrationDuration: number;
+  onNarrationSeek: (segundos: number) => void;
+  onNarrationSkip: (delta: number) => void;
   children: React.ReactNode;
 }
 
@@ -77,6 +81,10 @@ export function AppShell({
   onNarrationPlay,
   onNarrationPause,
   onNarrationStop,
+  narrationCurrentTime,
+  narrationDuration,
+  onNarrationSeek,
+  onNarrationSkip,
   children,
 }: AppShellProps) {
   // Con la presentación generada abierta no hay vista "Documento | Slides" seleccionada.
@@ -174,6 +182,10 @@ export function AppShell({
               onNarrationPlay={onNarrationPlay}
               onNarrationPause={onNarrationPause}
               onNarrationStop={onNarrationStop}
+              narrationCurrentTime={narrationCurrentTime}
+              narrationDuration={narrationDuration}
+              onNarrationSeek={onNarrationSeek}
+              onNarrationSkip={onNarrationSkip}
             />
           </div>
         </aside>
