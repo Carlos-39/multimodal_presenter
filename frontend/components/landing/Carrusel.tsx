@@ -1,50 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { useAvanceSolo } from "@/hooks/useAvanceSolo";
+import { useEnPantalla } from "@/hooks/useEnPantalla";
 import { CAPACIDADES } from "./capacidades";
 
 /**
  * Las piezas que el sistema sabe hacer, una a una.
  *
- * **Avanza solo, pero se calla en cuanto alguien participa.** Se detiene al pasar el ratón, al
- * enfocar con el teclado y en cuanto se pulsa un control: a partir de ahí manda quien mira. Y no
- * arranca si el sistema pide reducir movimiento. Un carrusel que sigue girando mientras intentas
- * leer una tarjeta es el motivo por el que los carruseles tienen mala fama.
+ * **Avanza solo, pero se calla en cuanto alguien participa**, con las mismas reglas que el héroe
+ * y el párrafo del problema: ver `useAvanceSolo`. Lo que esta pieza gana al compartirlas es la
+ * cuarta, que antes no tenía — no empieza a girar hasta estar en pantalla, así que ya no te
+ * encuentras una tarjeta a mitad de ciclo al llegar.
  *
  * Las flechas y los puntos son botones de verdad, así que funciona con el teclado.
  */
 const INTERVALO_MS = 6000;
 
 export function Carrusel() {
-  const [actual, setActual] = useState(0);
-  const [detenido, setDetenido] = useState(false);
-  // Una vez que alguien toca un control, no se vuelve a mover solo: ya decidió qué quiere ver.
-  const intervenido = useRef(false);
+  const { ref, visible } = useEnPantalla<HTMLDivElement>();
+  const { indice, ir, pausa } = useAvanceSolo(CAPACIDADES.length, INTERVALO_MS, visible);
 
-  const ir = useCallback((indice: number) => {
-    intervenido.current = true;
-    setActual((indice + CAPACIDADES.length) % CAPACIDADES.length);
-  }, []);
-
-  useEffect(() => {
-    if (detenido || intervenido.current) return;
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-    const t = setInterval(() => setActual((i) => (i + 1) % CAPACIDADES.length), INTERVALO_MS);
-    return () => clearInterval(t);
-  }, [detenido]);
-
-  const capacidad = CAPACIDADES[actual];
+  const capacidad = CAPACIDADES[indice];
 
   return (
     <section className="border-t border-border bg-surface-sunken/40">
-      <div
-        className="mx-auto max-w-6xl px-5 py-20"
-        onMouseEnter={() => setDetenido(true)}
-        onMouseLeave={() => setDetenido(false)}
-        onFocusCapture={() => setDetenido(true)}
-        onBlurCapture={() => setDetenido(false)}
-      >
+      <div ref={ref} className="mx-auto max-w-6xl px-5 py-20" {...pausa}>
         <h2 className="max-w-[22ch] font-serif text-[1.75rem] leading-tight text-foreground sm:text-[2.25rem]">
           Todo lo que puedes hacer con un documento
         </h2>
@@ -62,10 +43,10 @@ export function Carrusel() {
 
             <div className="mt-7 flex items-center gap-4">
               <div className="flex gap-1">
-                <Flecha etiqueta="Anterior" onClick={() => ir(actual - 1)}>
+                <Flecha etiqueta="Anterior" onClick={() => ir(indice - 1)}>
                   <CaretLeft size={14} aria-hidden />
                 </Flecha>
-                <Flecha etiqueta="Siguiente" onClick={() => ir(actual + 1)}>
+                <Flecha etiqueta="Siguiente" onClick={() => ir(indice + 1)}>
                   <CaretRight size={14} aria-hidden />
                 </Flecha>
               </div>
@@ -77,9 +58,9 @@ export function Carrusel() {
                       type="button"
                       onClick={() => ir(i)}
                       aria-label={c.titulo}
-                      aria-current={i === actual}
+                      aria-current={i === indice}
                       className={`block h-1.5 rounded-full transition-all ${
-                        i === actual ? "w-6 bg-accent" : "w-1.5 bg-border-strong hover:bg-muted"
+                        i === indice ? "w-6 bg-accent" : "w-1.5 bg-border-strong hover:bg-muted"
                       }`}
                     />
                   </li>

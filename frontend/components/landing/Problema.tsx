@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { Prohibit } from "@phosphor-icons/react";
+import { useAvanceSolo } from "@/hooks/useAvanceSolo";
+import { useEnPantalla } from "@/hooks/useEnPantalla";
 
 /**
  * El problema que resuelve, demostrado con un interruptor en vez de contado con un ensayo.
@@ -23,12 +24,23 @@ const AFIRMACIONES: { texto: string; anclada: boolean }[] = [
   { texto: "Se fotografiaron por primera vez en 1989.", anclada: false },
 ];
 
+/**
+ * El interruptor se mueve solo, **pero solo desde que la sección está en pantalla**.
+ *
+ * Si arrancara al montar, el párrafo se habría estado volteando mientras nadie lo miraba y
+ * llegarías a él en un estado cualquiera. Así llegas siempre a «sin fuente», que es la mitad que
+ * plantea el problema, y lo ves cambiar. Se detiene en cuanto tocas uno de los dos botones.
+ */
+const VUELTA_MS = 5200;
+
 export function Problema() {
-  const [conFuente, setConFuente] = useState(false);
+  const { ref, visible } = useEnPantalla<HTMLDivElement>("0px 0px -25% 0px");
+  const { indice, ir, pausa } = useAvanceSolo(2, VUELTA_MS, visible);
+  const conFuente = indice === 1;
 
   return (
     <section className="border-t border-border bg-surface-sunken/40">
-      <div className="mx-auto max-w-3xl px-5 py-20">
+      <div ref={ref} className="mx-auto max-w-3xl px-5 py-20">
         <h2 className="max-w-[24ch] font-serif text-[1.75rem] leading-tight text-foreground sm:text-[2.25rem]">
           El problema no es escribir el texto. Es poder creerlo.
         </h2>
@@ -38,12 +50,12 @@ export function Problema() {
           querías evitar.
         </p>
 
-        <div className="mt-9 rounded-xl border border-border bg-surface p-5">
+        <div className="mt-9 rounded-xl border border-border bg-surface p-5" {...pausa}>
           <div className="flex items-center gap-1.5" role="group" aria-label="Ver el párrafo">
-            <Pestana puesta={!conFuente} onClick={() => setConFuente(false)}>
+            <Pestana puesta={!conFuente} onClick={() => ir(0)}>
               Sin fuente
             </Pestana>
-            <Pestana puesta={conFuente} onClick={() => setConFuente(true)}>
+            <Pestana puesta={conFuente} onClick={() => ir(1)}>
               Con fuente
             </Pestana>
           </div>
@@ -76,10 +88,9 @@ export function Problema() {
             ))}
           </p>
 
-          <p
-            role="status"
-            className="mt-4 border-t border-border pt-3 text-[0.8125rem] leading-[1.55] text-muted"
-          >
+          {/* Sin región viva: con el interruptor andando, un lector de pantalla estaría leyendo
+              una frase nueva cada cinco segundos. */}
+          <p className="mt-4 border-t border-border pt-3 text-[0.8125rem] leading-[1.55] text-muted">
             {conFuente
               ? "Tres afirmaciones salen del documento y se abren en su frase. La cuarta no se pudo anclar, así que pierde el enlace: la aplicación dice que no pudo verificarla en vez de enseñar una cita que no está."
               : "El mismo párrafo, sin nada detrás. Cuatro afirmaciones verosímiles y ninguna manera de saber cuál sale del documento."}
