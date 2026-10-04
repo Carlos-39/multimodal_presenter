@@ -9,6 +9,7 @@ import { Carrusel } from "./Carrusel";
 import { ComoFunciona } from "./ComoFunciona";
 import { Demostracion } from "./Demostracion";
 import { Preguntas } from "./Preguntas";
+import { Problema } from "./Problema";
 
 /**
  * La portada.
@@ -57,6 +58,7 @@ export function Landing({ onEntrar }: { onEntrar: () => void }) {
 
       <main>
         <Hero onInvitado={onEntrar} onAcceso={() => setAcceso(true)} />
+        <Problema />
         <ComoFunciona />
         <Carrusel />
         <Preguntas />
