@@ -1,9 +1,11 @@
 import type { Bloque, FiguraId, Trozo } from "@/lib/makingOf";
-import { trozos } from "@/lib/makingOf";
+import { columnasDeDatos, trozos } from "@/lib/makingOf";
 import { Figura } from "./Figura";
 import { Aplanar } from "./figuras/Aplanar";
+import { CacheChat } from "./figuras/CacheChat";
 import { EscaleraFidelidad } from "./figuras/EscaleraFidelidad";
 import { HuecoContrato } from "./figuras/HuecoContrato";
+import { Isomorfismo } from "./figuras/Isomorfismo";
 import { PipelineAudio } from "./figuras/PipelineAudio";
 
 /** El mapa está aquí y no en cada capítulo: el contenido nombra la figura, no la importa. */
@@ -12,6 +14,8 @@ const FIGURAS: Record<FiguraId, () => React.ReactElement> = {
   "hueco-contrato": HuecoContrato,
   aplanar: Aplanar,
   "escalera-fidelidad": EscaleraFidelidad,
+  isomorfismo: Isomorfismo,
+  "cache-chat": CacheChat,
 };
 
 /**
@@ -81,6 +85,8 @@ function Uno({ bloque }: { bloque: Bloque }) {
 }
 
 function Tabla({ bloque }: { bloque: Extract<Bloque, { tipo: "tabla" }> }) {
+  const dato = columnasDeDatos(bloque.filas, bloque.cabeceras.length);
+
   return (
     <figure className="my-2 flex flex-col gap-3">
       <div className="overflow-x-auto rounded-lg border border-border">
@@ -92,7 +98,7 @@ function Tabla({ bloque }: { bloque: Extract<Bloque, { tipo: "tabla" }> }) {
                   key={i}
                   scope="col"
                   className={`px-3 py-2.5 text-xs font-medium text-foreground-secondary ${
-                    i === 0 ? "text-left" : "text-right"
+                    dato[i] ? "text-right" : "text-left"
                   }`}
                 >
                   {c}
@@ -107,11 +113,11 @@ function Tabla({ bloque }: { bloque: Extract<Bloque, { tipo: "tabla" }> }) {
                   <td
                     key={c}
                     className={
-                      c === 0
-                        ? "px-3 py-2.5 text-left text-foreground"
-                        : // Los números en mono tabular, como en toda la aplicación: es la señal
+                      dato[c]
+                        ? // Los números en mono tabular, como en toda la aplicación: es la señal
                           // que dice "esto es un dato", y alinea las columnas sin trucos.
                           "px-3 py-2.5 text-right font-mono tabular-nums text-foreground"
+                        : "px-3 py-2.5 text-left text-foreground"
                     }
                   >
                     {celda}

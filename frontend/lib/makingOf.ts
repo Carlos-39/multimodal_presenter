@@ -28,7 +28,13 @@ export const ACTOS: Record<Acto, string> = {
  * envejecen cuando la interfaz cambia. Una captura envejecería en el primer rediseño y, peor,
  * enseñaría una pantalla en vez de una idea.
  */
-export type FiguraId = "pipeline-audio" | "hueco-contrato" | "aplanar" | "escalera-fidelidad";
+export type FiguraId =
+  | "pipeline-audio"
+  | "hueco-contrato"
+  | "aplanar"
+  | "escalera-fidelidad"
+  | "isomorfismo"
+  | "cache-chat";
 
 export type Bloque =
   | { tipo: "prosa"; texto: string }
@@ -97,6 +103,31 @@ export function trozos(linea: string): Trozo[] {
     }
   }
   return salida;
+}
+
+/**
+ * Una celda es un dato cuando lo que trae son cifras: enteros, decimales, porcentajes, o
+ * proporciones del tipo `3/3`. Lo demás es prosa.
+ */
+const SOLO_CIFRAS = /^[\d.,%\s/+·–-]+$/;
+
+/**
+ * Qué columnas de una tabla son de datos, mirando lo que hay dentro y no en qué posición están.
+ *
+ * El criterio del 5k es «los números en mono tabular»: es la señal que dice *esto es un dato*, y
+ * de paso alinea las columnas. Se aplicaba por posición —primera columna etiqueta, el resto
+ * números—, y en cuanto un capítulo tuvo una tabla con dos columnas de prosa salían frases
+ * enteras compuestas en monoespaciada y alineadas a la derecha.
+ *
+ * Una columna es de datos solo si **todas** sus celdas no vacías lo son: basta una celda de
+ * prosa para que la columna entera se componga como prosa, que es lo correcto — mezclar las dos
+ * cosas en una columna sería peor que no distinguirlas.
+ */
+export function columnasDeDatos(filas: string[][], cuantas: number): boolean[] {
+  return Array.from({ length: cuantas }, (_, c) => {
+    const celdas = filas.map((f) => f[c] ?? "").filter((v) => v.trim() !== "");
+    return celdas.length > 0 && celdas.every((v) => SOLO_CIFRAS.test(v));
+  });
 }
 
 /** Cuántos capítulos están escritos, para que el índice no prometa lo que no hay. */
