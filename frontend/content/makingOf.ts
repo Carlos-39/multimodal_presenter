@@ -21,7 +21,81 @@ export const CAPITULOS: Capitulo[] = [
     hitos: "Hitos 0-2",
     conclusion:
       "El error del prototipo anterior no se corrigió: se volvió imposible de escribir.",
-    bloques: [],
+    bloques: [
+      {
+        tipo: "prosa",
+        texto:
+          "Había un prototipo antes de este proyecto, y tenía un fallo que no daba la cara. Una sección llevaba dos campos: `content_type`, que decía de qué era, y `content`, que lo guardaba. Eran campos hermanos, y nada los obligaba a coincidir.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Se podía declarar `content_type=\"chart\"` y guardar en `content` una cadena de texto cualquiera. Pasaba la validación sin una queja. El error aparecía mucho después, al dibujar, cuando ya era imposible saber de dónde había salido.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La reacción natural es añadir una validación que compruebe que los dos campos están de acuerdo. **Eso es lo que no se hizo**, y es la decisión que sostiene todo lo demás.",
+      },
+
+      { tipo: "encabezado", texto: "Quitar una pieza, no añadir una" },
+      {
+        tipo: "prosa",
+        texto:
+          "No existe un campo `content_type` suelto. El discriminador vive **dentro** del propio bloque de contenido, y `content` es una unión discriminada: el tipo declarado y el contenido real no son dos cosas que haya que mantener sincronizadas, son el mismo objeto.",
+      },
+      {
+        tipo: "figura",
+        figura: "hueco-contrato",
+        pie: "Cerrar el hueco quitó una pieza en vez de añadir una. A la derecha hay una caja menos, no una más.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "Un estado inválido que no se puede representar no hace falta validarlo.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Es la idea que vuelve en cada hito de este relato. En el capítulo 3 impedirá declarar una fidelidad que no se alcanzó; en el 4, dibujar un gráfico que contradice sus datos; en el 13, que la identidad de quien guarda se cuele en el contrato que viaja a los modelos.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "A la misma lógica responden los conjuntos cerrados. `SectionRole` es `core` o `satellite` y nada más; `ChartType` es `line`, `bar`, `pie` o `scatter`. Ninguno es texto libre. Y todos los modelos llevan `extra=\"forbid\"`: un campo que no se esperaba no se ignora, se rechaza.",
+      },
+
+      { tipo: "encabezado", texto: "La mitad importante son los rechazos" },
+      {
+        tipo: "prosa",
+        texto:
+          "El contrato trae ==13 pruebas==, y **once de ellas comprueban que algo se rechaza**. Dos comprueban que lo correcto pasa. Esa proporción no es casual: un contrato se define por lo que no deja escribir.",
+      },
+      {
+        tipo: "tabla",
+        cabeceras: ["Lo que se intenta escribir", "Resultado"],
+        filas: [
+          ["Un gráfico cuyo contenido es una cadena de texto", "rechazado"],
+          ["Un gráfico sin tipo de gráfico ni datos", "rechazado"],
+          ["Un texto que además lleva campos de gráfico", "rechazado"],
+          ["Un tipo de contenido que no existe", "rechazado"],
+          ["Una fila de tabla más ancha que sus columnas", "rechazado"],
+          ["Una sección sin fuente, o sin papel de núcleo o satélite", "rechazado"],
+          ["Una cita cuyo final va antes que su principio", "rechazado"],
+          ["Una presentación sin ninguna sección", "rechazado"],
+        ],
+        nota: "La primera fila es el fallo del prototipo. Es la prueba que este hito existe para poder escribir.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La atribución entra aquí y no más tarde: cada sección lleva una `SourceReference` **obligatoria**, con la cita exacta y sus posiciones. No se añadió cuando hizo falta resaltar; estaba en el contrato desde antes de que existiera una interfaz que la usara. Un campo opcional se habría quedado vacío en la mitad de los caminos, y a los tres hitos habría sido tarde para exigirlo.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El precio hay que decirlo: el contrato es rígido y cada capacidad nueva tiene que negociar con él. Se verá en el capítulo 3, cuando añadir el recuadro sobre la frase y el segundo exacto del audio obligó a campos hermanos antes que a tocar `SourceReference`. Esa rigidez es el coste de que el hueco siga cerrado.",
+      },
+    ],
   },
   {
     slug: "nunca-aplanar",
@@ -31,7 +105,77 @@ export const CAPITULOS: Capitulo[] = [
     hitos: "Hitos 2 y 4",
     conclusion:
       "El PDF entra al modelo como PDF. Los parsers se evaluaron y se descartaron a propósito.",
-    bloques: [],
+    bloques: [
+      {
+        tipo: "prosa",
+        texto:
+          "El prototipo leía los PDF con `pypdf`: sacaba el texto y trabajaba con el texto. Es lo que hace casi todo el mundo, y durante años fue lo único que se podía hacer.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El problema no es que el texto extraído sea peor. Es que **le faltan cosas**, y no avisa de cuáles.",
+      },
+      {
+        tipo: "figura",
+        figura: "aplanar",
+        pie: "El mismo documento por dos caminos. Arriba la rejilla de la tabla se perdió y del gráfico no queda nada; abajo llega entero.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Una tabla aplanada deja de ser una tabla: las celdas se convierten en una línea corrida de palabras y números en la que ya no se sabe qué cifra iba con qué fila. Un gráfico no deja ni eso — no hay texto que extraer, así que simplemente no aparece. Dos columnas se entrelazan. Un pie de figura acaba pegado al párrafo de al lado.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "Un parser destruye justo aquello que un modelo multimodal está hecho para leer.",
+      },
+
+      { tipo: "encabezado", texto: "Se evaluaron, y se descartaron" },
+      {
+        tipo: "prosa",
+        texto:
+          "No se descartaron de oídas. Estaban en el inventario de herramientas del proyecto y se miraron: convierten el documento a Markdown o a texto, que es exactamente la operación que había que evitar. La decisión quedó escrita junto al código, con su motivo, para que nadie la reabra por comodidad tres meses después.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El PDF y la imagen llegan al modelo como **binario nativo**, sin intermediario. Un parser solo volvería a considerarse para documentos que no quepan en el contexto del modelo, y **nunca en el camino que va al modelo**.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La misma operación se repitió dos veces más. En el capítulo 7, transcribir un audio es aplanar una señal acústica a texto, y por eso ese formato ganó una fase de percepción en vez de un transcriptor. En el capítulo 5, el chat relee el documento entero en lugar de buscar en un resumen, porque un resumen ya descartó lo que quizá vas a preguntar. Es el mismo principio tres veces.",
+      },
+
+      { tipo: "encabezado", texto: "Lo que entra sin preguntar es lo que te rompe" },
+      {
+        tipo: "prosa",
+        texto:
+          "Aceptar archivos de fuera obligó a poner guardas que el prototipo no tenía, y ninguna se fía de lo que dice el cliente:",
+      },
+      {
+        tipo: "tabla",
+        cabeceras: ["Guarda", "Cómo", "Si falla"],
+        filas: [
+          ["Tipo real del archivo", "por los bytes de cabecera, no por la extensión", "415"],
+          ["Tamaño", "leído por trozos de 1 MB, abortando al pasarse", "413"],
+          ["Duración del audio", "medida antes de llamar a nadie", "413"],
+          ["Archivo vacío o corrupto", "comprobado antes de tocar el modelo", "400"],
+        ],
+        nota: "Los topes son ==20 MB== y ==15 minutos==, y están en la configuración, no incrustados en el código.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Leer por trozos y abortar al pasarse, en vez de leer entero y después medir, es la diferencia entre rechazar un archivo de 2 GB y quedarse sin memoria por culpa de él. La lista de tipos permitidos es blanca, no negra: lo que no está, no entra.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y la consecuencia incómoda, que es de donde sale el capítulo siguiente. Si el documento no se aplana a texto, **no hay texto contra el que comprobar una cita**. La verificación por coincidencia exacta, que funciona con un texto pegado, deja de ser posible en cuanto la fuente es un binario. Eso obligó a decir la verdad sobre qué se sabe de cada cita en vez de fingir que todas valen lo mismo.",
+      },
+    ],
   },
   {
     slug: "fidelidad",
@@ -41,7 +185,88 @@ export const CAPITULOS: Capitulo[] = [
     hitos: "5c · 8A.1 · resaltado por región",
     conclusion:
       "Cuatro niveles de fidelidad, y se declara el alcanzado sin fingir nunca el siguiente.",
-    bloques: [],
+    bloques: [
+      {
+        tipo: "prosa",
+        texto:
+          "Cualquier sistema de estos puede poner una cita debajo de lo que escribe. Lo difícil no es ponerla: es que signifique siempre lo mismo.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Con un texto pegado, comprobar una cita es buscarla. O está, carácter por carácter, o no está. En cuanto la fuente es un PDF, una grabación o una foto, esa comprobación deja de existir, porque no hay texto plano contra el que buscar — y aplanarlo para poder buscar sería deshacer el capítulo anterior.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La salida fácil habría sido poner la cita igual en los cuatro casos y no decir nada. Se hizo lo contrario: **cada cita declara qué se sabe de ella**.",
+      },
+      {
+        tipo: "figura",
+        figura: "escalera-fidelidad",
+        pie: "Cuatro entradas, cuatro pruebas de distinta fuerza. Solo la primera lleva el resaltador, porque es la única donde «comprobada» es literal.",
+      },
+
+      { tipo: "encabezado", texto: "Tres estados, y el que no existe" },
+      {
+        tipo: "prosa",
+        texto:
+          "Los estados son `verified`, `not_found` y `unverified`, y la distinción importante es la segunda contra la tercera. `not_found` significa **se buscó y no está**: es una alarma real, la cita no sale del documento. `unverified` significa **no se pudo buscar**: no hay nada malo, hay algo que no se sabe.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Confundir los dos sería el peor fallo posible en este sistema, en las dos direcciones. Enseñar un PDF como si estuviera verificado promete algo que nadie comprobó; enseñarlo como fallo asusta por una limitación nuestra. Por eso la interfaz muestra `unverified` en neutro, sin color de error.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y lo que pasa con `not_found` es lo que de verdad define al proyecto: **la sección pierde la fuente**. No se enseña una cita que no se pudo anclar, ni se deja el enlace puesto confiando en que nadie lo pulse. Es la diferencia entre decir «no pude verificar esto» y fingir que sí.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "Localizar no es verificar, y el estado no cambia por haber localizado.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Esa frase decidió el diseño del cuarto nivel. Cuando se añadió el recuadro sobre la frase en un PDF, la tentación era ascender esas citas a `verified`: al fin y al cabo se había encontrado el pasaje en la página. Pero encontrar dónde está no demuestra que diga lo que la sección afirma. El estado se quedó en `unverified` y lo que se añadió fue **dónde**, no **cuánto**.",
+      },
+
+      { tipo: "encabezado", texto: "Añadir sin tocar lo que ya está" },
+      {
+        tipo: "prosa",
+        texto:
+          "El recuadro del PDF y el segundo exacto del audio son dos capacidades distintas que llegaron en momentos distintos, y las dos entraron igual: como un **campo hermano**, nunca metiéndose dentro de `SourceReference`. La región no es una propiedad de la cita; es algo que se sabe de ella en una fuente concreta.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Hay un detalle del contrato que vale por toda la idea: **no existe el valor «página»**. La fidelidad de página es la AUSENCIA del campo de región. Así el estado contradictorio —«solo sé la página» y aun así traer recuadros dentro— no se puede ni escribir. Es el capítulo 1, aplicado tres hitos después.",
+      },
+
+      { tipo: "encabezado", texto: "El umbral, y el caso que lo rompía" },
+      {
+        tipo: "prosa",
+        texto:
+          "Localizar una cita en una página no es buscar una cadena: el modelo reescribe espacios, comillas y guiones. Se compara de forma difusa, con un umbral de ==90 sobre 100==, y por debajo de ahí se prefiere no dibujar nada antes que dibujar un recuadro sobre la frase equivocada.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Un caso real se colaba por debajo. Cuando el modelo cita con puntos suspensivos —«…a una altitud tan alta… que no representan…»— y se busca la frase entera, la parte elidida hunde la puntuación: ==78 puntos== frente al umbral de 90. Se perdía una localización que era exacta.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La solución no fue bajar el umbral, que habría dejado pasar aciertos falsos en todas partes. Se parte la cita **por sus puntos suspensivos** y se busca cada trozo. No relaja nada: la elipsis está diciendo que ahí hay un hueco, y recuadrar los dos trozos sin lo de en medio es más fiel que un único recuadro que se lo tragaría todo.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El capítulo 14 recoge lo que esta escalera deja fuera, y hay que decirlo aquí también: un PDF escaneado se queda en la página, porque señalar la frase pediría reconocer el texto dentro de la imagen y eso no se hace. Y una imagen devuelve la cita y nada más. Son los dos peldaños de abajo, y están dibujados en la figura con el mismo tamaño que los de arriba a propósito.",
+      },
+    ],
   },
   {
     slug: "forma-y-datos",
