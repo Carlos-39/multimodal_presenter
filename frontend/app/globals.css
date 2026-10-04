@@ -376,3 +376,197 @@ body {
     animation: none;
   }
 }
+
+/*
+ * ─────────────────────────────────────────────────────────────
+ * Movimiento de la portada
+ * ─────────────────────────────────────────────────────────────
+ * La portada tiene más movimiento que la aplicación, y es deliberado: ahí lo que hay que hacer es
+ * entender qué es esto, y una secuencia explica mejor que un párrafo. Dentro de la aplicación hay
+ * trabajo que hacer y el movimiento estorbaría.
+ *
+ * Todo lo de aquí se apaga con «reducir movimiento», y lo que se apaga queda en su estado FINAL,
+ * nunca invisible: una animación que no corre no puede esconder contenido.
+ */
+
+/* Entrada al aparecer en pantalla. La dispara un IntersectionObserver, no el scroll. */
+.revelar {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.revelar[data-visible="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* El resaltador recorriendo una frase: es el gesto de la aplicación, hecho visible. */
+@keyframes barrido-resaltador {
+  from {
+    background-size: 0% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+.barrido {
+  background-image: linear-gradient(var(--highlight), var(--highlight));
+  background-repeat: no-repeat;
+  background-size: 0% 100%;
+  animation: barrido-resaltador 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Líneas que se dibujan solas: para los diagramas que explican un recorrido. */
+@keyframes trazo {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.trazo {
+  stroke-dasharray: var(--largo, 400);
+  stroke-dashoffset: var(--largo, 400);
+}
+[data-visible="true"] .trazo {
+  animation: trazo 1.1s ease-out forwards;
+}
+
+/* Aparición encadenada de piezas de una secuencia. */
+@keyframes surgir {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.surgir {
+  opacity: 0;
+  animation: surgir 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/*
+ * El paso de una lámina a la siguiente, en las piezas que se recorren solas.
+ *
+ * **Entra desde el lado hacia el que vas.** Un fundido sin dirección deja la duda de si
+ * avanzaste o retrocediste; viniendo del lado correcto, el gesto ya lo dice. El
+ * desplazamiento es corto (20 px) porque lo que informa es la dirección, no la distancia.
+ *
+ * Dura casi el doble que `section-enter`, que es la entrada de dentro de la aplicación: ahí hay
+ * trabajo que hacer y el movimiento estorba, aquí es la pieza la que tiene que explicarse sola.
+ * Y es **la misma duración la pase el tiempo o la pases tú**: una animación que se acelera al
+ * pulsar hace sentir el clic como una interrupción en vez de como el mando.
+ */
+@keyframes pasar-adelante {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pasar-atras {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pasar {
+  animation: pasar-adelante 0.58s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.pasar[data-sentido="atras"] {
+  animation-name: pasar-atras;
+}
+
+/*
+ * La cuenta del punto activo: cuánto queda para que pase sola.
+ *
+ * Sin esto, la lámina cambia de golpe y parece que la página hace cosas por su cuenta. Con esto
+ * el movimiento se anuncia, que es la diferencia entre un carrusel y un cartel. Se para con el
+ * resto cuando el ratón está encima, y desaparece en cuanto alguien pulsa algo: a partir de ahí
+ * no hay nada que contar porque ya no va a pasar nada solo.
+ */
+@keyframes cuenta-atras {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.cuenta {
+  transform-origin: left;
+  transform: scaleX(1);
+}
+.cuenta[data-contando="true"] {
+  animation: cuenta-atras var(--espera, 6s) linear forwards;
+}
+.cuenta[data-detenido="true"] {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revelar,
+  .revelar[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .barrido {
+    background-size: 100% 100%;
+    animation: none;
+  }
+  .trazo,
+  [data-visible="true"] .trazo {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+  .surgir {
+    opacity: 1;
+    animation: none;
+  }
+  .pasar {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+  .cuenta[data-contando="true"] {
+    animation: none;
+    transform: scaleX(1);
+  }
+}
+
+/*
+ * Al imprimir, todo terminado.
+ *
+ * Lo que se dibuja al entrar en pantalla depende de un `IntersectionObserver`, y al imprimir no
+ * hay pantalla por la que entrar: las figuras del «cómo se construyó» saldrían con las líneas a
+ * medio trazar o directamente sin ellas. Un capítulo impreso tiene que verse como el terminado,
+ * que para un documento de tesis no es un detalle.
+ */
+@media print {
+  .trazo,
+  [data-visible="true"] .trazo {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+  .revelar,
+  .surgir,
+  .pasar {
+    opacity: 1;
+    transform: none;
+    animation: none;
+    transition: none;
+  }
+}
