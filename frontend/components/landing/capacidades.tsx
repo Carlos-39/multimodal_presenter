@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import { Quotes, SpeakerHigh } from "@phosphor-icons/react/dist/ssr";
+import { Barra } from "./Barra";
 
 /**
  * Las capacidades del carrusel, cada una con su lámina.
@@ -220,15 +221,5 @@ function LaminaGenerar() {
         ))}
       </div>
     </div>
-  );
-}
-
-function Barra({ ancho, tono = "suave" }: { ancho: string; tono?: "suave" | "fuerte" }) {
-  return (
-    <span
-      aria-hidden
-      className={`block h-[5px] rounded-full ${tono === "fuerte" ? "bg-border-strong" : "bg-border"}`}
-      style={{ width: ancho }}
-    />
   );
 }
