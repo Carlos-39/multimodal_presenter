@@ -4,10 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, FileAudio, FilePdf, FileText, Image as ImageIcon, Plus } from "@phosphor-icons/react";
 import type { ResumenPresentacion, Usuario } from "@/lib/account";
-import { misPresentaciones, quienSoy } from "@/lib/account";
+import { borrarPresentacion, misPresentaciones, quienSoy } from "@/lib/account";
 import type { SourceKind } from "@/lib/types";
 import { fechaRelativa } from "@/lib/fechas";
 import { AuthForm } from "@/components/shell/AuthForm";
+import { BotonMecha } from "@/components/shell/BotonMecha";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
 
 /**
@@ -106,7 +107,11 @@ export function BibliotecaClient() {
               ) : (
                 <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {lista.map((p) => (
-                    <Tarjeta key={p.id} presentacion={p} />
+                    <Tarjeta
+                      key={p.id}
+                      presentacion={p}
+                      onBorrada={(id) => setLista((l) => (l ?? []).filter((x) => x.id !== id))}
+                    />
                   ))}
                 </ul>
               )}
@@ -176,20 +181,59 @@ function SinCuenta({ onDentro }: { onDentro: () => void }) {
 /**
  * Toda la tarjeta abre. Lleva a `/?abrir=<id>`, no a una ruta propia: la presentación se restaura
  * **dentro del área de trabajo**, que es donde vive todo lo que se puede hacer con ella.
+ *
+ * **Eliminar vive en la tarjeta y no en un diálogo.** La ventana para arrepentirse ocurre aquí
+ * mismo, sobre la cosa que va a desaparecer, y mientras tanto la tarjeta se atenúa y deja de
+ * abrirse: ya está medio ida. Un «¿seguro?» pregunta antes de que pase nada y se contesta que sí
+ * sin leerlo; esto deja ver la consecuencia y da tiempo a cambiar de idea.
  */
-function Tarjeta({ presentacion }: { presentacion: ResumenPresentacion }) {
+function Tarjeta({
+  presentacion,
+  onBorrada,
+}: {
+  presentacion: ResumenPresentacion;
+  onBorrada: (id: string) => void;
+}) {
   const { id, titulo, source_kind, nombre_archivo, creada_en } = presentacion;
   const Icono = ICONOS[source_kind] ?? FileText;
+  const [yendose, setYendose] = useState(false);
 
   return (
-    <li>
+    <li className="relative">
+      <div className="absolute right-3 top-3 z-10">
+        <BotonMecha
+          compacto
+          onArmado={setYendose}
+          onConfirmar={() => {
+            // Solo aquí se borra de verdad. Si da error, la tarjeta vuelve: perder algo en
+            // silencio porque falló la red sería lo peor que puede hacer esta pantalla.
+            void borrarPresentacion(id).then(
+              () => onBorrada(id),
+              () => setYendose(false),
+            );
+          }}
+        />
+      </div>
+
       <Link
         href={`/?abrir=${encodeURIComponent(id)}`}
-        className="group flex h-full flex-col rounded-xl border border-border bg-surface p-4 transition-colors hover:border-accent"
+        aria-hidden={yendose}
+        tabIndex={yendose ? -1 : undefined}
+        className={`group flex h-full flex-col rounded-xl border bg-surface p-4 transition-all ${
+          yendose
+            ? "pointer-events-none border-border opacity-45"
+            : "border-border hover:border-accent"
+        }`}
       >
         <div className="flex items-start gap-2.5">
           <Icono size={16} aria-hidden className="mt-0.5 shrink-0 text-muted" />
-          <h2 className="min-w-0 flex-1 font-serif text-[0.9375rem] leading-snug text-foreground">
+          <h2
+            className={`min-w-0 flex-1 font-serif text-[0.9375rem] leading-snug text-foreground ${
+              // El hueco crece con el botón: armado pasa de icono a «Deshacer 5» y, con el hueco
+              // de reposo, se montaba encima del título.
+              yendose ? "pr-24" : "pr-7"
+            }`}
+          >
             {titulo}
           </h2>
         </div>
