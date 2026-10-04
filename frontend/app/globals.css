@@ -50,8 +50,8 @@
   --muted: light-dark(#676f77, #878f98);
 
   /* Acento "tinta" */
-  --accent: light-dark(#1e3c84, #9db2ec);
-  --accent-hover: light-dark(#16306f, #b8c7f3);
+  --accent: light-dark(#1e3c84, #6b96f0);
+  --accent-hover: light-dark(#16306f, #89abf4);
   --accent-foreground: light-dark(#ffffff, #101418);
   --accent-subtle: light-dark(#e3e8f4, #1d2433);
 
