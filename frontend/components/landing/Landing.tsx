@@ -133,21 +133,32 @@ function Hero({ onInvitado, onAcceso }: { onInvitado: () => void; onAcceso: () =
   );
 }
 
+/**
+ * El cierre: el único sitio de la portada donde el tipo manda.
+ *
+ * Todos los titulares de la página miden lo mismo, y eso deja el final sin peso: se llega al
+ * último bloque igual que al tercero. Aquí la escala sube de golpe porque **es el único momento
+ * que pide una decisión**. Nada más cambia: ni color de acento nuevo, ni fondo, ni movimiento.
+ * Una cosa grande y lo demás callado.
+ */
 function Cierre({ onInvitado }: { onInvitado: () => void }) {
   return (
     <section className="border-t border-border bg-surface">
-      <div className="mx-auto max-w-6xl px-5 py-20">
-        <div className="flex flex-col items-start gap-6">
-          <h2 className="max-w-[20ch] font-serif text-[1.75rem] leading-tight text-foreground sm:text-[2.25rem]">
-            Pruébalo con un documento tuyo
+      <div className="mx-auto max-w-6xl px-5 py-24 lg:py-28">
+        <div className="flex flex-col items-start gap-8">
+          <h2 className="max-w-[17ch] font-serif text-[2.5rem] leading-[1.05] tracking-[-0.015em] text-foreground sm:text-[3.25rem] lg:text-[3.75rem]">
+            Trae un documento que te cueste leer.
           </h2>
-          <button
-            type="button"
-            onClick={onInvitado}
-            className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
-          >
-            Probar como invitado
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={onInvitado}
+              className="rounded-md bg-accent px-6 py-3 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
+            >
+              Probar como invitado
+            </button>
+            <span className="text-xs text-muted">Sin cuenta y sin instalar nada.</span>
+          </div>
         </div>
 
         <Link
