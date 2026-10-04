@@ -545,6 +545,43 @@ body {
 .fila-trasera > svg {
   transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/*
+ * El brillo que sigue al puntero en el botón principal de la portada.
+ *
+ * **Solo en la portada.** La aplicación es seria a propósito y un botón que reluce dentro del área
+ * de trabajo sería ruido; la portada es lo primero que ve alguien que todavía no sabe qué es esto,
+ * y ahí una superficie que responde al dedo dice «esto está vivo» antes que cualquier frase.
+ *
+ * **Solo contesta, nunca empieza.** No hay brillo hasta que alguien señala el botón: es respuesta
+ * a un gesto, no una animación corriendo sola para pedir atención. Por eso SUSTITUYE al oscurecido
+ * del hover en vez de sumarse — dos respuestas distintas al mismo gesto se estorban.
+ *
+ * El `z-index` negativo con `isolation` es lo que lo mete ENTRE el fondo del botón y su texto. Un
+ * pseudoelemento posicionado sin eso se pinta por encima de la palabra y la deslava.
+ */
+.luz {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  --luz-x: 50%;
+  --luz-y: 50%;
+  --luz-o: 0;
+  --luz-color: light-dark(rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.2));
+}
+.luz::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    9rem circle at var(--luz-x) var(--luz-y),
+    var(--luz-color),
+    transparent 62%
+  );
+  opacity: var(--luz-o);
+  transition: opacity 240ms ease;
+}
 .fila-trasera[data-listo="true"] > svg {
   transform: scale(1.18);
 }

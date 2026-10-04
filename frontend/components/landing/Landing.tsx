@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, X } from "@phosphor-icons/react";
 import { AuthForm } from "@/components/shell/AuthForm";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
+import { BotonLuz } from "./BotonLuz";
 import { Carrusel } from "./Carrusel";
 import { ComoFunciona } from "./ComoFunciona";
 import { Demostracion } from "./Demostracion";
@@ -108,13 +109,9 @@ function Hero({ onInvitado, onAcceso }: { onInvitado: () => void; onAcceso: () =
         className="surgir mt-7 flex flex-wrap items-center gap-3"
         style={{ animationDelay: "0.3s" }}
       >
-        <button
-          type="button"
-          onClick={onInvitado}
-          className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
-        >
+        <BotonLuz onClick={onInvitado} className="px-5 py-2.5 text-sm">
           Probar como invitado
-        </button>
+        </BotonLuz>
         <button
           type="button"
           onClick={onAcceso}
@@ -151,13 +148,9 @@ function Cierre({ onInvitado }: { onInvitado: () => void }) {
             Trae un documento que te cueste leer.
           </h2>
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={onInvitado}
-              className="rounded-md bg-accent px-6 py-3 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
-            >
+            <BotonLuz onClick={onInvitado} className="px-6 py-3 text-sm">
               Probar como invitado
-            </button>
+            </BotonLuz>
             <span className="text-xs text-muted">Sin cuenta y sin instalar nada.</span>
           </div>
         </div>
