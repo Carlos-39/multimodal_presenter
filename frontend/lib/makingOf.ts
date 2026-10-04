@@ -34,7 +34,9 @@ export type FiguraId =
   | "aplanar"
   | "escalera-fidelidad"
   | "isomorfismo"
-  | "cache-chat";
+  | "cache-chat"
+  | "equilibrio"
+  | "tandas-imagen";
 
 export type Bloque =
   | { tipo: "prosa"; texto: string }

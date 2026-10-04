@@ -3,10 +3,12 @@ import { columnasDeDatos, trozos } from "@/lib/makingOf";
 import { Figura } from "./Figura";
 import { Aplanar } from "./figuras/Aplanar";
 import { CacheChat } from "./figuras/CacheChat";
+import { Equilibrio } from "./figuras/Equilibrio";
 import { EscaleraFidelidad } from "./figuras/EscaleraFidelidad";
 import { HuecoContrato } from "./figuras/HuecoContrato";
 import { Isomorfismo } from "./figuras/Isomorfismo";
 import { PipelineAudio } from "./figuras/PipelineAudio";
+import { TandasImagen } from "./figuras/TandasImagen";
 
 /** El mapa está aquí y no en cada capítulo: el contenido nombra la figura, no la importa. */
 const FIGURAS: Record<FiguraId, () => React.ReactElement> = {
@@ -16,6 +18,8 @@ const FIGURAS: Record<FiguraId, () => React.ReactElement> = {
   "escalera-fidelidad": EscaleraFidelidad,
   isomorfismo: Isomorfismo,
   "cache-chat": CacheChat,
+  equilibrio: Equilibrio,
+  "tandas-imagen": TandasImagen,
 };
 
 /**
