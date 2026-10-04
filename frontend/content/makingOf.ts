@@ -276,7 +276,89 @@ export const CAPITULOS: Capitulo[] = [
     hitos: "Hito 5a",
     conclusion:
       "Un gráfico no puede contradecir la forma de sus datos: si el modelo se equivoca, se corrige en código.",
-    bloques: [],
+    bloques: [
+      {
+        tipo: "prosa",
+        texto:
+          "Un gráfico mal elegido no es un problema estético. Una serie de años dibujada como tarta dice que las partes suman un todo, y no lo hacen: dice algo falso sobre los datos, en un lenguaje que se lee antes que el texto.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El modelo escoge el tipo de gráfico a la vez que inventa los datos, y a veces escoge mal. La pregunta es qué se hace entonces.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Lo habitual es pedírselo mejor: añadir al prompt una frase que explique cuándo usar cada tipo. Eso convierte una garantía en una súplica. **Lo que se hizo fue sacar la decisión del modelo y meterla en código.**",
+      },
+
+      { tipo: "encabezado", texto: "La forma de los datos manda" },
+      {
+        tipo: "prosa",
+        texto:
+          "Antes de dibujar nada, una regla mira la forma de los datos —si las series están alineadas, si los números son finitos, si el eje tiene un orden, cuántas categorías hay, si todo es positivo— y devuelve el conjunto de tipos que esa forma admite. Sin modelo, sin juicio, sin prompt.",
+      },
+      {
+        tipo: "tabla",
+        cabeceras: ["Tipo", "Cuándo lo admite la forma"],
+        filas: [
+          ["barra", "siempre que los datos estén alineados y sean finitos"],
+          ["línea", "si el eje tiene un orden y hay al menos dos puntos"],
+          ["tarta", "una sola serie, no negativa, eje SIN orden, entre 2 y 8 categorías"],
+          ["dispersión", "nunca: pide pares (x, y) que esta forma de datos no modela"],
+        ],
+        nota: "La tarta exige que el eje NO esté ordenado. Una progresión en el tiempo no son partes de un todo, y es el caso que más veces se elige mal.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Si el tipo que pidió el modelo está en el conjunto, se respeta. Si no, se corrige al mejor admisible, con una prioridad fija: eje ordenado → línea; si no, barra; si no, tarta. **Misma forma inválida, misma corrección, siempre.**",
+      },
+      {
+        tipo: "figura",
+        figura: "isomorfismo",
+        pie: "Dos desenlaces. Arriba el tipo se corrige en silencio; abajo no hay ningún gráfico posible y se dice.",
+      },
+
+      { tipo: "encabezado", texto: "Cuando no hay gráfico posible" },
+      {
+        tipo: "prosa",
+        texto:
+          "El caso que casi nadie implementa es el segundo. Si los datos vienen desalineados —tres categorías y dos valores— o traen un infinito, el conjunto de tipos admisibles queda **vacío**. No hay gráfico correcto que dibujar.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Entonces la sección se convierte en tabla, que es la forma que nunca miente sobre unos datos, y lleva una leyenda visible diciendo qué pasó. Los datos no se tiran: la tabla los conserva, categoría a categoría.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "Nunca falla en silencio: corrige, degrada o marca. Pero lo que sale nunca contradice sus datos.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La diferencia entre corregir y degradar está en quién se entera. Corregir el tipo es silencioso a propósito, porque es consistencia y no un aviso: al lector no le aporta saber que el modelo pidió otra cosa. Degradar sí se dice, porque lo que ve es distinto de lo que esperaba. Son dos casos distintos y llevan dos nombres distintos en el contrato, `corrected` y `degraded`.",
+      },
+
+      { tipo: "encabezado", texto: "Un matiz que no se suavizó" },
+      {
+        tipo: "prosa",
+        texto:
+          "La regla **no restringe de antemano** lo que el modelo puede pedir: lo corrige después. Sería más elegante impedir la elección mala desde el principio, pero el modelo genera los datos y el tipo en la misma respuesta, así que no hay un «antes» en el que la forma de los datos ya se conozca.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El efecto final es el mismo —el tipo que sale siempre está dentro de lo válido— y el camino está escrito tal cual en el Registro en vez de contado como si la regla fuera preventiva. ==10 pruebas== cubren la regla: que acepta lo válido, que corrige lo inválido, y que la corrección es siempre la misma.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Encima de esto hay una segunda capa, esta sí con modelo: un agente compara los gráficos contra el documento y marca incoherencias de significado, no de forma. **Esa capa está implementada y probada con el modelo simulado, pero no se ha confirmado con el modelo real**, y así figura en el Registro. Marca, nunca borra: una observación semántica no elimina un gráfico.",
+      },
+    ],
   },
   {
     slug: "preguntar",
@@ -286,7 +368,102 @@ export const CAPITULOS: Capitulo[] = [
     hitos: "Hito 6 · Opción D",
     conclusion:
       "El chat relee el documento entero en cada turno, y lo paga una sola vez.",
-    bloques: [],
+    bloques: [
+      {
+        tipo: "prosa",
+        texto:
+          "El chat podría responder leyendo la presentación que ya se generó. Está ahí, está estructurada, y es mucho más corta que el documento. Sería lo barato.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Pero esa presentación es **una selección**: separó lo esencial del detalle y dejó cosas fuera a propósito. Preguntarle a un resumen es preguntarle a alguien que ya decidió qué no te iba a contar — y lo que no contó es exactamente lo que quizá vas a preguntar.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Es el principio del capítulo 2 otra vez, en otro sitio: no sustituir la fuente por un derivado más pobre antes de que nadie la interprete. Así que el chat **relee el documento original completo en cada turno**.",
+      },
+
+      { tipo: "encabezado", texto: "Y se paga una sola vez" },
+      {
+        tipo: "prosa",
+        texto:
+          "La objeción obvia es el coste: mandar el documento entero en cada pregunta. La respuesta no fue recortarlo, fue cachearlo. Lo que entra al modelo se arma siempre igual — el documento, un marcador, y después el historial con la pregunta — y el marcador separa lo estable de lo nuevo.",
+      },
+      {
+        tipo: "figura",
+        figura: "cache-chat",
+        pie: "Las dos barras miden lo mismo: el documento entero entra en los dos turnos. Lo que cambia es si se procesa o se lee de caché.",
+      },
+      {
+        tipo: "tabla",
+        cabeceras: ["Turno", "entrada", "escritura de caché", "lectura de caché"],
+        filas: [
+          ["1 · escribe la caché", "3253", "3223", "0"],
+          ["2 · lee la caché", "3298", "0", "3223"],
+        ],
+        nota: "Medido con el modelo real sobre un documento de unos 2.600 caracteres. Del segundo turno en adelante el documento se sirve desde caché, a alrededor del 10 % del coste del input.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Dos límites que van con la cifra y no se separan de ella: el proveedor **no cachea prefijos por debajo de unos 1.024 tokens**, así que un documento corto no activa nada y el ahorro solo se ve en documentos medianos o largos; y la caché dura unos cinco minutos por turno. Una conversación con pausas largas vuelve a pagar el documento.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "Lo barato no era recortar el documento, era no volver a procesarlo.",
+      },
+
+      { tipo: "encabezado", texto: "Cada respuesta trae su cita, o dice que no la tiene" },
+      {
+        tipo: "prosa",
+        texto:
+          "La atribución del capítulo 3 se extiende a cada turno, y por el mismo camino: el modelo da la cita, y **el código la ancla**, con la misma función que usa la transformación. No hay un segundo mecanismo de verificación para el chat.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Si el modelo no da cita, o la da y no existe en el documento, la respuesta sale marcada como no anclada y sin fuente. Se dice en la interfaz, con esas palabras. **Nunca se fabrica una cita para que la respuesta parezca respaldada.**",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La respuesta tampoco es siempre un párrafo: el modelo elige el tipo de contenido de la misma unión del capítulo 1, así que una pregunta por unas cifras puede devolver una tabla o un gráfico, dibujados con los mismos componentes que la presentación. No hay un segundo sistema de render, y por tanto la regla del capítulo 4 también los vigila.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El texto se escribe en vivo mientras el modelo piensa, pero **la cita y los componentes llegan al final, ya completos y validados**. Enseñar un ancla a medias sería enseñar algo que todavía puede resultar falso.",
+      },
+
+      { tipo: "encabezado", texto: "Preguntar antes de adivinar" },
+      {
+        tipo: "prosa",
+        texto:
+          "Una mejora que estaba apuntada desde el diseño y se activó después: ante una pregunta **genuinamente ambigua**, el sistema pide una aclaración en vez de adivinar con la misma seguridad que si fuera clara. Dos condiciones, y ninguna más: un referente que el historial no resuelve, o dos lecturas distintas con respuestas distintas.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La calibración era todo el problema, porque algo así se vuelve insoportable si se dispara de más. Tiene **sesgo por defecto a responder** —ante preguntas cortas, informales o con erratas, responde; ante la duda, responde— y pide aclaración **a lo sumo una vez**: si el turno anterior ya fue una aclaración, contesta con la mejor interpretación. No hay ciclos.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Se probó con el modelo real sobre un documento con dos métodos de café, donde «¿y el otro?» o «¿cuánto café se usa?» son ambiguas de verdad. ==Cuatro de cuatro== ambiguas pidieron aclaración con opciones concretas; ==cuatro de cuatro== normales respondieron ancladas.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y lo que no salió redondo, que también se midió: en una pregunta de frontera el criterio **varió entre corridas** —una vez aclaró, otra respondió—. La variación cae del lado seguro, que es responder, porque esto es una invitación y nunca un muro: el campo de texto no se bloquea nunca y se puede ignorar la pregunta y reescribir.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Queda una deuda dicha en su sitio: el historial del chat vivía solo en la memoria de la pestaña y se perdía al recargar. Fue una decisión temporal, aislada en un único sitio para que el hito de guardar y volver —el capítulo 13— la reemplazara sin tocar nada más. Eso es lo que acabó pasando.",
+      },
+    ],
   },
   {
     slug: "rag",
