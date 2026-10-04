@@ -28,6 +28,10 @@ const PREGUNTAS: { p: string; r: string }[] = [
     r: "Te lleva a la página donde está la cita, y ahí se queda. Señalar la frase exacta haría falta reconocer el texto dentro de la imagen, y eso no se hace. Es menos de lo que ofrece un PDF con texto, y se dice en vez de disimularlo.",
   },
   {
+    p: "¿Y si subo una foto?",
+    r: "La cita vuelve como texto, pero no hay ningún sitio al que llevarte dentro de la foto: no se señala la zona ni se dice la página, porque una imagen no tiene páginas. Es la entrada con la atribución más débil de las cuatro, por el mismo motivo que el PDF escaneado. Con un texto la cita se compara carácter por carácter; con un PDF con texto te deja un recuadro sobre la frase; con una grabación te deja en el segundo exacto; con una imagen solo tienes la cita.",
+  },
+  {
     p: "¿Las imágenes que genera salen del documento?",
     r: "No, y por eso llevan siempre una etiqueta encima que lo dice, de forma permanente. Son una ayuda para entender, nunca una prueba. La aplicación solo las genera cuando el documento no trae material visual propio y el contenido se beneficia de verlo.",
   },
