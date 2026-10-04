@@ -41,7 +41,7 @@ export function Problema() {
   return (
     <section className="border-t border-border bg-surface-sunken/40">
       <div ref={ref} className="mx-auto max-w-3xl px-5 py-20">
-        <h2 className="max-w-[24ch] font-serif text-[1.75rem] leading-tight text-foreground sm:text-[2.25rem]">
+        <h2 className="max-w-[24ch] font-sans text-[1.75rem] font-medium leading-[1.1] tracking-[-0.022em] text-foreground sm:text-[2.25rem]">
           El problema no es escribir el texto. Es poder creerlo.
         </h2>
         <p className="mt-4 max-w-[54ch] font-serif text-[1.0625rem] leading-[1.65] text-foreground-secondary">

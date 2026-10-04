@@ -91,7 +91,7 @@ function Hero({ onInvitado, onAcceso }: { onInvitado: () => void; onAcceso: () =
   return (
     <section className="mx-auto max-w-6xl px-5 pb-20 pt-14 lg:pt-20">
       <h1
-        className="surgir max-w-[32ch] font-serif text-[2.25rem] leading-[1.15] text-foreground sm:text-[2.5rem] lg:text-[2.75rem]"
+        className="surgir max-w-[30ch] font-sans text-[2.25rem] font-medium leading-[1.12] tracking-[-0.025em] text-foreground sm:text-[2.6rem] lg:text-[2.95rem]"
         style={{ animationDelay: "0.05s" }}
       >
         Entiende un documento difícil. Comprueba cada frase.
@@ -146,7 +146,7 @@ function Cierre({ onInvitado }: { onInvitado: () => void }) {
     <section className="border-t border-border bg-surface">
       <div className="mx-auto max-w-6xl px-5 py-24 lg:py-28">
         <div className="flex flex-col items-start gap-8">
-          <h2 className="max-w-[17ch] font-serif text-[2.5rem] leading-[1.05] tracking-[-0.015em] text-foreground sm:text-[3.25rem] lg:text-[3.75rem]">
+          <h2 className="max-w-[17ch] font-sans text-[2.5rem] font-medium leading-[1.02] tracking-[-0.03em] text-foreground sm:text-[3.25rem] lg:text-[3.75rem]">
             Trae un documento que te cueste leer.
           </h2>
           <div className="flex flex-wrap items-center gap-3">
@@ -166,7 +166,7 @@ function Cierre({ onInvitado }: { onInvitado: () => void }) {
           className="group mt-14 flex flex-col gap-4 border-t border-border pt-8 sm:flex-row sm:items-end sm:justify-between"
         >
           <div>
-            <h3 className="font-serif text-xl text-foreground">Cómo se construyó</h3>
+            <h3 className="font-sans text-xl font-medium tracking-[-0.015em] text-foreground">Cómo se construyó</h3>
             <p className="mt-2 max-w-[54ch] text-sm leading-6 text-foreground-secondary">
               Catorce capítulos sobre qué se construyó, por qué, y qué apareció al medirlo.
               Incluido lo que no funcionó.
@@ -203,7 +203,7 @@ function DialogoAcceso({ onCerrar, onDentro }: { onCerrar: () => void; onDentro:
         className="section-enter relative w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-2xl"
       >
         <div className="flex items-start justify-between gap-3">
-          <h2 id="titulo-acceso" className="font-serif text-xl text-foreground">
+          <h2 id="titulo-acceso" className="font-sans text-xl font-medium tracking-[-0.015em] text-foreground">
             Entrar
           </h2>
           <button

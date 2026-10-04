@@ -27,7 +27,7 @@ export function ComoFunciona() {
     <section className="border-t border-border">
       <div ref={ref} data-visible={visible} className="mx-auto max-w-6xl px-5 py-20">
         <div className="revelar" data-visible={visible}>
-          <h2 className="max-w-[18ch] font-serif text-[1.75rem] leading-tight text-foreground sm:text-[2.25rem]">
+          <h2 className="max-w-[18ch] font-sans text-[1.75rem] font-medium leading-[1.1] tracking-[-0.022em] text-foreground sm:text-[2.25rem]">
             Cómo funciona
           </h2>
           <p className="mt-4 max-w-[54ch] font-serif text-[1.0625rem] leading-[1.65] text-foreground-secondary">
