@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, X } from "@phosphor-icons/react";
 import { AuthForm } from "@/components/shell/AuthForm";
+import { ThemeToggle } from "@/components/shell/ThemeToggle";
 import { Artefacto } from "./Artefacto";
 import { Carrusel } from "./Carrusel";
 import { ComoFunciona } from "./ComoFunciona";
@@ -31,13 +32,18 @@ export function Landing({ onEntrar }: { onEntrar: () => void }) {
           <span className="text-sm font-semibold tracking-tight text-foreground">
             Multimodal Presenter
           </span>
-          <nav className="flex items-center gap-5">
+          <nav className="flex items-center gap-4">
             <Link
               href="/making-of"
               className="hidden text-xs text-foreground-secondary transition-colors hover:text-foreground sm:block"
             >
               Cómo se construyó
             </Link>
+            {/* El MISMO botón del núcleo fijo de la aplicación. Elegir claro u oscuro no es una
+                preferencia de la aplicación sino de quien mira, así que tiene que poder hacerse
+                desde el primer momento, no solo después de entrar. Y es el mismo componente, con
+                el mismo almacenamiento: el tema que elijas aquí es el que te encuentras dentro. */}
+            <ThemeToggle />
             <button
               type="button"
               onClick={onEntrar}

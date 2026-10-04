@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import type { ReactNode } from "react";
+import { ThemeToggle } from "@/components/shell/ThemeToggle";
 
 /**
  * El armazón del «making of». Deliberadamente más desnudo que la aplicación: aquí no hay nada que
@@ -26,6 +27,11 @@ export default function MakingOfLayout({ children }: { children: ReactNode }) {
           <Link href="/making-of" className="text-xs text-foreground-secondary hover:text-foreground">
             Cómo se construyó
           </Link>
+          {/* El mismo botón de la aplicación y de la portada, con el mismo almacenamiento: leer
+              estos capítulos de noche no debería obligar a salir a cambiar el tema. */}
+          <div className="ml-auto">
+            <ThemeToggle />
+          </div>
         </div>
       </header>
       {children}
