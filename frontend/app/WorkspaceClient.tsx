@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Books } from "@phosphor-icons/react";
+import { AvisoBiblioteca } from "@/components/shell/AvisoBiblioteca";
+import { avisoPendiente, marcarAvisoVisto } from "@/lib/avisos";
 import { AppShell } from "@/components/shell/AppShell";
 import { Workspace } from "@/components/shell/Workspace";
 import { ChatPanel } from "@/components/shell/ChatPanel";
@@ -92,6 +94,7 @@ type ModeBucket = DetailLevel | "deck";
  */
 export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   const router = useRouter();
+  const [avisoBiblioteca, setAvisoBiblioteca] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -414,6 +417,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
       if (yaGuardada) {
         await actualizarPresentacion(yaGuardada, titulo, payload);
         setGuardando("guardada");
+        if (avisoPendiente("biblioteca")) setAvisoBiblioteca(true);
         return;
       }
 
@@ -435,6 +439,9 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
       const audio = narration.audioGenerado();
       if (audio) void guardarNarracion(guardada.id, audio);
       setGuardando("guardada");
+      // La única pista de bienvenida de la aplicación, y llega cuando hay una pregunta que
+      // responder: acabas de guardar y no sabes a dónde fue.
+      if (avisoPendiente("biblioteca")) setAvisoBiblioteca(true);
     } catch {
       setGuardando("error");
     }
@@ -750,13 +757,27 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
           {/* La biblioteca, con su sitio en el núcleo fijo y no enterrada en el cajón. Solo
               aparece con cuenta: para un invitado sería una promesa que no puede cumplir. */}
           {usuario ? (
-            <Link
-              href="/biblioteca"
-              className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-foreground-secondary transition-colors hover:border-border-strong hover:text-foreground"
-            >
-              <Books size={13} aria-hidden />
-              Biblioteca
-            </Link>
+            <span className="relative">
+              <Link
+                href="/biblioteca"
+                className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors ${
+                  avisoBiblioteca
+                    ? "border-accent bg-accent-subtle text-accent"
+                    : "border-border text-foreground-secondary hover:border-border-strong hover:text-foreground"
+                }`}
+              >
+                <Books size={13} aria-hidden />
+                Biblioteca
+              </Link>
+              {avisoBiblioteca ? (
+                <AvisoBiblioteca
+                  onCerrar={() => {
+                    marcarAvisoVisto("biblioteca");
+                    setAvisoBiblioteca(false);
+                  }}
+                />
+              ) : null}
+            </span>
           ) : null}
           {hasContent && usuario ? (
             <button
