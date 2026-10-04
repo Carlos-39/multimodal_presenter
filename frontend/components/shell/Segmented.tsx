@@ -22,6 +22,13 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
  * control de dos opciones arrastrar no aporta nada.
  *
  * Con «reducir movimiento» el pulgar salta: sigue marcando lo activo, sin recorrido.
+ *
+ * **Lo activo va en acento, pero el pulgar sigue siendo papel.** Rellenarlo de azul lo convertiría
+ * en un botón, y el azul relleno ya significa otra cosa en esta aplicación: la acción principal
+ * («Generar presentación», «Nueva»). Esto no se pulsa para que pase algo, se pulsa para mirar otra
+ * cosa. Dejar el pulgar claro con el borde y la palabra en acento tiene además una ventaja de
+ * contraste: durante el estirón, la caja cubre las DOS opciones, y sobre un relleno azul la opción
+ * que se va quedaría medio segundo en gris sobre azul — ilegible justo cuando se la está mirando.
  */
 interface SegmentedOption<T extends string> {
   value: T;
@@ -160,7 +167,7 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
         ref={pulgar}
         aria-hidden
         hidden
-        className="pointer-events-none absolute top-0.5 bottom-0.5 rounded bg-surface ring-1 ring-border transition-[left,width] duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+        className="pointer-events-none absolute top-0.5 bottom-0.5 rounded bg-surface ring-1 ring-accent transition-[left,width] duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
       />
 
       {options.map((opt, i) => {
@@ -181,7 +188,7 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
             onKeyDown={(e) => teclas(e, i)}
             className={`relative rounded px-2.5 py-1 text-xs transition-colors disabled:opacity-40 ${
               activa
-                ? "font-medium text-foreground"
+                ? "font-medium text-accent"
                 : "text-muted hover:text-foreground disabled:hover:text-muted"
             }`}
           >
