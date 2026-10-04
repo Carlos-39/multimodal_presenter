@@ -21,8 +21,14 @@ export const ACTOS: Record<Acto, string> = {
   cierre: "Cierre",
 };
 
-/** Las figuras son dibujos propios, no capturas: ilustran un concepto. */
-export type FiguraId = "pipeline-audio";
+/**
+ * Las figuras son dibujos propios, no capturas: ilustran un concepto.
+ *
+ * Dibujadas con los tokens del 5k, así que siguen al tema claro y oscuro sin dos versiones y no
+ * envejecen cuando la interfaz cambia. Una captura envejecería en el primer rediseño y, peor,
+ * enseñaría una pantalla en vez de una idea.
+ */
+export type FiguraId = "pipeline-audio" | "hueco-contrato" | "aplanar" | "escalera-fidelidad";
 
 export type Bloque =
   | { tipo: "prosa"; texto: string }

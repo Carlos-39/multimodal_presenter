@@ -545,3 +545,28 @@ body {
     transform: scaleX(1);
   }
 }
+
+/*
+ * Al imprimir, todo terminado.
+ *
+ * Lo que se dibuja al entrar en pantalla depende de un `IntersectionObserver`, y al imprimir no
+ * hay pantalla por la que entrar: las figuras del «cómo se construyó» saldrían con las líneas a
+ * medio trazar o directamente sin ellas. Un capítulo impreso tiene que verse como el terminado,
+ * que para un documento de tesis no es un detalle.
+ */
+@media print {
+  .trazo,
+  [data-visible="true"] .trazo {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+  .revelar,
+  .surgir,
+  .pasar {
+    opacity: 1;
+    transform: none;
+    animation: none;
+    transition: none;
+  }
+}

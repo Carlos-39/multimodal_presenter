@@ -1,6 +1,18 @@
-import type { Bloque, Trozo } from "@/lib/makingOf";
+import type { Bloque, FiguraId, Trozo } from "@/lib/makingOf";
 import { trozos } from "@/lib/makingOf";
+import { Figura } from "./Figura";
+import { Aplanar } from "./figuras/Aplanar";
+import { EscaleraFidelidad } from "./figuras/EscaleraFidelidad";
+import { HuecoContrato } from "./figuras/HuecoContrato";
 import { PipelineAudio } from "./figuras/PipelineAudio";
+
+/** El mapa está aquí y no en cada capítulo: el contenido nombra la figura, no la importa. */
+const FIGURAS: Record<FiguraId, () => React.ReactElement> = {
+  "pipeline-audio": PipelineAudio,
+  "hueco-contrato": HuecoContrato,
+  aplanar: Aplanar,
+  "escalera-fidelidad": EscaleraFidelidad,
+};
 
 /**
  * Cómo se compone un capítulo.
@@ -57,15 +69,14 @@ function Uno({ bloque }: { bloque: Bloque }) {
     case "tabla":
       return <Tabla bloque={bloque} />;
 
-    case "figura":
+    case "figura": {
+      const Dibujo = FIGURAS[bloque.figura];
       return (
-        <figure className="my-2 flex flex-col gap-3">
-          <div className="overflow-x-auto rounded-lg border border-border bg-surface px-4 py-6">
-            {bloque.figura === "pipeline-audio" ? <PipelineAudio /> : null}
-          </div>
-          <figcaption className="text-xs leading-5 text-muted">{bloque.pie}</figcaption>
-        </figure>
+        <Figura pie={bloque.pie}>
+          <Dibujo />
+        </Figura>
       );
+    }
   }
 }
 
