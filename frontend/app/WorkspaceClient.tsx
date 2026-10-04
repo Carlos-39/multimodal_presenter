@@ -81,7 +81,13 @@ function synthGrounding(sourceKind: SourceKind, entries: SectionGrounding[]): Gr
 /** Tramo del reloj de modo. `deck` es un tramo PROPIO, no un nivel de detalle: ver `modeBucketRef`. */
 type ModeBucket = DetailLevel | "deck";
 
-export default function WorkspaceClient() {
+/**
+ * `abrir`: el id de una presentación guardada con la que llegas desde la biblioteca. Se restaura
+ * por el MISMO camino que al abrirla desde el cajón (`restaurar`), no por uno propio: ese camino
+ * limpia todos los estados del documento anterior, y duplicarlo significaría que cada estado que
+ * alguien añada después habría que acordarse de limpiarlo en dos sitios.
+ */
+export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -657,6 +663,20 @@ export default function WorkspaceClient() {
   useEffect(() => {
     void quienSoy().then(setUsuario);
   }, []);
+
+  // Llegada desde la biblioteca. Una sola vez por id: si fallara —la borraste en otra pestaña, se
+  // te venció la sesión— se queda el área de trabajo vacía, que es un estado honesto, en vez de
+  // reintentar en bucle contra algo que ya no está.
+  // El ref se actualiza en un efecto y no en el render: la regla de pureza del proyecto prohíbe
+  // tocar un ref mientras se renderiza.
+  const restaurarRef = useRef(restaurar);
+  useEffect(() => {
+    restaurarRef.current = restaurar;
+  });
+  useEffect(() => {
+    if (!abrir) return;
+    void restaurarRef.current(abrir);
+  }, [abrir]);
 
   useEffect(() => {
     initTelemetry();
