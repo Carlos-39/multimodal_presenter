@@ -919,7 +919,82 @@ export const CAPITULOS: Capitulo[] = [
     hitos: "Hito 5d",
     conclusion:
       "Dos mediciones cambiaron la arquitectura del streaming. Ninguna de las dos se adivinó.",
-    bloques: [],
+    bloques: [
+      {
+        tipo: "prosa",
+        texto:
+          "Transformar un documento tarda entre veinte y sesenta segundos. Esperar ese rato delante de una pantalla en blanco es insoportable, así que las secciones aparecen **una por una**, a medida que el modelo las termina.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El grano se decidió antes de construir nada: **por sección completa**, nunca palabra por palabra. Una sección a medias sería JSON a medio construir, es decir contenido que todavía puede no validar, y este proyecto no enseña nada que no haya pasado por el contrato. Antes de emitir cada sección se la ancla y se le aplica la regla de los gráficos, así que **una sección que llega en vivo es indistinguible de una que llega al final**.",
+      },
+
+      { tipo: "encabezado", texto: "Primera medición: salía todo de golpe" },
+      {
+        tipo: "prosa",
+        texto:
+          "Con el modelo real no funcionaba. El indicador decía «Generando… 0 secciones» y de pronto aparecía el bloque entero. El código del streaming estaba bien; lo que fallaba estaba más abajo.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La causa se diagnosticó, no se supuso: el agente pedía su salida como **llamada a herramienta**. Con ese modo, toda la presentación viaja como los argumentos de una sola herramienta, y la librería no puede entregar nada hasta que esa llamada está **completa**. No había parciales que trocear — ni siquiera el título.",
+      },
+      {
+        tipo: "tabla",
+        cabeceras: ["Modo de salida", "título", "secciones", "parciales"],
+        filas: [
+          ["salida por herramienta", "7,31 s", "las 4 de golpe a 7,31 s", "1"],
+          ["salida por texto", "3,03 s", "1 → 3 → 4 a 3,0 / 4,7 / 5,3 s", "10"],
+        ],
+        nota: "Una sola llamada, medida dentro del proceso. El título llega en menos de la mitad de tiempo, y lo hace porque hay parciales que entregar.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El cambio tiene un precio y está dicho: la salida por herramienta daba una garantía de esquema del proveedor algo más fuerte. Pero sin parciales no hay streaming, y con la validación y los reintentos de la librería el JSON sale bien de forma fiable. **El agente entero cambió de modo**, no solo el camino con streaming: dos modos distintos serían dos comportamientos que mantener sincronizados.",
+      },
+
+      { tipo: "encabezado", texto: "Segunda medición: el proxy lo volvía a juntar" },
+      {
+        tipo: "prosa",
+        texto:
+          "Arreglado eso, el backend troceaba. Pero el navegador no habla con el backend directamente: pasa por el servidor del frontend. Y ahí se volvía a juntar todo.",
+      },
+      {
+        tipo: "figura",
+        figura: "troceo",
+        pie: "Cuatro puntos en la misma vertical: por el camino de en medio las secciones llegaban juntas, aunque el backend las mandara separadas.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La regla de reescritura del framework **bufferiza** el flujo y lo entrega de una vez. Es un detalle de infraestructura que no aparece en ningún diagrama de arquitectura, y que convertía en inútil todo el trabajo anterior. Se reemplazó por un manejador de ruta propio que devuelve el flujo tal cual, con las cabeceras que piden a los intermediarios que no lo transformen.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "Dos capas distintas podían anular el streaming, y ninguna de las dos se veía desde el código del streaming.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Esa es la lección del capítulo, y vuelve en el 12 con la telemetría: **algo puede estar correctamente construido y aun así no funcionar**, porque lo que falla está en una capa que nadie estaba mirando. Verlo exige medir contra el sistema corriendo, no releer el código.",
+      },
+
+      { tipo: "encabezado", texto: "La limitación que esto deja" },
+      {
+        tipo: "prosa",
+        texto:
+          "El troceo incremental está verificado con el proveedor primario. Con el de respaldo **puede no darse**: las secciones llegarían casi de golpe al final, y el streaming se degradaría a un único bloque tardío.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Es una limitación real de ser agnóstico del modelo, y está documentada en vez de forzada. La interfaz no se rompe —el render es el mismo— pero la experiencia sería peor, y conviene decirlo antes de que alguien lo descubra solo.",
+      },
+    ],
   },
   {
     slug: "columnas",
@@ -929,7 +1004,64 @@ export const CAPITULOS: Capitulo[] = [
     hitos: "Hito 5e",
     conclusion:
       "La convivencia de columnas es una regla determinista con umbrales, no un catálogo de plantillas.",
-    bloques: [],
+    bloques: [
+      {
+        tipo: "prosa",
+        texto:
+          "Había un apretón concreto: con el chat siempre visible, abrir el panel de fuente dejaba el contenido en una franja ilegible. Tres columnas peleando por el mismo ancho.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La salida habitual es un catálogo de plantillas: una para cada combinación de paneles y de tamaño. Envejece mal — cada panel nuevo multiplica los casos — y nadie puede predecir qué va a pasar sin mirarse la lista.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Aquí es **una regla con umbrales**, y es lógica pura: depende solo de qué paneles están abiertos y de cuánto mide la ventana. Vive en una función con sus pruebas, no repartida por los componentes.",
+      },
+      {
+        tipo: "figura",
+        figura: "umbrales",
+        pie: "El contenido conserva su sitio en los tres anchos. Lo que no cabe no se encoge: se oculta o se pone encima.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El criterio cuando solo cabe una columna es **la más reciente**: la que acabas de abrir es la que se ve. Es predecible sin explicarlo, porque coincide con lo que acabas de hacer. La otra no se cierra —sigue abierta en el estado— y reaparece sola al ensanchar la ventana.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "El contenido nunca se aplasta: cada umbral admite una columna más solo cuando cabe con ancho legible.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y está comprobado con números, no a ojo: a 1440 px, el nav de 240 más el contenido de 464 más la fuente de 416 más el chat de 320 suman exactamente 1440, sin desbordar. A 800 px el chat pasa a superponerse y el contenido se queda con sus 560 completos.",
+      },
+
+      { tipo: "encabezado", texto: "Una cosa que no se cableó, y se dice" },
+      {
+        tipo: "prosa",
+        texto:
+          "El hito tenía dos escalas. La segunda es ésta. La primera era componer **dentro** de una sección: un gráfico y su tabla de apoyo lado a lado, por ejemplo.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "No se pudo, y el motivo es bonito: el contrato del capítulo 1 dice que una sección tiene **exactamente un** bloque de contenido. Esa es justamente la decisión que cerró el hueco original. Componer varios tipos dentro de una sección exigiría tocar el contrato, y el hito se había prohibido tocarlo.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Así que la Escala 1 quedó como **especificación escrita y no cableada**, con su jerarquía de peso visual decidida —gráfico, tabla, línea de tiempo, texto, por huella espacial decreciente— lista para el día que el contrato gane secciones de varios bloques. **Cero deuda oculta:** está anotada, no olvidada.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Un detalle que parece menor y no lo es: el layout **solo recalcula al abrir o cerrar un panel y al redimensionar**, nunca al llegar una sección nueva por el streaming del capítulo 9. Si dependiera del contenido, las columnas bailarían durante toda la generación.",
+      },
+    ],
   },
   {
     slug: "la-piel",
@@ -939,7 +1071,83 @@ export const CAPITULOS: Capitulo[] = [
     hitos: "Hito 5k",
     conclusion:
       "Un rediseño que no tocó la arquitectura, y que empezó por medir por qué la anterior se sentía plana.",
-    bloques: [],
+    bloques: [
+      {
+        tipo: "prosa",
+        texto:
+          "La identidad anterior se sentía plana. «Se siente plana» no es un diagnóstico: es una impresión, y a partir de una impresión se eligen colores nuevos hasta que la impresión cambie. Así que primero se midió por qué.",
+      },
+      {
+        tipo: "tabla",
+        cabeceras: ["Lo que se midió", "valor", "qué implicaba"],
+        filas: [
+          ["Acento contra el texto", "1,42:1", "un estado activo se leía como otro gris"],
+          ["El acento como texto, en oscuro", "2,15:1", "por debajo de lo legible"],
+          ["Familia de base y acento", "la misma", "sin contraste de temperatura"],
+          ["Niveles de superficie", "2", "sin profundidad que ordenara las capas"],
+        ],
+        nota: "Tres causas concretas y medibles detrás de una sola impresión. Con eso ya se puede decidir qué cambiar.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La respuesta fue **neutros cálidos con un acento frío**. El contraste de temperatura es el que da la profundidad que faltaba, y no depende de subir la saturación. El acento se reserva a lo interactivo o activo, y un estado activo se marca con un lavado de ese acento y texto en acento, no con un bloque relleno.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "Todos los pares de texto y fondo superan 4,5:1, en claro y en oscuro. Calculado, no estimado a ojo.",
+      },
+
+      { tipo: "encabezado", texto: "Dos voces tipográficas, y lo que significan" },
+      {
+        tipo: "prosa",
+        texto:
+          "La decisión que más se nota: **lo que viene del documento va en una serifa; lo que es de la herramienta, en una sans**. Títulos, cuerpo de las secciones, citas y panel de fuente en una; navegación, botones y etiquetas en la otra. Los números siguen en monoespaciada tabular, que es la señal de «esto es un dato».",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "No es un gusto: es información. Antes de leer una palabra ya sabes si lo que tienes delante sale del documento o lo pone la aplicación. Este relato que estás leyendo usa el mismo código tipográfico, y por eso se lee como se lee.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El resaltador quedó **reservado al rastro de verificación**: la cita al pie de una sección, la de una respuesta del chat, la de una diapositiva y el pasaje marcado en el documento comparten componente y color. El aviso pasó de ámbar a óxido para no confundirse con él. Y el borde punteado quedó reservado a «generado», así que el satélite dejó de usarlo y se distingue de otra forma.",
+      },
+
+      { tipo: "encabezado", texto: "Lo que NO cambió, que es la mitad del hito" },
+      {
+        tipo: "prosa",
+        texto:
+          "Un rediseño visual es la ocasión perfecta para colar cambios de comportamiento, y por eso la lista de lo intocado se escribió explícitamente: la arquitectura de información, los umbrales de columnas del capítulo 10, los modos de detalle, la Generative UI, el contrato, el backend y **la telemetría del capítulo 12**, con los mismos eventos en los mismos puntos.",
+      },
+      {
+        tipo: "cita",
+        texto: "En la página principal solo cambió una clase y se pasó un prop de presentación nuevo.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Que esa frase se pueda escribir es la prueba de que era piel y no arquitectura. Y hacerlo **antes** de las sesiones con usuarios tiene un motivo: que quien participe vea la versión más parecida a la final, y no juzgue una interfaz que iba a cambiar igualmente.",
+      },
+
+      { tipo: "encabezado", texto: "Y un cambio que sí era de fondo" },
+      {
+        tipo: "prosa",
+        texto:
+          "Durante el hito apareció un problema que no era de color. **Ver y generar estaban mezclados**: diapositivas, presentación y chat eran tres botones iguales, y no se entendía cuál de ellos iba a costar dinero y tiempo.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Se separaron en dos sitios distintos. *Ver* —documento o diapositivas, resumen o detallado— son formas de mostrar lo que ya existe, y no generan nada. *Generar* —presentación y narración— vive en su propio panel, cada una con una línea que dice qué es, y el botón nombra su estado en vez de quedarse mudo mientras trabaja.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Es exactamente la misma frontera del capítulo 8: lo que sale del documento por un lado, lo que el sistema inventa por otro. Aquí se volvió geografía de la interfaz.",
+      },
+    ],
   },
   {
     slug: "telemetria",
@@ -949,7 +1157,98 @@ export const CAPITULOS: Capitulo[] = [
     hitos: "Hito 8A · 8A.1",
     conclusion:
       "Revisar el instrumento antes de usarlo encontró un contador roto en 7 de 11 sesiones ya grabadas.",
-    bloques: [],
+    bloques: [
+      {
+        tipo: "prosa",
+        texto:
+          "Para saber si el sistema sirve hace falta ver a alguien usarlo. Y para que esa observación valga algo hace falta medir qué hace: cuánto tiempo pasa en el modo resumen y cuánto en el detallado, si pregunta con sus palabras o pulsa las sugerencias, y **cuántas veces abre la fuente para comprobar algo**.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Son ocho tipos de evento, un conjunto cerrado. La parte interesante no es qué se captura sino qué **no**, y que eso no dependa de acordarse.",
+      },
+
+      { tipo: "encabezado", texto: "Privacidad que no depende de la buena intención" },
+      {
+        tipo: "prosa",
+        texto:
+          "No se captura contenido de documentos, ni el texto de las preguntas, ni nombres de archivo. Solo metadatos: enums, milisegundos, longitudes en caracteres y **ordinales** de sección en vez del identificador —porque ese identificador lo escribe el modelo y podría describir el contenido.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Pero una promesa que depende de que el frontend se porte bien es frágil, así que hay una **barrera del lado del servidor**: la ingesta rechaza cualquier dato con cadenas largas. Si el cliente se equivocara, el contenido no entra igualmente.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y la telemetría **no importa ni referencia** el contrato de datos. Observa; no toca el pipeline ni lo que viaja a los modelos. Es una capa aparte por construcción, no por disciplina.",
+      },
+
+      { tipo: "encabezado", texto: "Revisar el instrumento antes de usarlo" },
+      {
+        tipo: "prosa",
+        texto:
+          "La telemetría se construyó antes del rediseño del capítulo 11, antes del audio y antes de una ronda de arreglos. Antes de sentar a nadie delante del sistema había que comprobar que siguiera midiendo lo que dice medir — **porque un instrumento roto no se nota durante la sesión, se nota al analizar los datos, cuando ya no hay forma de repetirla.**",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Casi todo estaba bien. Los ocho eventos llegaban, sin contenido; las cuentas cuadraban —25.492 más 94.560 milisegundos dan exactamente la sesión, y el porcentaje de tiempo en detallado sale de esa división— y el identificador del participante estaba donde hacía falta para cruzar con el cuestionario.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y había un bug. **El contador de eventos volvía a cero al recargar la pestaña.** El identificador de sesión sobrevive a una recarga, eso es deliberado; el contador no sobrevivía, así que una misma sesión tenía dos eventos con el número 0, dos con el 1, y así.",
+      },
+      {
+        tipo: "figura",
+        figura: "orden-seq",
+        pie: "El exportador ordenaba por contador. En una sesión con recarga, eso mete los eventos de después entre los de antes.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La consecuencia medida: con una pregunta real a los 30 segundos y otra a los 70 tras recargar, el exportador decía ==70.000 ms== hasta la primera pregunta y señalaba la pregunta equivocada. Ordenando por tiempo dice ==30.000 ms==.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "**No era hipotético.** Al auditar los archivos ya recogidos: ==7 de 11 sesiones== tenían el contador repetido, una de ellas con ocho arranques dentro de la misma sesión.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "En los datos que ya tenía las dos cifras coincidían, pero por un accidente, no por una propiedad del diseño.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Esa frase es el capítulo. El orden estable de la herramienta de ordenación conservaba el orden del archivo, así que el resultado salía bien **por casualidad**. Un análisis que depende de una casualidad es un análisis que va a fallar el día que la casualidad no se dé.",
+      },
+
+      { tipo: "encabezado", texto: "Arreglado en dos sitios, a propósito" },
+      {
+        tipo: "prosa",
+        texto:
+          "En el cliente, el contador pasa a guardarse junto al identificador de sesión y por el mismo motivo, así que ya cruza las recargas. Pero **arreglar el cliente no arregla los archivos ya recogidos**, y esos son datos reales de sesiones que no se pueden repetir.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Así que el exportador también cambió: ahora ordena por **sello de tiempo** —la verdad de terreno, que no depende de un detalle del cliente— y usa el contador solo para desempatar eventos del mismo milisegundo. Y el arranque y la primera pregunta se eligen por tiempo, no por posición.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "De paso se añadió al resumen el número de recargas, que se deduce de los arranques de más. **No se esconde el ruido: se etiqueta.** Una fila con muchos eventos deja de parecer una sesión más activa de lo que fue y se explica sola.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Queda decir qué falta. Esta es solo la tubería: el cuestionario de carga de trabajo, la prueba de comprensión y las sesiones con cinco a diez personas **no se han corrido**. El Hito 8 sigue abierto, y el capítulo 14 lo recoge.",
+      },
+    ],
   },
   {
     slug: "guardar",
@@ -959,7 +1258,110 @@ export const CAPITULOS: Capitulo[] = [
     hitos: "Login y persistencia",
     conclusion:
       "Quién guardó qué vive fuera del contrato de datos, porque el contrato viaja a los modelos.",
-    bloques: [],
+    bloques: [
+      {
+        tipo: "prosa",
+        texto:
+          "Hasta aquí el sistema olvidaba todo al cerrar la pestaña. Podías transformar un documento, preguntarle, generar diapositivas y escuchar la narración, y nada de eso sobrevivía a recargar la página.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La autenticación era la parte fácil. Lo caro era otra cosa: **toda la aplicación daba por hecho que el navegador tenía el archivo en la mano.** Una presentación restaurada no trae archivo, así que cada ruta que lo reenvía necesitaba un segundo camino.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Parecían ocho endpoints que tocar. Medirlo antes de construir cambió el tamaño del problema.",
+      },
+      {
+        tipo: "figura",
+        figura: "un-solo-sitio",
+        pie: "Los ocho ya entraban por la misma función. El cambio fue una función, no ocho.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y esa única puerta se convirtió en algo mejor que un ahorro de trabajo: es **el punto donde se impone la propiedad**. Lo que no pasa por ahí no puede leer un documento guardado. Un endpoint nuevo que olvidara comprobarla tampoco podría cargar nada.",
+      },
+
+      { tipo: "encabezado", texto: "Quién guardó qué no cabe en el contrato" },
+      {
+        tipo: "prosa",
+        texto:
+          "La tentación evidente es meter un identificador de usuario en la presentación. Es un campo, y ya está.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "**El contrato viaja a los modelos.** La presentación es el cuerpo de las peticiones de narración y de ilustraciones. Un identificador de usuario dentro de ella acabaría dentro de un prompt por una ruta perfectamente normal, sin que nadie hiciera nada raro.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "La propiedad no es una propiedad del resultado: es del acto de guardarlo.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Así que vive en la base de datos y nunca en el contrato. El contenido se guarda como un bloque opaco con un número de versión del contrato — que no es ceremonia: **el contrato cambió dos veces en un mes**, al añadir el momento del audio y la región del PDF, y sin ese campo el primer cambio habría dejado ilegible todo lo ya guardado.",
+      },
+
+      { tipo: "encabezado", texto: "Decisiones de infraestructura, con su motivo" },
+      {
+        tipo: "tabla",
+        cabeceras: ["Decisión", "Por qué, y qué se descartó"],
+        filas: [
+          ["SQLite con migraciones numeradas, sin ORM", "un servidor que hay que levantar antes de cada sesión es una pieza más que puede fallar delante del participante; y seis tablas no justifican un ORM que además arrastraría su propio modelo de usuario"],
+          ["Sesiones en la base, no un token firmado", "un token guardado se puede revocar: cerrar sesión borra la fila y deja de valer en el acto. Con un token firmado haría falta una lista negra, que es la misma tabla con más pasos"],
+          ["Contraseñas con argon2, cookie HttpOnly", "innegociable aunque sea un prototipo: la cookie es lo que impide que un ataque de script se lleve la sesión"],
+          ["Documentos direccionados por su contenido", "dos personas que suban el mismo PDF comparten fila y bytes sin coordinación; los bytes van a disco, no a la base"],
+          ["La carpeta de datos, fuera de la nube sincronizada", "un servicio de sincronización escribiendo encima de una base SQLite en caliente la corrompe"],
+        ],
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y lo que la autenticación **no** lleva, dicho en vez de omitido: sin verificación de correo, sin recuperar contraseña, sin segundo factor y sin límite de intentos. Es autenticación de prototipo y conviene llamarla así.",
+      },
+
+      { tipo: "encabezado", texto: "El modo invitado no es una cortesía" },
+      {
+        tipo: "prosa",
+        texto:
+          "**Sin cuenta la aplicación funciona exactamente igual que antes.** No es amabilidad: las sesiones de evaluación del capítulo 12 corren sin login, y si entrar se volviera obligatorio, esa evaluación se rompe. Entrar añade *guardar y volver*; no habilita usar el sistema.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Eso es fácil de romper sin enterarse. Añadir la dependencia de usuario a un endpoint es un cambio de una línea, y no se nota probando a mano **porque quien prueba suele estar dentro**. Por eso hay un test que recorre el árbol de dependencias de cada ruta y fija la lista exacta de las que exigen cuenta: hoy, solo la biblioteca.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La telemetría tampoco se ató a las cuentas, y el motivo es el consentimiento: promete anonimato por etiqueta de participante. Atarla a una cuenta la volvería identificable y contradiría lo ya prometido a quien firmó. Hay tres pruebas que comprueban que la ingesta no recibe identidad de usuario.",
+      },
+
+      { tipo: "encabezado", texto: "Dos fallos que solo aparecieron usándolo" },
+      {
+        tipo: "prosa",
+        texto:
+          "Pulsar «Guardar» dos veces creaba **dos presentaciones**. Deshabilitar el botón no habría servido, y el motivo es interesante: las ilustraciones del capítulo 8 llegan *después* de guardar, así que volver a pulsar es legítimo. Ahora, si lo que hay en pantalla ya está guardado, se completa en vez de duplicar.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El segundo es el mejor ejemplo de todo este relato. Una presentación con ilustraciones **no se podía guardar**: devolvía un error. El contenido viajaba como un campo de formulario, y el framework topa esos campos en un megabyte; las ilustraciones son imágenes incrustadas, de varios megabytes. Ahora viaja como parte de archivo, que no tiene ese tope.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "Llevaba roto desde que la biblioteca existe, y ningún test podía haberlo encontrado: todos mandaban cargas de unos cientos de bytes.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La suite estaba verde todo el tiempo. Lo encontró usar la aplicación con un documento real, que es lo que ninguna prueba automática sustituye del todo — y la razón por la que en este proyecto cada hito termina delante del sistema corriendo.",
+      },
+    ],
   },
   {
     slug: "lo-que-no-se-hizo",
@@ -969,7 +1371,104 @@ export const CAPITULOS: Capitulo[] = [
     hitos: "Todo el proyecto",
     conclusion:
       "La lista completa de limitaciones declaradas. Es el capítulo que sostiene a los trece anteriores.",
-    bloques: [],
+    bloques: [
+      {
+        tipo: "prosa",
+        texto:
+          "Trece capítulos diciendo que un sistema debe declarar lo que no puede probar se quedan en retórica si no hay un sitio donde esté la lista. Este es ese sitio, y es el capítulo que sostiene a los otros trece.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Nada de lo que viene es una sorpresa: todo estaba dicho en su capítulo. Lo que hace este es ponerlo junto, donde se pueda leer de una vez y sin buscarlo.",
+      },
+
+      { tipo: "encabezado", texto: "Lo que la atribución no alcanza" },
+      {
+        tipo: "prosa",
+        texto:
+          "Solo con un **texto** la palabra «comprobada» es literal. Con un PDF con capa de texto te queda un recuadro sobre la frase; con una grabación, el segundo exacto; con una **imagen**, la cita y ningún sitio al que ir.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Un **PDF escaneado** te deja en la página y ahí se queda: señalar la frase pediría reconocer el texto dentro de la imagen, y eso no se hace. Y hay un caso raro y real: en una página rotada 90 grados, el extractor devuelve los renglones en orden inverso al visual, así que una cita de varias líneas **degrada a fidelidad de página** en vez de recuadrarse. Sin resolver.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "En audio, la fidelidad es al **momento**, no a la palabra: no hay verificación contra la señal. Y sigue en pie el pendiente de fondo: verificar de verdad un contenido binario contra su fuente. Localizar ya se hace; **localizar no es verificar**.",
+      },
+
+      { tipo: "encabezado", texto: "Lo que se midió poco, o no se midió" },
+      {
+        tipo: "tabla",
+        cabeceras: ["Qué", "En qué estado está"],
+        filas: [
+          ["Las sesiones con usuarios", "sin correr: el cuestionario y la prueba de comprensión están diseñados, la tubería de datos funciona, las personas faltan"],
+          ["El experimento de RAG", "tres documentos, treinta preguntas, una sola repetición: sin medida de varianza, y el juez es de la misma familia que el generador"],
+          ["La batería de imágenes", "seis casos por tanda: orientativo, no establecido"],
+          ["La evaluación del audio", "ocho clips y una repetición: son señales, no tasas"],
+          ["El fallback de estructuración", "verificado solo a nivel de cableado: nunca se forzó un fallo del primario de punta a punta"],
+          ["La verificación semántica de gráficos", "implementada y probada con modelo simulado; no confirmada con el real"],
+        ],
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La fila más importante es la primera. Todo lo que este relato afirma sobre diseño es **criterio**, no evidencia de uso. Que la aplicación sea más fácil de entender, o que la gente de verdad abra las fuentes para comprobar, no está demostrado por nada de lo aquí escrito.",
+      },
+
+      { tipo: "encabezado", texto: "Capacidades que existen y no se ejercitaron" },
+      {
+        tipo: "prosa",
+        texto:
+          "No es lo mismo que fallaron. En la anotación de audio hay dos campos —qué cifras quedan en riesgo y si algo resulta ininteligible— que **nunca se activaron**: tras dos grabaciones no se consiguió un caso donde el ruido volviera una cifra ininteligible para los modelos, y forzarlo habría exigido un clip que ya no representa el caso de uso.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y el contrapeso del audio, que es un fallo real y está señalado sin cuantificar: **bajo ruido, una sola voz puede reportarse como dos**, y con confianza alta. Es la primera candidata a atender si esa pieza se amplía.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Lo mismo con el bucle completo de chat sobre una grabación en la interfaz: los tres endpoints se verificaron contra los modelos reales y el reenvío está cubierto por pruebas, pero **el recorrido entero no se miró a ojo**.",
+      },
+
+      { tipo: "encabezado", texto: "Topes y alcances declarados" },
+      {
+        tipo: "prosa",
+        texto:
+          "El audio tiene un tope de **quince minutos**, y no es un número redondo: lo fija el techo de salida del modelo que escucha, medido en unos 18,5 minutos. Pasar de ahí exige trocear el audio en ventanas y unir anotaciones, con sus propias preguntas sin respuesta todavía — la continuidad de los hablantes, los tiempos globales.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La autenticación es de prototipo: sin verificación de correo, sin recuperar contraseña, sin segundo factor, sin límite de intentos. La biblioteca **no se pagina**. Hay un tipo de gráfico, la dispersión, que no se puede dibujar porque los datos se modelan como categorías y series, no como pares de coordenadas. Y la composición de varios tipos dentro de una sección es especificación escrita, no código.",
+      },
+
+      { tipo: "encabezado", texto: "Qué sostiene esto" },
+      {
+        tipo: "prosa",
+        texto:
+          "Mirado de golpe, el patrón que más se repite en estos catorce capítulos no es una decisión técnica: es **medir antes de construir, y volver a medir contra el sistema corriendo**.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Eso quitó tres piezas de arquitectura en el capítulo 6, cambió el modo de salida del agente en el 9, desmontó una hipótesis razonable sobre los prompts en el 8, encontró un instrumento roto en el 12, y convirtió ocho endpoints en una función en el 13. Y las cuatro cosas que ninguna suite verde encontró —el buffer del proxy, el contador que se reiniciaba, el tope de un megabyte, el cálculo del punto de equilibrio— aparecieron todas usando el sistema o releyendo los datos crudos.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "Una suite en verde dice que lo que probaste funciona. No dice nada de lo que no se te ocurrió probar.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Por eso esta lista existe, y por eso cada capítulo termina diciendo lo que no alcanzó. Un sistema que presume de trazabilidad y esconde sus límites está haciendo exactamente lo que dice combatir.",
+      },
+    ],
   },
 ];
 
