@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight, X } from "@phosphor-icons/react";
 import { AuthForm } from "@/components/shell/AuthForm";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
@@ -74,7 +75,7 @@ export function Landing({ onEntrar }: { onEntrar: () => void }) {
         </div>
       </footer>
 
-      {acceso ? <DialogoAcceso onCerrar={() => setAcceso(false)} onDentro={onEntrar} /> : null}
+      {acceso ? <DialogoAcceso onCerrar={() => setAcceso(false)} /> : null}
     </div>
   );
 }
@@ -186,7 +187,8 @@ function Cierre({ onInvitado }: { onInvitado: () => void }) {
  * El acceso, sobre la portada. Reusa `AuthForm`, el mismo del cajón de cuenta: una copia aquí
  * habría divergido de la otra en silencio, que es la peor forma de divergir.
  */
-function DialogoAcceso({ onCerrar, onDentro }: { onCerrar: () => void; onDentro: () => void }) {
+function DialogoAcceso({ onCerrar }: { onCerrar: () => void }) {
+  const router = useRouter();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
@@ -216,7 +218,10 @@ function DialogoAcceso({ onCerrar, onDentro }: { onCerrar: () => void; onDentro:
           </button>
         </div>
         <div className="mt-5">
-          <AuthForm onUsuario={() => onDentro()} />
+          {/* Entrar desde la portada lleva a la biblioteca, no al área de trabajo en blanco: si
+              tienes cuenta, lo que vienes a buscar es lo tuyo. «Probar como invitado» sigue
+              entrando directo, que es el camino del Hito 8. */}
+          <AuthForm onUsuario={() => router.push("/biblioteca")} />
         </div>
       </div>
     </div>

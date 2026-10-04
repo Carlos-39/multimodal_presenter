@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Books } from "@phosphor-icons/react";
 import { AppShell } from "@/components/shell/AppShell";
 import { Workspace } from "@/components/shell/Workspace";
 import { ChatPanel } from "@/components/shell/ChatPanel";
@@ -88,6 +91,7 @@ type ModeBucket = DetailLevel | "deck";
  * alguien añada después habría que acordarse de limpiarlo en dos sitios.
  */
 export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
+  const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -743,6 +747,17 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
       deckOpen={deckOpen}
       acciones={
         <>
+          {/* La biblioteca, con su sitio en el núcleo fijo y no enterrada en el cajón. Solo
+              aparece con cuenta: para un invitado sería una promesa que no puede cumplir. */}
+          {usuario ? (
+            <Link
+              href="/biblioteca"
+              className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-foreground-secondary transition-colors hover:border-border-strong hover:text-foreground"
+            >
+              <Books size={13} aria-hidden />
+              Biblioteca
+            </Link>
+          ) : null}
           {hasContent && usuario ? (
             <button
               type="button"
@@ -890,7 +905,13 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
         <div className="drawer-enter h-full w-80 max-w-[85vw] border-l border-border shadow-2xl">
           <AccountPanel
             usuario={usuario}
-            onUsuario={setUsuario}
+            onUsuario={(u) => {
+              setUsuario(u);
+              // Al ENTRAR se aterriza en la biblioteca, no de vuelta en el área de trabajo: lo
+              // primero que quiere ver quien acaba de identificarse es lo suyo. Solo al pasar de
+              // fuera a dentro — cerrar sesión deja donde estabas, que es lo correcto.
+              if (u) router.push("/biblioteca");
+            }}
             onAbrir={(id) => void restaurar(id)}
             onBorrada={(id) => {
               // Si se borró la que se está viendo, ya no hay dónde guardar su conversación. Sin
