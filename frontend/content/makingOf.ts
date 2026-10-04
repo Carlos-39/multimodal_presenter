@@ -473,7 +473,147 @@ export const CAPITULOS: Capitulo[] = [
     hitos: "Hito 7",
     conclusion:
       "A escala de documento gana el camino simple. Y el punto de equilibrio que publiqué primero estaba mal.",
-    bloques: [],
+    bloques: [
+      {
+        tipo: "prosa",
+        texto:
+          "El capítulo 5 defiende releer el documento entero en cada pregunta. Es lo contrario de lo que casi todo el mundo construye: lo normal es trocear el documento, indexarlo y recuperar solo los trozos que parecen relevantes. A eso se le llama RAG, y a la versión con grafo de conceptos, GraphRAG.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "No bastaba con razonarlo. Se montó un experimento aparte del producto para medirlo, con una regla escrita antes de empezar: **si un sistema rinde peor, se reporta tal cual; nada se ajusta para que gane el que querríamos que ganara.**",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Cuatro condiciones con el mismo generador y el mismo prompt — solo cambia de dónde sale el contexto. Tres documentos de 15, 47 y 98 páginas, treinta preguntas, ==120 corridas, cero errores==.",
+      },
+
+      { tipo: "encabezado", texto: "En calidad gana el camino simple" },
+      {
+        tipo: "tabla",
+        cabeceras: ["Condición", "exactitud", "recuperación"],
+        filas: [
+          ["Línea base · el documento entero", "0,987", "ve todo"],
+          ["RAG vectorial multimodal", "0,953", "0,889"],
+          ["LightRAG naive", "0,553", "0,370"],
+          ["LightRAG con grafo", "0,323", "0,167"],
+        ],
+        nota: "Exactitud media sobre 30 preguntas, ya con el dataset corregido. Un juez automático de la misma familia que el generador, que es una limitación declarada más abajo.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El RAG vectorial queda cerca y es una alternativa viable. El del grafo queda lejos, y hay una explicación que no lo deja peor de lo que es: su contexto sintetizado mapea mal a las páginas originales, así que su puntuación está **confundida con un fallo de recuperación** y no es solo un juicio sobre su razonamiento.",
+      },
+
+      { tipo: "encabezado", texto: "Y en coste la respuesta es otra" },
+      {
+        tipo: "prosa",
+        texto:
+          "Aquí es donde publiqué una cifra equivocada. La primera versión decía que indexar **solo se amortiza tras unas 267 preguntas por documento**: un umbral tan alto que daba a entender que el camino simple era además siempre el más barato.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Estaba mal por dos órdenes de magnitud, y al revés justo donde la pregunta importa. Tres errores encadenados, y ninguno era de medición: los datos crudos estaban bien.",
+      },
+      {
+        tipo: "tabla",
+        cabeceras: ["El error", "Qué hacía"],
+        filas: [
+          ["Mezclar escalas", "comparaba la indexación de LOS TRES documentos contra un ritmo de preguntas de UNO"],
+          ["Coste equivocado", "usaba la indexación total, dominada por el grafo, que el RAG vectorial no necesita para nada"],
+          ["Promedio global", "un único coste por pregunta, cuando varía 4× según el tamaño del documento"],
+        ],
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La raíz del tercero es lo que de verdad enseña este capítulo. **El coste por pregunta de la línea base escala con el documento**, porque manda el documento completo aunque esté cacheado. El del RAG vectorial es plano: recupera unas pocas páginas, mida lo que mida el original. Dos pendientes distintas se cruzan.",
+      },
+      {
+        tipo: "figura",
+        figura: "equilibrio",
+        pie: "Las tres mediciones reales. Por debajo del cruce la línea base es más barata por pregunta; por encima lo es el vectorial, y su índice cuesta céntimos.",
+      },
+      {
+        tipo: "tabla",
+        cabeceras: ["Documento", "páginas", "base $/preg", "vectorial $/preg", "se amortiza en"],
+        filas: [
+          ["Attention", "15", "0,0277", "0,0484", "nunca: la base ya es más barata"],
+          ["Juan Valdez", "47", "0,0742", "0,0480", "~1,2 preguntas"],
+          ["Decreto 1016", "98", "0,1045", "0,0582", "~1,7 preguntas"],
+        ],
+        nota: "Recalculado desde los 120 registros crudos, sin regenerar nada y sin llamar a ninguna API: `experiments/breakeven.py` lo reproduce entero. El caché funcionó —27 de las 30 preguntas de la línea base LEYERON caché— así que son costes de uso real, no inflados.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "No era un umbral de 267 preguntas: era una o dos, en cuanto el documento pasa de unas 30 páginas.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "**Esto corrige la conclusión, no solo una cifra.** La afirmación de que el camino simple era también el más barato hasta un umbral inalcanzable no se sostiene para documentos de 47 páginas o más.",
+      },
+
+      { tipo: "encabezado", texto: "Por qué la decisión se mantiene igual" },
+      {
+        tipo: "prosa",
+        texto:
+          "El sistema trabaja con documentos de 10 a 100 páginas, de forma conversacional, con pocas preguntas por documento y en una sola sesión. Ahí la diferencia de coste son céntimos, y la de exactitud —0,987 contra 0,953— se nota en cada respuesta.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Así que se elige el camino simple **por calidad y por simplicidad, no por coste**. Y decirlo así es más defendible que apoyarse en un umbral que no existía.",
+      },
+
+      { tipo: "encabezado", texto: "Y una auditoría del propio dataset" },
+      {
+        tipo: "prosa",
+        texto:
+          "Más tarde se auditaron las treinta preguntas contra los tres PDF. Lo que apareció fue que **la pasada de validación manual que el propio dataset anunciaba en su cabecera nunca se había ejecutado**, y cinco marcadores de «(VALIDAR)» llegaron literalmente al generador y al juez como si fueran contenido.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "De ahí salieron dos problemas con impacto medido. El primero es metodológico y es el más interesante: **la métrica de las preguntas sin respuesta premiaba el fallo de recuperación.** El juez solo comprobaba que el sistema dijera «no está en el documento», sin comprobar que hubiera buscado. Medido: el modo grafo sacó un 1,0 perfecto en dos preguntas **recuperando cero páginas** — su peor modo de fallo, disfrazado de acierto.",
+      },
+      {
+        tipo: "cita",
+        texto:
+          "«No recuperé nada, luego no está» no puede puntuar igual que «recuperé y verifiqué la ausencia».",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "El segundo era un *gold* falso: una pregunta sobre una gráfica de barras afirmaba que la compañía estaba por encima del promedio, cuando la gráfica muestra tres dimensiones por encima, una por debajo y una empatada. **Penalizaba a tres de los cuatro sistemas por leer la gráfica bien.**",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Se re-juzgaron solo ==16 registros== de 120, sin regenerar una sola respuesta: lo que cambió fue el criterio y el *gold*, no lo que dijeron los sistemas. Costó ==$0,0137==, frente a los $9,65 del experimento entero.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "**El orden no cambió** — base, vectorial, naive, grafo — pero la corrección honestiza la historia en las dos direcciones: el empate de todos en las preguntas sin respuesta era un artefacto de la métrica, y la penalización en las preguntas visuales la producía un *gold* equivocado y no los sistemas.",
+      },
+
+      { tipo: "encabezado", texto: "Lo que este experimento no demuestra" },
+      {
+        tipo: "prosa",
+        texto:
+          "Las amenazas a la validez van aparte y ninguna se esconde: **una sola repetición**, así que no hay medida de varianza; el juez es de la misma familia que el generador y no de otro proveedor; la muestra es pequeña —tres documentos, treinta preguntas— y señala tendencias sin cerrar el tema; el documento de 98 páginas hubo que comprimirlo para entrar en el límite del proveedor.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y una tensión que vale la pena nombrar porque contradice al capítulo 2: para indexar con grafo **hubo que aplanar las páginas a texto**. Solo en el índice; la respuesta final nunca ve texto aplanado. Pero es aplanar, y está dicho.",
+      },
+    ],
   },
   {
     slug: "audio",
@@ -641,7 +781,135 @@ export const CAPITULOS: Capitulo[] = [
     hitos: "5g · 5h · 5j · diagnóstico de imágenes",
     conclusion:
       "El sistema genera ilustraciones, diapositivas y narración, y ninguna puede confundirse con el documento.",
-    bloques: [],
+    bloques: [
+      {
+        tipo: "prosa",
+        texto:
+          "Hasta aquí todo lo que el sistema produce sale del documento y se puede rastrear hasta una frase. Tres piezas rompen eso a propósito: una ilustración dibujada, una presentación con su propio guion, y una narración en voz. Ninguna de las tres está en el original.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La decisión de Fase 2 era tajante: **el sistema NO genera imágenes nuevas**, porque chocaría con la trazabilidad. Esa decisión se reabrió, y conviene decirlo así en vez de presentarla como si nunca hubiera existido.",
+      },
+
+      { tipo: "encabezado", texto: "Reabrir una decisión, con condiciones" },
+      {
+        tipo: "prosa",
+        texto:
+          "Se modificó de forma acotada: se genera una ilustración **solo** si el documento de esa sección no trae imagen propia, si el contenido se beneficia de verdad de un apoyo visual —un proceso físico, un mecanismo espacial— y entendiendo que es una ayuda didáctica y nunca una prueba. El motivo real es simple: hay documentos que no traen una sola imagen.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La salvaguarda no es una etiqueta de buena voluntad, es **una imposibilidad estructural**, y salió de un hallazgo al diseñar el esquema. Toda `Section` tiene fuente obligatoria, así que meter la ilustración como un tipo más del contenido le habría dado fuente — es decir, la habría hecho confundible con contenido verificado.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La solución fue dejarla **fuera de la unión**: un campo opcional aparte, de un tipo que **no tiene campo de fuente en absoluto**. No es que su atribución esté vacía; es que no se puede escribir. Y lleva una etiqueta fija en el propio tipo, no en la interfaz: «Ilustración de apoyo (generada, no proviene del documento)».",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "Lo que no puede tener fuente no puede fingir que la tiene. Es el capítulo 1 otra vez, cuatro hitos después.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y un techo: la rúbrica decide cuántas, pero hay un **tope de seguridad de 4 por documento** en el código, que acota el peor caso de coste. En la práctica la rúbrica da una o dos. Verificado con un documento sobre la formación del granizo: marcó solo la sección del proceso y **excluyó la conceptual**.",
+      },
+
+      { tipo: "encabezado", texto: "El texto dentro de las imágenes, y la hipótesis que falló" },
+      {
+        tipo: "prosa",
+        texto:
+          "Había una regla desde el principio: las imágenes se generan **sin texto**, y las etiquetas viven en el HTML, donde se pueden leer y traducir. Aun así seguían apareciendo palabras inventadas dentro de las ilustraciones: «Flcn», «Nirrequco Nǫrecdearo dnandadl».",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Lo primero fue comprobar que la regla estuviera aplicada, antes de medir nada. Lo estaba, **en las tres capas**: en el clasificador, en el bloque de estilo y en la instrucción negativa del proveedor. Así que el problema no era una regla olvidada sino cómo estaba formulada — y se encontraron cinco debilidades que se suman.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La más interesante: **se pedía un «diagrama»**, que es el único género que en los datos de entrenamiento lleva etiquetas siempre. Se pedía justo la cosa que implica texto y después se prohibía el texto. A eso se sumaban la instrucción en español cuando el proveedor recomienda inglés, la prohibición enterrada tras sesenta palabras, y la palabra «legibilidad» en la misma frase que prohíbe las letras.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Se arreglaron los cinco a la vez y se volvió a medir con seis contenidos, usando los prompts que genera el clasificador real y no escritos a mano.",
+      },
+      {
+        tipo: "figura",
+        figura: "tandas-imagen",
+        pie: "Las dos primeras filas son idénticas: cinco cambios razonados en la instrucción no movieron la tasa.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "No es que la instrucción estuviera mal escrita: el modelo la ignora con una frecuencia que no baja reformulándola.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La hipótesis barata se probó y se descartó con datos, que es para lo que sirve medir. Lo que sí movió la aguja fue **cambiar de proveedor**: el mismo prompt, en otro modelo, salió limpio — y el caso que en el primero salía lleno de garabatos salió además mejor dibujado. De paso resultó más barato que el que estaba, y sin clave nueva.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La honestidad estadística va pegada: **seis casos por tanda**. Un 3 de 6 frente a un 0 de 6 es orientativo, no establecido. Lo que lo sostiene es que la evidencia cualitativa apunta igual y que el peor caso se reprodujo dos veces.",
+      },
+
+      { tipo: "encabezado", texto: "La regla se apretó, y eso desmintió el resultado" },
+      {
+        tipo: "prosa",
+        texto:
+          "Al revisar la batería apareció algo que el diagnóstico no había visto. **No basta con que no haya texto.** Una imagen con pasos numerados, o con letras clave, o con líneas guía, remite a una leyenda que no existe — y eso deja **peor** a quien no conoce el tema que no poner nada, porque se pone a buscar una explicación que no está en ninguna parte.",
+      },
+      {
+        tipo: "cita",
+        texto:
+          "La imagen debe entenderse sola; nada dentro de ella puede remitir a información que no esté dentro de ella.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y eso **corrigió el resultado de esta misma investigación**. La imagen del café que se había contado como válida numeraba los pasos del (1) al (7), así que no lo era: el proveedor nuevo pasó de 0 de 6 a ==1 de 6== bajo el criterio correcto. Con la regla reescrita y los clasificadores prohibidos de pedir pasos numerados, la misma batería dio ==0 de 6==, y el caso del café muestra ahora la secuencia colocando las etapas en orden con flechas.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "**Residuo honesto:** en el caso de la tormenta quedaron unas marcas de escala sin valores en el borde. Es la misma categoría de referencia huérfana, mucho menos dañina que una palabra inventada, pero no es cero absoluto y no se cuenta como si lo fuera.",
+      },
+
+      { tipo: "encabezado", texto: "Las otras dos, y lo que cuestan" },
+      {
+        tipo: "prosa",
+        texto:
+          "La presentación en diapositivas y la narración en voz son la misma idea terminando en dos sitios: una síntesis didáctica del documento, escrita **desde el original** y no desde el resumen ya generado — por el mismo motivo del capítulo 5.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Hay además una vista de diapositivas que **no genera nada**: recompone las secciones ya verificadas, con su misma atribución, y cuesta cero. Son dos cosas distintas y llevan nombres distintos, porque confundirlas sería confundir lo trazable con lo generado.",
+      },
+      {
+        tipo: "tabla",
+        cabeceras: ["Lo que produce", "coste real"],
+        filas: [
+          ["Una narración completa, guion y voz", "0,0455"],
+          ["Una ilustración de apoyo", "0,167"],
+          ["Una presentación generada entera", "0,52"],
+          ["La vista de diapositivas de lo ya generado", "0"],
+        ],
+        nota: "En dólares, medido. Todo se cachea por documento: volver a pedir lo mismo no regenera nada.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Las tres se piden a mano y ninguna corre sola al abrir un documento. Un sistema que genera por su cuenta cosas que no están en la fuente es exactamente lo que este proyecto se pasa catorce capítulos evitando.",
+      },
+    ],
   },
   {
     slug: "streaming",
