@@ -204,42 +204,10 @@ body {
   animation: skeleton-sweep 1.6s ease-in-out infinite;
 }
 
-@keyframes progress-slide {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(350%);
-  }
-}
-
-.progress-indeterminate {
-  position: relative;
-  height: 2px;
-  overflow: hidden;
-  border-radius: 1px;
-  background: var(--border);
-}
-
-.progress-indeterminate::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  width: 40%;
-  background: var(--accent);
-  animation: progress-slide 1.4s ease-in-out infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;
     background-image: none;
-  }
-
-  .progress-indeterminate::after {
-    animation: none;
-    width: 100%;
-    opacity: 0.5;
   }
 }
 
@@ -527,6 +495,37 @@ body {
   animation-play-state: paused;
 }
 
+/*
+ * La espera larga: ocho celdas dando una vuelta.
+ *
+ * Es indeterminada A PROPÓSITO. Generar una presentación no avisa de por dónde va, así que una
+ * barra que se llena sería una promesa inventada —justo lo contrario del puntico del carrusel y de
+ * la mecha, que recorren un tiempo que SÍ se conoce—. Lo único cierto aquí es que sigue viva y
+ * cuánto llevas esperando, y eso es lo que se enseña.
+ *
+ * Cada celda se enciende con su retraso y se apaga antes de que acabe el ciclo, así que lo que
+ * recorre el borde es una cola de dos o tres y no un punto suelto: la diferencia entre algo que
+ * gira y algo que avanza.
+ */
+@keyframes espera-vuelta {
+  0%,
+  100% {
+    opacity: 0.16;
+  }
+  12%,
+  30% {
+    opacity: 1;
+  }
+  48% {
+    opacity: 0.16;
+  }
+}
+.espera-celda {
+  opacity: 0.16;
+  animation: espera-vuelta var(--espera-ciclo) linear infinite;
+  animation-delay: var(--espera-retraso);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .revelar,
   .revelar[data-visible="true"] {
@@ -556,6 +555,13 @@ body {
   .cuenta[data-contando="true"] {
     animation: none;
     transform: scaleX(1);
+  }
+  /* La vuelta se para y queda el anillo quieto: quien lleva la señal de vida es el reloj, que
+     sigue contando. Mismo reparto que en la mecha, donde el número aguanta lo que la animación
+     deja de decir. */
+  .espera-celda {
+    animation: none;
+    opacity: 0.4;
   }
 }
 

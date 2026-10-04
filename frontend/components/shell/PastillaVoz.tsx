@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { CircleNotch, Microphone, Stop } from "@phosphor-icons/react";
+import { formatTimestamp } from "@/lib/audio";
 import type { VoiceStatus } from "@/hooks/useVoiceInput";
 
 /**
@@ -54,8 +55,7 @@ export function PastillaVoz({ estado, nivel, onToggle, disabled = false }: Pasti
       // Cronómetro: se escribe directo al DOM. Un `setState` cada 100 ms volvería a renderizar el
       // panel del chat entero mientras se graba.
       if (reloj.current) {
-        const s = Math.floor((ahora - desde) / 1000);
-        const texto = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+        const texto = formatTimestamp((ahora - desde) / 1000);
         if (reloj.current.textContent !== texto) reloj.current.textContent = texto;
       }
 
