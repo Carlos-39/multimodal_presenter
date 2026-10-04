@@ -36,7 +36,11 @@ export type FiguraId =
   | "isomorfismo"
   | "cache-chat"
   | "equilibrio"
-  | "tandas-imagen";
+  | "tandas-imagen"
+  | "troceo"
+  | "umbrales"
+  | "orden-seq"
+  | "un-solo-sitio";
 
 export type Bloque =
   | { tipo: "prosa"; texto: string }

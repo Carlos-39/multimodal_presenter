@@ -7,8 +7,12 @@ import { Equilibrio } from "./figuras/Equilibrio";
 import { EscaleraFidelidad } from "./figuras/EscaleraFidelidad";
 import { HuecoContrato } from "./figuras/HuecoContrato";
 import { Isomorfismo } from "./figuras/Isomorfismo";
+import { OrdenSeq } from "./figuras/OrdenSeq";
 import { PipelineAudio } from "./figuras/PipelineAudio";
 import { TandasImagen } from "./figuras/TandasImagen";
+import { Troceo } from "./figuras/Troceo";
+import { Umbrales } from "./figuras/Umbrales";
+import { UnSoloSitio } from "./figuras/UnSoloSitio";
 
 /** El mapa está aquí y no en cada capítulo: el contenido nombra la figura, no la importa. */
 const FIGURAS: Record<FiguraId, () => React.ReactElement> = {
@@ -20,6 +24,10 @@ const FIGURAS: Record<FiguraId, () => React.ReactElement> = {
   "cache-chat": CacheChat,
   equilibrio: Equilibrio,
   "tandas-imagen": TandasImagen,
+  troceo: Troceo,
+  umbrales: Umbrales,
+  "orden-seq": OrdenSeq,
+  "un-solo-sitio": UnSoloSitio,
 };
 
 /**
