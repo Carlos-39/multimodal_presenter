@@ -5,9 +5,9 @@ import Link from "next/link";
 import { ArrowRight, X } from "@phosphor-icons/react";
 import { AuthForm } from "@/components/shell/AuthForm";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
-import { Artefacto } from "./Artefacto";
 import { Carrusel } from "./Carrusel";
 import { ComoFunciona } from "./ComoFunciona";
+import { Demostracion } from "./Demostracion";
 import { Preguntas } from "./Preguntas";
 
 /**
@@ -77,50 +77,56 @@ export function Landing({ onEntrar }: { onEntrar: () => void }) {
   );
 }
 
+/**
+ * El héroe, a una sola columna y con la demostración a lo ancho.
+ *
+ * Estuvo en dos columnas mientras el visual era una ilustración estrecha. La demostración son dos
+ * paneles —el documento y lo que la aplicación escribe— y en media pantalla cada panel quedaba en
+ * 300 px: se lee peor justo donde hay que leer. A lo ancho cada panel tiene el doble, y el titular
+ * conserva su medida en vez de partirse en cinco líneas para dejarle hueco.
+ */
 function Hero({ onInvitado, onAcceso }: { onInvitado: () => void; onAcceso: () => void }) {
   return (
-    <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-16 lg:grid-cols-[1.15fr_minmax(0,24rem)] lg:gap-14 lg:pt-24">
-      <div>
-        {/* Dos líneas en escritorio. La medida y la escala se eligen JUNTAS: con una medida
-            estrecha y 56 px el titular caía en cinco líneas, que siempre es un error de tamaño. */}
-        <h1
-          className="surgir max-w-[32ch] font-serif text-[2.25rem] leading-[1.15] text-foreground sm:text-[2.5rem] lg:text-[2.75rem]"
-          style={{ animationDelay: "0.05s" }}
+    <section className="mx-auto max-w-6xl px-5 pb-20 pt-14 lg:pt-20">
+      <h1
+        className="surgir max-w-[32ch] font-serif text-[2.25rem] leading-[1.15] text-foreground sm:text-[2.5rem] lg:text-[2.75rem]"
+        style={{ animationDelay: "0.05s" }}
+      >
+        Entiende un documento difícil. Comprueba cada frase.
+      </h1>
+      <p
+        className="surgir mt-5 max-w-[52ch] font-serif text-[1.0625rem] leading-[1.65] text-foreground-secondary"
+        style={{ animationDelay: "0.2s" }}
+      >
+        Sube un PDF, una grabación o un texto. Cada frase de la explicación te lleva al punto
+        exacto del original.
+      </p>
+      <div
+        className="surgir mt-7 flex flex-wrap items-center gap-3"
+        style={{ animationDelay: "0.3s" }}
+      >
+        <button
+          type="button"
+          onClick={onInvitado}
+          className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
         >
-          Entiende un documento difícil. Comprueba cada frase.
-        </h1>
-        <p
-          className="surgir mt-6 max-w-[48ch] font-serif text-[1.0625rem] leading-[1.65] text-foreground-secondary"
-          style={{ animationDelay: "0.2s" }}
+          Probar como invitado
+        </button>
+        <button
+          type="button"
+          onClick={onAcceso}
+          className="rounded-md border border-border px-5 py-2.5 text-sm text-foreground-secondary transition-colors hover:border-border-strong hover:text-foreground"
         >
-          Sube un PDF, una grabación o un texto. Cada frase de la explicación te lleva al punto
-          exacto del original.
-        </p>
-        <div
-          className="surgir mt-8 flex flex-wrap items-center gap-3"
-          style={{ animationDelay: "0.35s" }}
-        >
-          <button
-            type="button"
-            onClick={onInvitado}
-            className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
-          >
-            Probar como invitado
-          </button>
-          <button
-            type="button"
-            onClick={onAcceso}
-            className="rounded-md border border-border px-5 py-2.5 text-sm text-foreground-secondary transition-colors hover:border-border-strong hover:text-foreground"
-          >
-            Entrar
-          </button>
-        </div>
-        <p className="surgir mt-4 text-xs text-muted" style={{ animationDelay: "0.45s" }}>
-          Sin cuenta funciona todo. Entrar sirve para guardar y volver.
-        </p>
+          Entrar
+        </button>
       </div>
+      <p className="surgir mt-4 text-xs text-muted" style={{ animationDelay: "0.4s" }}>
+        Sin cuenta funciona todo. Entrar sirve para guardar y volver.
+      </p>
 
-      <Artefacto />
+      <div className="mt-11">
+        <Demostracion />
+      </div>
     </section>
   );
 }
