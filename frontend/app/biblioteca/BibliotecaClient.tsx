@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, FileAudio, FilePdf, FileText, Image as ImageIcon, Plus } from "@phosphor-icons/react";
 import type { ResumenPresentacion, Usuario } from "@/lib/account";
@@ -8,7 +8,8 @@ import { borrarPresentacion, misPresentaciones, quienSoy } from "@/lib/account";
 import type { SourceKind } from "@/lib/types";
 import { fechaRelativa } from "@/lib/fechas";
 import { AuthForm } from "@/components/shell/AuthForm";
-import { BotonMecha } from "@/components/shell/BotonMecha";
+import { BotonMecha, type MechaHandle } from "@/components/shell/BotonMecha";
+import { FilaDeslizable } from "@/components/shell/FilaDeslizable";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
 
 /**
@@ -186,6 +187,9 @@ function SinCuenta({ onDentro }: { onDentro: () => void }) {
  * mismo, sobre la cosa que va a desaparecer, y mientras tanto la tarjeta se atenúa y deja de
  * abrirse: ya está medio ida. Un «¿seguro?» pregunta antes de que pase nada y se contesta que sí
  * sin leerlo; esto deja ver la consecuencia y da tiempo a cambiar de idea.
+ *
+ * **Con el dedo también se arrastra**, y acaba en esa misma ventana: el gesto enciende la mecha,
+ * no borra. El botón sigue estando para todo lo demás.
  */
 function Tarjeta({
   presentacion,
@@ -197,11 +201,14 @@ function Tarjeta({
   const { id, titulo, source_kind, nombre_archivo, creada_en } = presentacion;
   const Icono = ICONOS[source_kind] ?? FileText;
   const [yendose, setYendose] = useState(false);
+  const mecha = useRef<MechaHandle>(null);
 
   return (
-    <li className="relative">
+    <li className="h-full">
+      <FilaDeslizable onDeslizar={() => mecha.current?.armar()}>
       <div className="absolute right-3 top-3 z-10">
         <BotonMecha
+          ref={mecha}
           compacto
           onArmado={setYendose}
           onConfirmar={() => {
@@ -246,6 +253,7 @@ function Tarjeta({
           <span className="tabular">{fechaRelativa(creada_en)}</span>
         </p>
       </Link>
+      </FilaDeslizable>
     </li>
   );
 }

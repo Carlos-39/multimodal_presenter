@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { ArrowCounterClockwise, Trash } from "@phosphor-icons/react";
 
 /**
@@ -41,6 +41,17 @@ interface BotonMechaProps {
    */
   compacto?: boolean;
   className?: string;
+  /**
+   * Para encender la mecha desde fuera (hoy: arrastrando la tarjeta con el dedo).
+   *
+   * El gesto NO borra por su cuenta: termina aquí, en la misma ventana para arrepentirse. Dos
+   * caminos para eliminar con dos comportamientos distintos serían dos cosas que aprender.
+   */
+  ref?: React.Ref<MechaHandle>;
+}
+
+export interface MechaHandle {
+  armar: () => void;
 }
 
 export function BotonMecha({
@@ -52,6 +63,7 @@ export function BotonMecha({
   ventanaMs = 5000,
   compacto = false,
   className = "",
+  ref,
 }: BotonMechaProps) {
   const [armado, setArmado] = useState(false);
   const [restante, setRestante] = useState(Math.ceil(ventanaMs / 1000));
@@ -92,7 +104,7 @@ export function BotonMecha({
     }, ms);
   }, []);
 
-  function armar() {
+  const armar = useCallback(() => {
     const borde = mecha.current;
     if (armado) return;
     // La animación es solo el dibujo: si no hay elemento o el navegador no la soporta, la ventana
@@ -108,7 +120,9 @@ export function BotonMecha({
     setRestante(Math.ceil(ventanaMs / 1000));
     setArmado(true);
     ultimos.current.onArmado?.(true);
-  }
+  }, [armado, programar, ventanaMs]);
+
+  useImperativeHandle(ref, () => ({ armar }), [armar]);
 
   function deshacer() {
     if (!armado) return;

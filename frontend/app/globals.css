@@ -526,6 +526,36 @@ body {
   animation-delay: var(--espera-retraso);
 }
 
+/*
+ * Lo que aparece detrás de una tarjeta al arrastrarla.
+ *
+ * Mientras no se ha llegado al umbral es un lavado del color de aviso: se ve que hay algo ahí sin
+ * prometer que vaya a pasar. Al cruzarlo se pone macizo, y ESO es la promesa: si sueltas aquí,
+ * ocurre. Así el dedo sabe cuándo soltar sin tener que medir cuánto ha arrastrado.
+ */
+.fila-trasera {
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  color: var(--warning);
+  transition: background-color 160ms ease;
+}
+.fila-trasera[data-listo="true"] {
+  background: var(--warning);
+  color: var(--background);
+}
+.fila-trasera > svg {
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.fila-trasera[data-listo="true"] > svg {
+  transform: scale(1.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fila-trasera,
+  .fila-trasera > svg {
+    transition: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .revelar,
   .revelar[data-visible="true"] {
