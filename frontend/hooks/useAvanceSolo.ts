@@ -34,8 +34,13 @@ export function enRango(i: number, total: number): number {
   return ((i % total) + total) % total;
 }
 
+export type Sentido = "adelante" | "atras";
+
 export function useAvanceSolo(total: number, intervaloMs: number, listo = true) {
-  const [indice, setIndice] = useState(0);
+  // El índice y el sentido del último cambio van en UN solo estado, no en dos: separados, un
+  // render intermedio podía pintar el índice nuevo con el sentido viejo y la lámina entraba por
+  // el lado que no era.
+  const [paso, setPaso] = useState<{ i: number; sentido: Sentido }>({ i: 0, sentido: "adelante" });
   const [detenido, setDetenido] = useState(false);
   // Estado y no `ref`: así el efecto reacciona en el acto al primer clic, sin esperar a que el
   // ratón salga. Con un `ref` el intervalo seguía vivo hasta el siguiente cambio de `detenido`.
@@ -44,7 +49,9 @@ export function useAvanceSolo(total: number, intervaloMs: number, listo = true) 
   const ir = useCallback(
     (i: number) => {
       setIntervenido(true);
-      setIndice(enRango(i, total));
+      // El sentido se decide contra el índice SIN normalizar: así `ir(indice - 1)` desde el primer
+      // punto se lee como ir hacia atrás, aunque al normalizar acabe en el último.
+      setPaso((p) => ({ i: enRango(i, total), sentido: i < p.i ? "atras" : "adelante" }));
     },
     [total],
   );
@@ -52,13 +59,21 @@ export function useAvanceSolo(total: number, intervaloMs: number, listo = true) 
   useEffect(() => {
     if (!listo || detenido || intervenido) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-    const t = setInterval(() => setIndice((i) => (i + 1) % total), intervaloMs);
+    const t = setInterval(
+      () => setPaso((p) => ({ i: (p.i + 1) % total, sentido: "adelante" })),
+      intervaloMs,
+    );
     return () => clearInterval(t);
   }, [listo, detenido, intervenido, total, intervaloMs]);
 
   return {
-    indice,
+    indice: paso.i,
+    sentido: paso.sentido,
     ir,
+    /** `true` mientras el ratón o el foco están encima: la cuenta se pausa con el recorrido. */
+    detenido,
+    /** `true` desde el primer clic. Ya no va a pasar nada solo, así que no hay nada que contar. */
+    intervenido,
     /** Se reparten sobre el contenedor de la pieza, no sobre cada control. */
     pausa: {
       onMouseEnter: () => setDetenido(true),

@@ -33,7 +33,7 @@ const PASOS = MUESTRAS.flatMap((m, muestra) => m.secciones.map((_, seccion) => (
 
 export function Demostracion() {
   const [encendido, setEncendido] = useState(false);
-  const { indice, ir, pausa } = useAvanceSolo(PASOS.length, PASO_MS, encendido);
+  const { indice, sentido, ir, pausa } = useAvanceSolo(PASOS.length, PASO_MS, encendido);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const panelDoc = useRef<HTMLDivElement>(null);
 
@@ -120,9 +120,17 @@ export function Demostracion() {
         role="tabpanel"
         id="demostracion"
         aria-labelledby={`entrada-${muestra.id}`}
-        className="mt-3 rounded-xl border border-border bg-surface p-3.5 sm:p-4"
+        className="mt-3 overflow-x-clip rounded-xl border border-border bg-surface p-3.5 sm:p-4"
       >
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+        {/* La `key` es la ENTRADA, no el paso: cambiar de pestaña hace entrar todo por el lado
+            del que vienes, pero cambiar de sección dentro de la misma entrada no mueve nada. Lo
+            único que viaja entonces es el resaltado, y mover el documento justo cuando hay que
+            mirarlo obligaría a buscar otra vez la frase. */}
+        <div
+          key={muestra.id}
+          className="pasar grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]"
+          data-sentido={sentido}
+        >
           {/* El documento va primero también en móvil: al pulsar una sección, lo que se enciende
               tiene que estar ya en pantalla, no debajo del pulgar. */}
           <div ref={panelDoc}>

@@ -448,6 +448,72 @@ body {
   animation: surgir 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/*
+ * El paso de una lámina a la siguiente, en las piezas que se recorren solas.
+ *
+ * **Entra desde el lado hacia el que vas.** Un fundido sin dirección deja la duda de si
+ * avanzaste o retrocediste; viniendo del lado correcto, el gesto ya lo dice. El
+ * desplazamiento es corto (20 px) porque lo que informa es la dirección, no la distancia.
+ *
+ * Dura casi el doble que `section-enter`, que es la entrada de dentro de la aplicación: ahí hay
+ * trabajo que hacer y el movimiento estorba, aquí es la pieza la que tiene que explicarse sola.
+ * Y es **la misma duración la pase el tiempo o la pases tú**: una animación que se acelera al
+ * pulsar hace sentir el clic como una interrupción en vez de como el mando.
+ */
+@keyframes pasar-adelante {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pasar-atras {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pasar {
+  animation: pasar-adelante 0.58s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.pasar[data-sentido="atras"] {
+  animation-name: pasar-atras;
+}
+
+/*
+ * La cuenta del punto activo: cuánto queda para que pase sola.
+ *
+ * Sin esto, la lámina cambia de golpe y parece que la página hace cosas por su cuenta. Con esto
+ * el movimiento se anuncia, que es la diferencia entre un carrusel y un cartel. Se para con el
+ * resto cuando el ratón está encima, y desaparece en cuanto alguien pulsa algo: a partir de ahí
+ * no hay nada que contar porque ya no va a pasar nada solo.
+ */
+@keyframes cuenta-atras {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.cuenta {
+  transform-origin: left;
+  transform: scaleX(1);
+}
+.cuenta[data-contando="true"] {
+  animation: cuenta-atras var(--espera, 6s) linear forwards;
+}
+.cuenta[data-detenido="true"] {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .revelar,
   .revelar[data-visible="true"] {
@@ -468,5 +534,14 @@ body {
   .surgir {
     opacity: 1;
     animation: none;
+  }
+  .pasar {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+  .cuenta[data-contando="true"] {
+    animation: none;
+    transform: scaleX(1);
   }
 }
