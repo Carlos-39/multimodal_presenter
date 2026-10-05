@@ -92,8 +92,12 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
   return (
     <div
       id={rootId}
-      className={`mx-auto flex h-full flex-col bg-background ${
-        isFullscreen ? "max-w-none px-8 py-6" : "max-w-5xl px-6 py-5"
+      // El fondo propio solo a pantalla completa, donde este elemento ES la pantalla y sin él
+      // saldría negro. Dentro de la aplicación estorbaba: es una columna centrada del mismo color
+      // que el papel, así que tapaba el foco del área de trabajo justo en el medio y dejaba un
+      // rectángulo plano entre dos lados iluminados.
+      className={`mx-auto flex h-full flex-col ${
+        isFullscreen ? "max-w-none bg-background px-8 py-6" : "max-w-5xl px-6 py-5"
       }`}
     >
       {/* Identifica la pieza: es una presentación GENERADA (guion propio), no otra vista del

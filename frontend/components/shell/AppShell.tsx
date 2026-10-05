@@ -213,8 +213,10 @@ export function AppShell({
           </div>
         </aside>
 
-        {/* Zona dinámica: contenido + columnas opcionales (Workspace, Escala 2 del Hito 5e) */}
-        <main className="flex-1 overflow-hidden">{children}</main>
+        {/* Zona dinámica: contenido + columnas opcionales (Workspace, Escala 2 del Hito 5e).
+            El foco vive AQUÍ y no en el armazón entero: el rail y la cabecera son el marco, y un
+            marco no se ilumina. */}
+        <main className="foco flex-1 overflow-hidden">{children}</main>
       </div>
     </div>
   );

@@ -547,6 +547,31 @@ body {
 }
 
 /*
+ * El área de trabajo, iluminada desde arriba.
+ *
+ * **No es una trama, es luz.** Se probaron seis fondos con patrón —rejilla, puntos, pautado— y
+ * todos tenían el mismo problema: dan algo que seguir con la vista justo donde hay que leer. Esto
+ * no dibuja nada. El papel se aclara hacia donde está el texto y se apaga hacia los bordes, así
+ * que el vacío de los lados deja de pesar lo mismo que el centro sin que aparezca ni una línea.
+ *
+ * **El techo es el color de las tarjetas, y no se toca.** El punto más claro se queda por debajo
+ * de `--surface`: si lo alcanzara, arriba del todo las tarjetas perderían su borde contra el papel
+ * y dejarían de ser objetos. Por eso el recorrido se gana sobre todo **bajando los bordes**, no
+ * subiendo el centro.
+ *
+ * Sin movimiento, a propósito: esta es la pantalla donde alguien está leyendo algo difícil.
+ */
+.foco {
+  background-color: color-mix(in srgb, var(--surface-sunken) 70%, var(--background));
+  background-image: radial-gradient(
+    ellipse 58rem 40rem at 50% 0%,
+    color-mix(in srgb, var(--surface) 55%, var(--background)),
+    transparent 70%
+  );
+  background-repeat: no-repeat;
+}
+
+/*
  * El brillo que sigue al puntero en el botón principal de la portada.
  *
  * **Solo en la portada.** La aplicación es seria a propósito y un botón que reluce dentro del área

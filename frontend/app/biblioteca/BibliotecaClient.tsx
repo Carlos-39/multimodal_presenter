@@ -61,7 +61,7 @@ export function BibliotecaClient() {
   }, [cargar]);
 
   return (
-    <div className="min-h-[100dvh] bg-background">
+    <div className="foco min-h-[100dvh]">
       <header className="border-b border-border">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-5">
           <Link href="/" className="text-sm font-medium tracking-tight text-foreground">
