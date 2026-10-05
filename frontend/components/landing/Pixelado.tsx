@@ -78,6 +78,11 @@ export function Pixelado({ paso = 15, lado = 3 }: PixeladoProps) {
       puntos = [];
       for (let x = 0; x < w; x += paso) {
         for (let y = 0; y < h; y += paso) {
+          // Dentro del hueco de la máscara no se siembra. La máscara es CSS y oculta, pero el
+          // lienzo seguía pintando ahí: la mitad de los píxeles del bucle eran trabajo que nadie
+          // llegaba a ver nunca. Los radios son los mismos que los del `radial-gradient`.
+          const e = Math.hypot((x - cx) / (w * 0.27), (y - cy) / (h * 0.23));
+          if (e < 0.42) continue;
           const d = Math.hypot(x - cx, y - cy) / lejos;
           puntos.push({
             x,
@@ -181,7 +186,20 @@ export function Pixelado({ paso = 15, lado = 3 }: PixeladoProps) {
   }, [paso, lado]);
 
   return (
-    <div ref={caja} aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+    /*
+     * La máscara vacía el centro: la trama queda alrededor, enmarcando, y detrás del texto no hay
+     * nada. Es lo que arregla de raíz lo de la legibilidad en claro, en vez de ir bajando el alfa
+     * hasta que no se note.
+     *
+     * Va aquí, en la CAPA, y no en la sección: una máscara recorta al elemento y a todos sus
+     * hijos, así que puesta arriba se comería el texto. Ya me pasó con la rejilla de los fondos y
+     * con los anillos del héroe.
+     */
+    <div
+      ref={caja}
+      aria-hidden
+      className="pointer-events-none absolute inset-0 -z-10 [-webkit-mask-image:radial-gradient(ellipse_54%_46%_at_50%_50%,transparent_42%,black_100%)] [mask-image:radial-gradient(ellipse_54%_46%_at_50%_50%,transparent_42%,black_100%)]"
+    >
       <canvas ref={lienzo} className="block h-full w-full" />
     </div>
   );
