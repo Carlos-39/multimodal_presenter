@@ -4,6 +4,7 @@ import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useAvanceSolo } from "@/hooks/useAvanceSolo";
 import { useEnPantalla } from "@/hooks/useEnPantalla";
 import { CAPACIDADES } from "./capacidades";
+import { Baraja } from "./Baraja";
 
 /**
  * Las piezas que el sistema sabe hacer, una a una.
@@ -98,15 +99,10 @@ export function Carrusel() {
             </div>
           </div>
 
-          {/* El marco no se mueve: lo que entra por el lado es la lámina. Mover también la caja
-              haría saltar el layout de la sección entera en cada paso. */}
-          <div className="flex min-h-[15rem] items-center justify-center overflow-hidden rounded-xl border border-border bg-surface p-7 lg:min-h-[19rem]">
-            <div key={capacidad.id} className="pasar w-full" data-sentido={sentido}>
-              <div className="flex justify-center">
-                <capacidad.Lamina />
-              </div>
-            </div>
-          </div>
+          {/* La baraja en lugar del panel único: así se ve que hay cinco y cuáles son, que es lo
+              que unos puntos no pueden decir. El comportamiento no cambia — sigue siendo el mismo
+              `useAvanceSolo` con sus flechas, sus puntos y su cuenta. */}
+          <Baraja indice={indice} />
         </div>
       </div>
     </section>
