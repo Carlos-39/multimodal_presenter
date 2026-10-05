@@ -41,10 +41,10 @@ export function Problema() {
 
   return (
     <section className="relative isolate overflow-hidden border-t border-border bg-surface-sunken/40">
-      {/* Los píxeles florecen al llegar aquí y se quedan quietos. Es la sección donde se lee el
-          argumento del proyecto: algo parpadeando detrás del texto mientras lo lees no sería
-          contraste, sería competencia. El grano es más suelto que el del héroe a propósito — si
-          fueran iguales, la página parecería tener un solo papel pintado repetido. */}
+      {/* La trama aparece al pasar por encima y se va al salir. No florece sola: en modo claro
+          competía con el texto justo mientras se lee, y una sección que se decora sola convierte
+          en decorado lo que es el argumento del proyecto. Los puntos van en la tinta del texto,
+          no en el acento: siempre lo contrario del papel, que es de donde sale el contraste. */}
       <Pixelado />
       <div ref={ref} className="mx-auto max-w-3xl px-5 py-20">
         <h2 className="max-w-[24ch] font-sans text-[2rem] font-medium leading-[1.08] tracking-[-0.025em] text-foreground sm:text-[2.6rem]">

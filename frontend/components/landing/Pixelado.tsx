@@ -3,43 +3,37 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Píxeles que florecen cuando llegas a la sección, y se quedan quietos.
+ * Una trama de píxeles que aparece al pasar por encima de la sección y se va al salir.
  *
- * **Aparece al llegar y se para.** El componente de referencia los enciende al pasar el ratón y
- * los deja titilando para siempre; aquí es una sola floración, de dentro hacia fuera, y cuando el
- * último píxel llega a su tamaño el bucle se cancela solo. Esta es la sección donde se lee el
- * argumento del proyecto: algo parpadeando detrás del texto mientras lo lees no es contraste, es
- * competencia.
+ * **Solo al señalar.** La primera versión florecía sola al llegar y se quedaba puesta, y estaba
+ * mal por dos motivos: en modo claro la trama competía con el texto justo mientras se lee, y una
+ * sección que se decora sola convierte en decorado lo que es el argumento del proyecto. Así solo
+ * aparece si alguien la señala, y desaparece al irse — que es lo que hacía el componente del que
+ * sale esto y yo había cambiado sin necesidad.
  *
- * **El retardo de cada píxel es su distancia al foco**, que es lo que hace que la trama se abra
- * como una onda en vez de aparecer de golpe. Esa idea sí es de la referencia y es la buena.
+ * **El píxel va en la tinta del texto, no en el acento.** En claro son puntos oscuros sobre papel
+ * claro; en oscuro, claros sobre papel oscuro. La trama es siempre lo contrario del papel, que es
+ * de donde sale el contraste — y de paso no gasta el azul, que ya trabaja en el héroe.
  *
- * **El grano es distinto al del héroe a propósito.** Los dos son cuadraditos azules, y si tuvieran
- * el mismo tamaño la página parecería tener un solo papel pintado repetido. Aquí la malla es más
- * suelta y el píxel más grande.
+ * **El retardo de cada píxel es su distancia al centro**, así que la trama se abre como una onda.
+ * Esa idea es de la referencia y es la buena.
  *
- * El color sale del token y se vuelve a leer al cambiar de tema: un lienzo no sabe de CSS.
+ * Al salir se recoge y, cuando el último llega a cero, el bucle se cancela: no queda nada
+ * corriendo detrás. Con «reducir movimiento» aparece y desaparece de una vez, sin onda.
  *
- * Con «reducir movimiento» no hay floración — se pinta ya puesto, de una vez.
+ * En una pantalla táctil no hay «pasar por encima», así que no aparece. Es decoración: lo que la
+ * sección tiene que decir está en el texto.
  */
 interface PixeladoProps {
   /** Separación de la malla, en px. */
   paso?: number;
   /** Lado máximo del píxel. */
   lado?: number;
-  opacidad?: number;
-  /** Dónde está el foco del que sale la onda, en fracción de la caja. */
-  foco?: { x: number; y: number };
 }
 
 type Punto = { x: number; y: number; max: number; tam: number; espera: number; paso: number };
 
-export function Pixelado({
-  paso = 14,
-  lado = 3,
-  opacidad = 0.5,
-  foco = { x: 0.22, y: 0.5 },
-}: PixeladoProps) {
+export function Pixelado({ paso = 15, lado = 3 }: PixeladoProps) {
   const caja = useRef<HTMLDivElement>(null);
   const lienzo = useRef<HTMLCanvasElement>(null);
 
@@ -47,17 +41,29 @@ export function Pixelado({
     const cont = caja.current;
     const cv = lienzo.current;
     const ctx = cv?.getContext("2d");
-    if (!cont || !cv || !ctx) return;
+    // Los eventos van en la sección, que es el elemento que se señala; esta capa no los recibe
+    // porque está detrás y con los punteros desactivados.
+    const zona = cont?.parentElement;
+    if (!cont || !cv || !ctx || !zona) return;
 
     const quieto = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     let puntos: Punto[] = [];
     let raf = 0;
     let dpr = 1;
-    let tinta = "#1e3c84";
-    let abierto = false;
+    let tinta = "#14181c";
+    let alfa = 0.16;
+    let entrando = false;
 
     const leerTinta = () => {
-      tinta = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || tinta;
+      const raiz = document.documentElement;
+      tinta = getComputedStyle(raiz).getPropertyValue("--foreground").trim() || tinta;
+      const tema = raiz.getAttribute("data-theme");
+      const oscuro =
+        tema === "dark" ||
+        (tema === null && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      // En oscuro la trama puede pesar más: un punto claro sobre papel casi negro se ve con menos
+      // tinta de la que haría falta al revés, donde además compite con el texto.
+      alfa = oscuro ? 0.26 : 0.16;
     };
 
     const sembrar = () => {
@@ -66,104 +72,113 @@ export function Pixelado({
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       cv.width = Math.round(w * dpr);
       cv.height = Math.round(h * dpr);
-      const fx = w * foco.x;
-      const fy = h * foco.y;
-      const lejos = Math.hypot(Math.max(fx, w - fx), Math.max(fy, h - fy));
+      const cx = w / 2;
+      const cy = h / 2;
+      const lejos = Math.hypot(cx, cy);
       puntos = [];
       for (let x = 0; x < w; x += paso) {
         for (let y = 0; y < h; y += paso) {
-          const d = Math.hypot(x - fx, y - fy) / lejos;
+          const d = Math.hypot(x - cx, y - cy) / lejos;
           puntos.push({
             x,
             y,
-            // Tamaño propio por píxel: una malla con todos iguales se lee como una rejilla.
+            // Tamaño propio por píxel: con todos iguales se lee como una rejilla, no como trama.
             max: lado * (0.35 + Math.random() * 0.65),
             tam: 0,
-            espera: quieto ? 0 : d * 900 + Math.random() * 120,
-            paso: 0.055 + Math.random() * 0.07,
+            espera: quieto ? 0 : d * 520 + Math.random() * 90,
+            paso: 0.08 + Math.random() * 0.1,
           });
         }
       }
     };
 
-    const pintar = (t0: number) => (ahora: number) => {
-      const transcurrido = ahora - t0;
+    const pintar = () => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, cv.width, cv.height);
       ctx.fillStyle = tinta;
-      ctx.globalAlpha = opacidad;
-      let faltan = false;
+      ctx.globalAlpha = alfa;
       for (const p of puntos) {
-        if (transcurrido < p.espera) {
-          faltan = true;
-          continue;
-        }
-        if (p.tam < p.max) {
-          p.tam = Math.min(p.max, p.tam + p.paso);
-          faltan = true;
-        }
+        if (p.tam <= 0) continue;
         const centro = (lado - p.tam) / 2;
         ctx.fillRect(p.x + centro, p.y + centro, p.tam, p.tam);
       }
       ctx.globalAlpha = 1;
-      // Cuando el último llega a su tamaño, esto se apaga. No queda nada corriendo detrás.
-      if (faltan) raf = requestAnimationFrame(pintar(t0));
-      else raf = 0;
     };
 
-    const abrir = () => {
-      if (abierto) return;
-      abierto = true;
-      leerTinta();
-      sembrar();
-      if (quieto) {
-        for (const p of puntos) p.tam = p.max;
-      }
+    const latir = (t0: number) => {
+      const marco = (ahora: number) => {
+        const transcurrido = ahora - t0;
+        let faltan = false;
+        for (const p of puntos) {
+          if (entrando) {
+            if (transcurrido < p.espera) {
+              faltan = true;
+              continue;
+            }
+            if (p.tam < p.max) {
+              p.tam = Math.min(p.max, p.tam + p.paso);
+              faltan = true;
+            }
+          } else if (p.tam > 0) {
+            p.tam = Math.max(0, p.tam - 0.14);
+            faltan = true;
+          }
+        }
+        pintar();
+        // Cuando el último llega a su sitio, esto se apaga. No queda nada corriendo detrás.
+        raf = faltan ? requestAnimationFrame(marco) : 0;
+      };
       if (raf) cancelAnimationFrame(raf);
-      const t0 = performance.now();
-      // El primer fotograma se pinta YA, no en el siguiente `requestAnimationFrame`. Con «reducir
-      // movimiento» los píxeles salen a su tamaño final de una vez, y colgar ese único dibujo de
-      // un `rAF` significa que donde el navegador no lo dispare -una pestaña de fondo, un entorno
-      // sin pintar- la trama no aparecería nunca. Misma lección que la mecha: el dibujo no puede
-      // depender de que haya dibujo.
-      pintar(t0)(t0);
+      // El primer fotograma, ya: colgar el dibujo de un rAF significa que donde el navegador no
+      // lo dispare no aparecería nunca. Misma lección que la mecha.
+      marco(t0);
     };
 
-    // Un poco dentro (25 %) y no al rozar el borde: si no, florece mientras todavía se está
-    // leyendo la sección de arriba y nadie lo ve.
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) abrir();
-      },
-      { threshold: 0.25 },
-    );
-    io.observe(cont);
+    const entrar = () => {
+      if (entrando) return;
+      entrando = true;
+      leerTinta();
+      if (!puntos.length) sembrar();
+      if (quieto) for (const p of puntos) p.tam = p.max;
+      latir(performance.now());
+    };
+
+    const salir = () => {
+      if (!entrando) return;
+      entrando = false;
+      if (quieto) {
+        for (const p of puntos) p.tam = 0;
+        pintar();
+        return;
+      }
+      latir(performance.now());
+    };
+
+    zona.addEventListener("pointerenter", entrar);
+    zona.addEventListener("pointerleave", salir);
 
     const ro = new ResizeObserver(() => {
-      if (!abierto) return;
-      leerTinta();
+      if (!puntos.length) return;
       sembrar();
-      for (const p of puntos) p.tam = p.max; // ya estaba abierto: se recoloca sin volver a florecer
-      if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(pintar(performance.now() - 99999));
+      if (entrando) for (const p of puntos) p.tam = p.max;
+      pintar();
     });
     ro.observe(cont);
 
     const mo = new MutationObserver(() => {
-      if (!abierto) return;
       leerTinta();
-      if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(pintar(performance.now() - 99999));
+      pintar();
     });
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
     return () => {
       if (raf) cancelAnimationFrame(raf);
-      io.disconnect();
+      zona.removeEventListener("pointerenter", entrar);
+      zona.removeEventListener("pointerleave", salir);
       ro.disconnect();
       mo.disconnect();
     };
-  }, [paso, lado, opacidad, foco]);
+  }, [paso, lado]);
 
   return (
     <div ref={caja} aria-hidden className="pointer-events-none absolute inset-0 -z-10">
