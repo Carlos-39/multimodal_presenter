@@ -39,7 +39,7 @@ export function Carrusel() {
     // y no toca el eje vertical, donde recortaría los anillos de foco.
     <section className="overflow-x-clip border-t border-border bg-surface-sunken/40">
       <div ref={ref} className="mx-auto max-w-6xl px-5 py-20" {...pausa}>
-        <h2 className="max-w-[22ch] font-sans text-[1.75rem] font-medium leading-[1.1] tracking-[-0.022em] text-foreground sm:text-[2.25rem]">
+        <h2 className="max-w-[22ch] font-sans text-[2rem] font-medium leading-[1.08] tracking-[-0.025em] text-foreground sm:text-[2.6rem]">
           Todo lo que puedes hacer con un documento
         </h2>
 
@@ -47,8 +47,8 @@ export function Carrusel() {
           <div>
             {/* `key` fuerza el remontaje para que la entrada se repita en cada cambio. */}
             <div key={capacidad.id} className="pasar" data-sentido={sentido}>
-              <h3 className="font-sans text-xl font-medium tracking-[-0.015em] text-foreground">{capacidad.titulo}</h3>
-              <p className="mt-3 max-w-[42ch] text-sm leading-6 text-foreground-secondary">
+              <h3 className="font-sans text-[1.375rem] font-medium tracking-[-0.016em] text-foreground">{capacidad.titulo}</h3>
+              <p className="mt-3 max-w-[42ch] text-[0.9375rem] leading-[1.6] text-foreground-secondary">
                 {capacidad.descripcion}
               </p>
             </div>

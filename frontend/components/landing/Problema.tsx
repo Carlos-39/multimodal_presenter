@@ -41,10 +41,10 @@ export function Problema() {
   return (
     <section className="border-t border-border bg-surface-sunken/40">
       <div ref={ref} className="mx-auto max-w-3xl px-5 py-20">
-        <h2 className="max-w-[24ch] font-sans text-[1.75rem] font-medium leading-[1.1] tracking-[-0.022em] text-foreground sm:text-[2.25rem]">
+        <h2 className="max-w-[24ch] font-sans text-[2rem] font-medium leading-[1.08] tracking-[-0.025em] text-foreground sm:text-[2.6rem]">
           El problema no es escribir el texto. Es poder creerlo.
         </h2>
-        <p className="mt-4 max-w-[54ch] font-serif text-[1.0625rem] leading-[1.65] text-foreground-secondary">
+        <p className="mt-4 max-w-[54ch] font-serif text-[1.1875rem] leading-[1.6] text-foreground-secondary">
           Un resumen generado se lee igual de bien tanto si sale del documento como si no. Ahí está
           la trampa: para comprobarlo tendrías que releer el original entero, que es justo lo que
           querías evitar.
@@ -60,7 +60,7 @@ export function Problema() {
             </Pestana>
           </div>
 
-          <p className="mt-5 font-serif text-[0.9375rem] leading-[1.9] text-foreground-secondary">
+          <p className="mt-5 font-serif text-[1.0625rem] leading-[1.85] text-foreground-secondary">
             {AFIRMACIONES.map(({ texto, anclada }) => (
               <span key={texto}>
                 {/* Las ancladas se marcan con el resaltador, que es el vocabulario de la propia

@@ -45,7 +45,7 @@ export function Preguntas() {
   return (
     <section className="border-t border-border">
       <div className="mx-auto max-w-3xl px-5 py-20">
-        <h2 className="font-sans text-[1.75rem] font-medium leading-[1.1] tracking-[-0.022em] text-foreground sm:text-[2.25rem]">
+        <h2 className="font-sans text-[2rem] font-medium leading-[1.08] tracking-[-0.025em] text-foreground sm:text-[2.6rem]">
           Preguntas frecuentes
         </h2>
 
@@ -53,7 +53,7 @@ export function Preguntas() {
           {PREGUNTAS.map(({ p, r }) => (
             <details key={p} className="group border-b border-border first:border-t">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-left [&::-webkit-details-marker]:hidden">
-                <span className="font-sans text-[1.0625rem] font-medium leading-snug tracking-[-0.01em] text-foreground">
+                <span className="font-sans text-[1.125rem] font-medium leading-snug tracking-[-0.012em] text-foreground">
                   {p}
                 </span>
                 <CaretDown

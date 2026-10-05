@@ -93,13 +93,13 @@ function Hero({ onInvitado, onAcceso }: { onInvitado: () => void; onAcceso: () =
   return (
     <section className="mx-auto max-w-6xl px-5 pb-20 pt-14 lg:pt-20">
       <h1
-        className="surgir max-w-[30ch] font-sans text-[2.25rem] font-medium leading-[1.12] tracking-[-0.025em] text-foreground sm:text-[2.6rem] lg:text-[2.95rem]"
+        className="surgir max-w-[26ch] font-sans text-[2.6rem] font-medium leading-[1.08] tracking-[-0.028em] text-foreground sm:text-[3.1rem] lg:text-[3.6rem]"
         style={{ animationDelay: "0.05s" }}
       >
         Entiende un documento difícil. Comprueba cada frase.
       </h1>
       <p
-        className="surgir mt-5 max-w-[52ch] font-serif text-[1.0625rem] leading-[1.65] text-foreground-secondary"
+        className="surgir mt-6 max-w-[50ch] font-serif text-[1.1875rem] leading-[1.6] text-foreground-secondary"
         style={{ animationDelay: "0.2s" }}
       >
         Sube un PDF, una grabación o un texto. Cada frase de la explicación te lleva al punto
@@ -109,18 +109,18 @@ function Hero({ onInvitado, onAcceso }: { onInvitado: () => void; onAcceso: () =
         className="surgir mt-7 flex flex-wrap items-center gap-3"
         style={{ animationDelay: "0.3s" }}
       >
-        <BotonLuz onClick={onInvitado} className="px-5 py-2.5 text-sm">
+        <BotonLuz onClick={onInvitado} className="px-6 py-3 text-[0.9375rem]">
           Probar como invitado
         </BotonLuz>
         <button
           type="button"
           onClick={onAcceso}
-          className="rounded-md border border-border px-5 py-2.5 text-sm text-foreground-secondary transition-colors hover:border-border-strong hover:text-foreground"
+          className="rounded-md border border-border px-6 py-3 text-[0.9375rem] text-foreground-secondary transition-colors hover:border-border-strong hover:text-foreground"
         >
           Entrar
         </button>
       </div>
-      <p className="surgir mt-4 text-xs text-muted" style={{ animationDelay: "0.4s" }}>
+      <p className="surgir mt-4 text-[0.8125rem] text-muted" style={{ animationDelay: "0.4s" }}>
         Sin cuenta funciona todo. Entrar sirve para guardar y volver.
       </p>
 
@@ -144,14 +144,14 @@ function Cierre({ onInvitado }: { onInvitado: () => void }) {
     <section className="border-t border-border bg-surface">
       <div className="mx-auto max-w-6xl px-5 py-24 lg:py-28">
         <div className="flex flex-col items-start gap-8">
-          <h2 className="max-w-[17ch] font-sans text-[2.5rem] font-medium leading-[1.02] tracking-[-0.03em] text-foreground sm:text-[3.25rem] lg:text-[3.75rem]">
+          <h2 className="max-w-[17ch] font-sans text-[2.75rem] font-medium leading-[1.02] tracking-[-0.032em] text-foreground sm:text-[3.6rem] lg:text-[4.25rem]">
             Trae un documento que te cueste leer.
           </h2>
           <div className="flex flex-wrap items-center gap-3">
-            <BotonLuz onClick={onInvitado} className="px-6 py-3 text-sm">
+            <BotonLuz onClick={onInvitado} className="px-7 py-3.5 text-base">
               Probar como invitado
             </BotonLuz>
-            <span className="text-xs text-muted">Sin cuenta y sin instalar nada.</span>
+            <span className="text-[0.8125rem] text-muted">Sin cuenta y sin instalar nada.</span>
           </div>
         </div>
 
