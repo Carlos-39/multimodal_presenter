@@ -37,6 +37,8 @@ export interface ResumenPresentacion {
    */
   secciones: number | null;
   verificadas: number | null;
+  /** El principio de la primera sección, recortado. `null` si no hay texto que asomar. */
+  resumen: string | null;
 }
 
 export interface PayloadGuardado {

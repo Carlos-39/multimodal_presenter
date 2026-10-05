@@ -161,7 +161,7 @@ export function BibliotecaClient() {
                         <h2 className="text-xs font-medium uppercase tracking-[0.08em] text-muted">
                           {TRAMOS[t]}
                         </h2>
-                        <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <ul className="mt-4 grid gap-4 md:grid-cols-2">
                           {grupo.map((x) => (
                             <Tarjeta
                               key={x.id}
@@ -187,9 +187,9 @@ export function BibliotecaClient() {
 
 function Cargando() {
   return (
-    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Cargando">
+    <ul className="grid gap-4 md:grid-cols-2" role="status" aria-label="Cargando">
       {[0, 1, 2].map((i) => (
-        <li key={i} className="skeleton h-28 rounded-xl" />
+        <li key={i} className="skeleton h-40 rounded-xl" />
       ))}
     </ul>
   );
@@ -201,14 +201,36 @@ function Cargando() {
  */
 function Vacia() {
   return (
-    <div className="rounded-xl border border-dashed border-border px-6 py-14 text-center">
-      <p className="mx-auto max-w-[36ch] font-serif text-[1.0625rem] leading-[1.6] text-foreground-secondary">
+    /*
+     * El signo de mas ES el boton, y no un dibujo con un boton debajo.
+     *
+     * Antes habia un recuadro punteado con un parrafo y un enlace: tres cosas para decir una. Aqui
+     * lo primero que se ve es la accion, en grande, y el texto explica debajo. En una pantalla que
+     * esta vacia a proposito, lo unico que debe pesar es por donde se sale de ella.
+     *
+     * El trazo se dibuja al entrar -el mismo gesto que las figuras del «como se construyo»- y al
+     * pasar por encima el aspa gira un cuarto de vuelta hasta la cruz. Con «reducir movimiento» no
+     * se dibuja ni gira: sale puesto.
+     */
+    <div className="flex flex-col items-center px-6 py-16 text-center">
+      <Link
+        href="/"
+        aria-label="Transformar mi primer documento"
+        className="mas group flex h-28 w-28 items-center justify-center rounded-2xl border border-dashed border-border-strong text-accent transition-colors hover:border-accent hover:bg-accent-subtle/40"
+      >
+        <svg viewBox="0 0 48 48" className="h-12 w-12" aria-hidden>
+          <line x1="24" y1="10" x2="24" y2="38" pathLength={1} className="mas-trazo" />
+          <line x1="10" y1="24" x2="38" y2="24" pathLength={1} className="mas-trazo" style={{ animationDelay: "160ms" }} />
+        </svg>
+      </Link>
+
+      <p className="mt-7 max-w-[34ch] font-serif text-[1.0625rem] leading-[1.6] text-foreground-secondary">
         Aquí van a aparecer los documentos que transformes y guardes, con su conversación y lo que
         hayas generado.
       </p>
       <Link
         href="/"
-        className="mt-6 inline-flex items-center gap-1.5 rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
+        className="mt-5 inline-flex items-center gap-1.5 text-sm text-accent transition-colors hover:text-accent-hover"
       >
         Transformar mi primer documento
         <ArrowRight size={14} aria-hidden />
@@ -264,6 +286,19 @@ function Tarjeta({
   const [yendose, setYendose] = useState(false);
   const mecha = useRef<MechaHandle>(null);
 
+  // La posición del foco se escribe en el DOM, no en estado: con doce tarjetas en pantalla, un
+  // `setState` por movimiento del ratón volvería a renderizar la biblioteca entera.
+  const foco = (e: React.PointerEvent<HTMLElement>) => {
+    const n = e.currentTarget;
+    const r = n.getBoundingClientRect();
+    n.style.setProperty("--luz-x", `${e.clientX - r.left}px`);
+    n.style.setProperty("--luz-y", `${e.clientY - r.top}px`);
+    n.style.setProperty("--luz-o", "1");
+  };
+  const apagar = (e: React.PointerEvent<HTMLElement>) => {
+    e.currentTarget.style.setProperty("--luz-o", "0");
+  };
+
   return (
     <li className="h-full">
       <FilaDeslizable onDeslizar={() => mecha.current?.armar()}>
@@ -283,20 +318,31 @@ function Tarjeta({
         />
       </div>
 
+      {/*
+        * `luz` es la MISMA clase del botón principal de la portada: un foco que sigue al puntero.
+        * Reusarla en vez de escribir otro resplandor es lo que hace que las dos pantallas se
+        * sientan del mismo sitio; aquí solo cambia el color, que va en acento y no en blanco
+        * porque esto es papel y no un botón macizo.
+        *
+        * Alto fijo (`h-52`): las tarjetas tienen que medir lo mismo aunque un título ocupe dos
+        * líneas y otro una. Una rejilla con tarjetas desiguales se lee como un descuido.
+        */}
       <Link
         href={`/?abrir=${encodeURIComponent(id)}`}
         aria-hidden={yendose}
         tabIndex={yendose ? -1 : undefined}
-        className={`group flex h-full flex-col rounded-xl border bg-surface p-4 transition-all ${
+        onPointerMove={foco}
+        onPointerLeave={apagar}
+        className={`luz tarjeta-luz group flex h-52 flex-col rounded-xl border bg-surface p-5 transition-all ${
           yendose
             ? "pointer-events-none border-border opacity-45"
             : "border-border hover:border-accent"
         }`}
       >
         <div className="flex items-start gap-2.5">
-          <Icono size={16} aria-hidden className="mt-0.5 shrink-0 text-muted" />
+          <Icono size={16} aria-hidden className="mt-1 shrink-0 text-muted" />
           <h2
-            className={`min-w-0 flex-1 font-serif text-[0.9375rem] leading-snug text-foreground ${
+            className={`line-clamp-2 min-w-0 flex-1 font-serif text-[1.0625rem] leading-snug text-foreground ${
               // El hueco crece con el botón: armado pasa de icono a «Deshacer 5» y, con el hueco
               // de reposo, se montaba encima del título.
               yendose ? "pr-24" : "pr-7"
@@ -305,6 +351,14 @@ function Tarjeta({
             {titulo}
           </h2>
         </div>
+
+        {/* El asomo de lo que hay dentro. Tres líneas y puntos suspensivos: con seis guardadas del
+            mismo documento, el título no basta para saber cuál es cuál. */}
+        {presentacion.resumen ? (
+          <p className="mt-3 line-clamp-3 text-[0.8125rem] leading-[1.6] text-foreground-secondary">
+            {presentacion.resumen}
+          </p>
+        ) : null}
         <div className="mt-auto pt-4 text-xs text-muted">
           {nombre_archivo ? (
             <p className="truncate" title={nombre_archivo}>

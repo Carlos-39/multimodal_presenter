@@ -760,6 +760,62 @@ body {
 }
 
 /*
+ * La tarjeta de la biblioteca, con el mismo foco que el botón de la portada.
+ *
+ * Reusa `.luz` y solo cambia el color: en acento y no en blanco, porque esto es papel y no un
+ * botón macizo. Que las dos pantallas compartan el gesto es lo que hace que se sientan del mismo
+ * sitio.
+ */
+.tarjeta-luz {
+  --luz-color: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+/*
+ * El signo de más del estado vacío: se traza al entrar y gira al señalarlo.
+ *
+ * El trazo es el mismo gesto que las figuras del «cómo se construyó» — ahí dibuja una idea, aquí
+ * dibuja la única acción que queda por hacer en una pantalla vacía.
+ */
+@keyframes mas-traza {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.mas svg {
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mas:hover svg,
+.mas:focus-visible svg {
+  transform: rotate(90deg);
+}
+.mas-trazo {
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  /* `pathLength="1"` va en el elemento, no aquí: normaliza el largo del trazo para que el dibujo
+     dure lo mismo mida lo que mida la línea. */
+  stroke-dasharray: 1;
+  animation: mas-traza 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mas svg {
+    transition: none;
+  }
+  .mas:hover svg,
+  .mas:focus-visible svg {
+    transform: none;
+  }
+  .mas-trazo {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}
+
+/*
  * El brillo que sigue al puntero en el botón principal de la portada.
  *
  * **Solo en la portada.** La aplicación es seria a propósito y un botón que reluce dentro del área
