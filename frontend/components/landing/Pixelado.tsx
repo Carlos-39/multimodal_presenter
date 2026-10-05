@@ -33,6 +33,15 @@ interface PixeladoProps {
 
 type Punto = { x: number; y: number; max: number; tam: number; espera: number; paso: number };
 
+/**
+ * Medio hueco libre de puntos, en px, a cada lado del centro.
+ *
+ * Son los 24rem de la columna de texto (`max-w-3xl`) más un dedo de aire. Antes el hueco era un
+ * óvalo, y un óvalo no encaja con una columna: por arriba y por abajo la trama volvía a meterse
+ * donde hay renglones. Una banda recta sí, porque es la forma que tiene el texto.
+ */
+const HUECO = 464; // 29rem
+
 export function Pixelado({ paso = 15, lado = 3 }: PixeladoProps) {
   const caja = useRef<HTMLDivElement>(null);
   const lienzo = useRef<HTMLCanvasElement>(null);
@@ -78,11 +87,10 @@ export function Pixelado({ paso = 15, lado = 3 }: PixeladoProps) {
       puntos = [];
       for (let x = 0; x < w; x += paso) {
         for (let y = 0; y < h; y += paso) {
-          // Dentro del hueco de la máscara no se siembra. La máscara es CSS y oculta, pero el
-          // lienzo seguía pintando ahí: la mitad de los píxeles del bucle eran trabajo que nadie
-          // llegaba a ver nunca. Los radios son los mismos que los del `radial-gradient`.
-          const e = Math.hypot((x - cx) / (w * 0.27), (y - cy) / (h * 0.23));
-          if (e < 0.42) continue;
+          // Dentro del hueco de la máscara no se siembra. La máscara es CSS y solo OCULTA: el
+          // lienzo seguía pintando ahí, y eso era trabajo que nadie llegaba a ver. El límite es
+          // el mismo que usa el degradado.
+          if (Math.abs(x - cx) < HUECO) continue;
           const d = Math.hypot(x - cx, y - cy) / lejos;
           puntos.push({
             x,
@@ -198,7 +206,7 @@ export function Pixelado({ paso = 15, lado = 3 }: PixeladoProps) {
     <div
       ref={caja}
       aria-hidden
-      className="pointer-events-none absolute inset-0 -z-10 [-webkit-mask-image:radial-gradient(ellipse_54%_46%_at_50%_50%,transparent_42%,black_100%)] [mask-image:radial-gradient(ellipse_54%_46%_at_50%_50%,transparent_42%,black_100%)]"
+      className="pointer-events-none absolute inset-0 -z-10 [-webkit-mask-image:linear-gradient(to_right,black_0,black_calc(50%-29rem),transparent_calc(50%-25rem),transparent_calc(50%+25rem),black_calc(50%+29rem),black_100%)] [mask-image:linear-gradient(to_right,black_0,black_calc(50%-29rem),transparent_calc(50%-25rem),transparent_calc(50%+25rem),black_calc(50%+29rem),black_100%)]"
     >
       <canvas ref={lienzo} className="block h-full w-full" />
     </div>
