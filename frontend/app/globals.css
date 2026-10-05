@@ -760,14 +760,51 @@ body {
 }
 
 /*
- * La tarjeta de la biblioteca, con el mismo foco que el botón de la portada.
+ * La tarjeta de la biblioteca: lo que se ilumina es el BORDE, por donde pasa el puntero.
  *
- * Reusa `.luz` y solo cambia el color: en acento y no en blanco, porque esto es papel y no un
- * botón macizo. Que las dos pantallas compartan el gesto es lo que hace que se sientan del mismo
- * sitio.
+ * La primera versión reusaba `.luz`, el foco macizo del botón de la portada, y estaba mal por dos
+ * motivos. Uno de bulto: en oscuro salía un manchón blanco en mitad de la tarjeta, y en claro no
+ * se veía nada —el relleno de `.luz` es blanco, que sobre papel claro es invisible—. Y uno de
+ * orden: yo había puesto aquí un color de acento, pero `.tarjeta-luz` estaba ANTES que `.luz` en
+ * la hoja y, a igual especificidad, gana la última. El acento no llegaba a aplicarse nunca.
+ *
+ * Un relleno tapa; un borde encendido señala. Y funciona igual en los dos temas porque el acento
+ * cambia con ellos, cosa que el blanco no hace.
+ *
+ * El anillo sale de pintar un degradado y recortarlo a la franja del borde con dos máscaras que
+ * se restan (`mask-composite: exclude`): la de fuera menos la de dentro.
  */
-.tarjeta-luz {
-  --luz-color: color-mix(in srgb, var(--accent) 16%, transparent);
+.borde-luz {
+  position: relative;
+}
+.borde-luz::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(
+    13rem circle at var(--luz-x, 50%) var(--luz-y, 50%),
+    var(--accent),
+    transparent 70%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: var(--luz-o, 0);
+  transition: opacity 260ms ease;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .borde-luz::after {
+    transition: none;
+  }
 }
 
 /*

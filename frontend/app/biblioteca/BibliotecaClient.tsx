@@ -17,6 +17,7 @@ import type { SourceKind } from "@/lib/types";
 import { fechaRelativa, TRAMOS, tramoDe, type Tramo } from "@/lib/fechas";
 import { AuthForm } from "@/components/shell/AuthForm";
 import { BotonMecha, type MechaHandle } from "@/components/shell/BotonMecha";
+import { Cubos } from "@/components/shell/Cubos";
 import { FilaDeslizable } from "@/components/shell/FilaDeslizable";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
 
@@ -212,7 +213,16 @@ function Vacia() {
      * pasar por encima el aspa gira un cuarto de vuelta hasta la cruz. Con «reducir movimiento» no
      * se dibuja ni gira: sale puesto.
      */
-    <div className="flex flex-col items-center px-6 py-16 text-center">
+    <div className="relative isolate flex flex-col items-center px-6 py-16 text-center">
+      {/* Los cubos, en la esquina y detrás de todo. Se difuminan hacia el centro para que no se
+          acerquen al texto ni al botón: la retícula acompaña, no compite. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-6 -right-6 -z-10 w-[clamp(14rem,34vw,22rem)] opacity-[0.55] [-webkit-mask-image:radial-gradient(circle_at_85%_85%,black_20%,transparent_75%)] [mask-image:radial-gradient(circle_at_85%_85%,black_20%,transparent_75%)]"
+      >
+        <Cubos />
+      </div>
+
       <Link
         href="/"
         aria-label="Transformar mi primer documento"
@@ -319,10 +329,9 @@ function Tarjeta({
       </div>
 
       {/*
-        * `luz` es la MISMA clase del botón principal de la portada: un foco que sigue al puntero.
-        * Reusarla en vez de escribir otro resplandor es lo que hace que las dos pantallas se
-        * sientan del mismo sitio; aquí solo cambia el color, que va en acento y no en blanco
-        * porque esto es papel y no un botón macizo.
+        * Lo que se enciende al pasar por encima es el BORDE, no el relleno: un relleno tapa, un
+        * borde señala. Y en acento, que cambia con el tema — el blanco del botón de la portada
+        * aquí daba un manchón en oscuro y nada en claro.
         *
         * Alto fijo (`h-52`): las tarjetas tienen que medir lo mismo aunque un título ocupe dos
         * líneas y otro una. Una rejilla con tarjetas desiguales se lee como un descuido.
@@ -333,7 +342,7 @@ function Tarjeta({
         tabIndex={yendose ? -1 : undefined}
         onPointerMove={foco}
         onPointerLeave={apagar}
-        className={`luz tarjeta-luz group flex h-52 flex-col rounded-xl border bg-surface p-5 transition-all ${
+        className={`borde-luz group flex h-52 flex-col rounded-xl border bg-surface p-5 transition-all ${
           yendose
             ? "pointer-events-none border-border opacity-45"
             : "border-border hover:border-accent"
