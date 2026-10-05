@@ -98,3 +98,11 @@ Thumbs.db
 docs/Registro_de_Hitos.md
 .registro.git/
 registro.ps1
+
+# Herramientas de mi máquina, no del proyecto.
+#
+# Igual que `registro.ps1` y el hook de pre-push: configuración de cómo trabajo yo, que no tiene
+# por qué viajar con el código ni aparecer en el repositorio de un trabajo de grado. Estaban sin
+# ignorar, así que un `git add -A` despistado se las habría llevado enteras.
+.claude/
+skills-lock.json

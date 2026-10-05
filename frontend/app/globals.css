@@ -536,7 +536,15 @@ body {
 .fila-trasera {
   background: color-mix(in srgb, var(--warning) 12%, var(--surface));
   color: var(--warning);
-  transition: background-color 160ms ease;
+  /* Apagada salvo durante el arrastre: si no, al atenuarse la tarjeta se transparenta y asoma una
+     papelera suelta en mitad del contenido. */
+  opacity: 0;
+  transition:
+    background-color 160ms ease,
+    opacity 140ms ease;
+}
+.fila-trasera[data-activa="true"] {
+  opacity: 1;
 }
 .fila-trasera[data-listo="true"] {
   background: var(--warning);

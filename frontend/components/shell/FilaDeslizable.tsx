@@ -48,7 +48,10 @@ export function FilaDeslizable({ onDeslizar, children }: FilaDeslizableProps) {
     if (!n) return;
     n.style.transitionProperty = "";
     n.style.transform = "";
-    if (trasera.current) trasera.current.dataset.listo = "false";
+    if (trasera.current) {
+      trasera.current.dataset.listo = "false";
+      trasera.current.dataset.activa = "false";
+    }
     if (recorrido.current <= -UMBRAL) onDeslizar();
     recorrido.current = 0;
   }, [onDeslizar]);
@@ -68,6 +71,7 @@ export function FilaDeslizable({ onDeslizar, children }: FilaDeslizableProps) {
         ref={trasera}
         aria-hidden
         data-listo="false"
+        data-activa="false"
         className="fila-trasera absolute inset-0 flex items-center justify-end pr-5"
       >
         <Trash size={18} />
@@ -89,6 +93,11 @@ export function FilaDeslizable({ onDeslizar, children }: FilaDeslizableProps) {
           if (!arrastrando.current) {
             if (d > -HOLGURA) return;
             arrastrando.current = true;
+            // La trasera solo existe mientras el dedo arrastra. Estaba siempre puesta, y cuando la
+            // tarjeta se atenuaba -al armar la mecha- se transparentaba y aparecía una papelera
+            // suelta flotando en mitad del contenido. Un fondo que solo tiene sentido durante un
+            // gesto no puede estar pintado fuera del gesto.
+            if (trasera.current) trasera.current.dataset.activa = "true";
             // A partir de aquí los eventos son nuestros aunque el dedo se salga de la tarjeta.
             // Capturar es una comodidad, no un requisito: si el navegador dice que ese puntero ya
             // no está activo, lanza — y perder el arrastre entero por eso sería absurdo.

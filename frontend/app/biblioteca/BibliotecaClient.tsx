@@ -344,7 +344,10 @@ function Tarjeta({
         onPointerLeave={apagar}
         className={`borde-luz group flex h-52 flex-col rounded-xl border bg-surface p-5 transition-all ${
           yendose
-            ? "pointer-events-none border-border opacity-45"
+            ? // Mientras la mecha corre, la tarjeta se marca con el color del aviso en vez de
+              // limitarse a apagarse: atenuada y nada más parecía que algo se había roto, no que
+              // esto se va. El borde y el botón pasan a ser la misma cosa.
+              "pointer-events-none border-warning/60 opacity-60"
             : "border-border hover:border-accent"
         }`}
       >
