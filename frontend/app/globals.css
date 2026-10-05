@@ -733,14 +733,30 @@ body {
  *
  * Sin movimiento, a propósito: esta es la pantalla donde alguien está leyendo algo difícil.
  */
+/*
+ * **El grano no es una segunda decoración: es cómo se apaga el papel.**
+ *
+ * La luz y los puntos son UNA sola capa pintada en dos tiempos. El grano va debajo y la luz
+ * encima; donde la luz es opaca —el centro, que es donde se lee— tapa los puntos del todo, y según
+ * se desvanece hacia los bordes los va destapando. O sea: la densidad de la trama sigue a la luz
+ * sin que nadie la calcule, y detrás del texto no hay ni un punto.
+ *
+ * Sin máscara (que recortaría también a los hijos), sin lienzo y sin una línea de JavaScript. Y
+ * quieto: esta es la pantalla donde alguien está leyendo algo que le cuesta.
+ */
 .foco {
   background-color: color-mix(in srgb, var(--surface-sunken) 70%, var(--background));
-  background-image: radial-gradient(
-    ellipse 58rem 40rem at 50% 0%,
-    color-mix(in srgb, var(--surface) 55%, var(--background)),
-    transparent 70%
-  );
-  background-repeat: no-repeat;
+  background-image:
+    radial-gradient(
+      ellipse 58rem 40rem at 50% 0%,
+      color-mix(in srgb, var(--surface) 55%, var(--background)),
+      transparent 70%
+    ),
+    radial-gradient(color-mix(in srgb, var(--foreground) 10%, transparent) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    18px 18px;
+  background-repeat: no-repeat, repeat;
 }
 
 /*
