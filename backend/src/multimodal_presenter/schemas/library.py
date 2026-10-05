@@ -97,6 +97,10 @@ class ResumenPresentacion(_Strict):
     source_kind: SourceKind
     nombre_archivo: str | None
     creada_en: str
+    # Cuántas secciones tiene y cuántas quedaron ancladas al documento. `None` en las que se
+    # guardaron antes de que esto existiera: la biblioteca no inventa un dato que no tiene.
+    secciones: int | None = None
+    verificadas: int | None = None
 
 
 class ListaPresentaciones(_Strict):

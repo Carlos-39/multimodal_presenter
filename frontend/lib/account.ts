@@ -29,6 +29,14 @@ export interface ResumenPresentacion {
   source_kind: SourceKind;
   nombre_archivo: string | null;
   creada_en: string;
+  /**
+   * Cuántas secciones tiene y cuántas quedaron ancladas al documento.
+   *
+   * `null` en las guardadas antes de que esto existiera. La biblioteca no inventa el dato: si no
+   * está, no enseña la etiqueta.
+   */
+  secciones: number | null;
+  verificadas: number | null;
 }
 
 export interface PayloadGuardado {

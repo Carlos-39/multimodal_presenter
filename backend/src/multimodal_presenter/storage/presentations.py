@@ -49,8 +49,9 @@ async def guardar(
     )
     await conn.execute(
         "INSERT INTO presentaciones "
-        "  (id, usuario_id, document_id, titulo, version_contrato, payload_json, creada_en) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "  (id, usuario_id, document_id, titulo, version_contrato, payload_json, creada_en, "
+        "   secciones, verificadas) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             presentacion_id,
             usuario_id,
@@ -59,6 +60,8 @@ async def guardar(
             VERSION_CONTRATO,
             payload.model_dump_json(),
             momento,
+            payload.grounding.total_sections,
+            payload.grounding.verified_sections,
         ),
     )
     await conn.commit()
@@ -84,9 +87,18 @@ async def actualizar(
     toca el documento, que es el mismo por definición — si cambiara, sería otra presentación.
     """
     cur = await conn.execute(
-        "UPDATE presentaciones SET titulo = ?, version_contrato = ?, payload_json = ? "
+        "UPDATE presentaciones SET titulo = ?, version_contrato = ?, payload_json = ?, "
+        "  secciones = ?, verificadas = ? "
         "WHERE id = ? AND usuario_id = ?",
-        (titulo, VERSION_CONTRATO, payload.model_dump_json(), presentacion_id, usuario_id),
+        (
+            titulo,
+            VERSION_CONTRATO,
+            payload.model_dump_json(),
+            payload.grounding.total_sections,
+            payload.grounding.verified_sections,
+            presentacion_id,
+            usuario_id,
+        ),
     )
     await conn.commit()
     return cur.rowcount > 0
@@ -99,7 +111,7 @@ async def listar(conn: aiosqlite.Connection, usuario_id: str) -> list[ResumenPre
     de qué es cada cosa.
     """
     async with conn.execute(
-        "SELECT p.id, p.document_id, p.creada_en, "
+        "SELECT p.id, p.document_id, p.creada_en, p.secciones, p.verificadas, "
         "       COALESCE(p.titulo, '(sin título)') AS titulo, "
         "       d.source_kind, d.nombre_archivo "
         "FROM presentaciones p "
@@ -118,6 +130,8 @@ async def listar(conn: aiosqlite.Connection, usuario_id: str) -> list[ResumenPre
             source_kind=f["source_kind"],
             nombre_archivo=f["nombre_archivo"],
             creada_en=f["creada_en"],
+            secciones=f["secciones"],
+            verificadas=f["verificadas"],
         )
         for f in filas
     ]

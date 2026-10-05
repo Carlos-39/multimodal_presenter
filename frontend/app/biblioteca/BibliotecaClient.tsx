@@ -2,11 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, FileAudio, FilePdf, FileText, Image as ImageIcon, Plus } from "@phosphor-icons/react";
+import {
+  ArrowRight,
+  FileAudio,
+  FilePdf,
+  FileText,
+  Image as ImageIcon,
+  MagnifyingGlass,
+  Plus,
+} from "@phosphor-icons/react";
 import type { ResumenPresentacion, Usuario } from "@/lib/account";
 import { borrarPresentacion, misPresentaciones, quienSoy } from "@/lib/account";
 import type { SourceKind } from "@/lib/types";
-import { fechaRelativa } from "@/lib/fechas";
+import { fechaRelativa, TRAMOS, tramoDe, type Tramo } from "@/lib/fechas";
 import { AuthForm } from "@/components/shell/AuthForm";
 import { BotonMecha, type MechaHandle } from "@/components/shell/BotonMecha";
 import { FilaDeslizable } from "@/components/shell/FilaDeslizable";
@@ -27,6 +35,9 @@ import { ThemeToggle } from "@/components/shell/ThemeToggle";
  * **Sin cuenta no se echa a nadie:** se ofrece entrar, aquí mismo, con el formulario de siempre.
  * Un muro de 401 sería el único sitio de la aplicación que trata a un invitado como un error.
  */
+/** A partir de cuantas presentaciones vale la pena un buscador. */
+const UMBRAL_BUSCADOR = 6;
+
 const ICONOS: Record<SourceKind, typeof FileText> = {
   text: FileText,
   pdf: FilePdf,
@@ -37,6 +48,14 @@ const ICONOS: Record<SourceKind, typeof FileText> = {
 export function BibliotecaClient() {
   const [usuario, setUsuario] = useState<Usuario | null | undefined>(undefined);
   const [lista, setLista] = useState<ResumenPresentacion[] | null>(null);
+  const [filtro, setFiltro] = useState("");
+
+  // Se filtra por titulo y nada mas: buscar dentro del contenido seria otra cosa -y pediria al
+  // servidor- y prometerlo sin hacerlo es peor que no ofrecerlo.
+  const busqueda = filtro.trim().toLocaleLowerCase("es");
+  const filtradas = (lista ?? []).filter(
+    (p) => !busqueda || p.titulo.toLocaleLowerCase("es").includes(busqueda),
+  );
 
   // `vivo` corta el camino si el componente se desmonta a mitad de las dos peticiones: fijar
   // estado sobre algo ya desmontado es un aviso en desarrollo y una fuga en producción.
@@ -100,21 +119,63 @@ export function BibliotecaClient() {
                   : `${lista.length} ${lista.length === 1 ? "presentación guardada" : "presentaciones guardadas"}`}
             </p>
 
+            {/* El buscador solo cuando hay bastante que buscar. Con tres presentaciones un campo
+                de busqueda es un trasto que ocupa sitio y no resuelve nada. */}
+            {lista && lista.length >= UMBRAL_BUSCADOR ? (
+              <div className="relative mt-6 max-w-sm">
+                <MagnifyingGlass
+                  size={14}
+                  aria-hidden
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+                />
+                <input
+                  type="search"
+                  value={filtro}
+                  onChange={(e) => setFiltro(e.target.value)}
+                  placeholder="Buscar por titulo"
+                  aria-label="Buscar en tu biblioteca"
+                  className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-3 text-sm text-foreground transition-colors placeholder:text-muted hover:border-border-strong focus:border-accent focus:outline-none"
+                />
+              </div>
+            ) : null}
+
             <div className="mt-8">
               {lista === null ? (
                 <Cargando />
               ) : lista.length === 0 ? (
                 <Vacia />
+              ) : filtradas.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-border px-6 py-10 text-center text-sm text-muted">
+                  Nada con esa palabra. Prueba con otra del titulo.
+                </p>
               ) : (
-                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {lista.map((p) => (
-                    <Tarjeta
-                      key={p.id}
-                      presentacion={p}
-                      onBorrada={(id) => setLista((l) => (l ?? []).filter((x) => x.id !== id))}
-                    />
-                  ))}
-                </ul>
+                /* Por montones y no en una cuadricula seguida: con quince presentaciones, saber
+                   que algo es de hoy o de hace un mes es la mitad de encontrarlo. Los montones
+                   vacios no se dibujan. */
+                <div className="flex flex-col gap-10">
+                  {(Object.keys(TRAMOS) as Tramo[]).map((t) => {
+                    const grupo = filtradas.filter((x) => tramoDe(x.creada_en) === t);
+                    if (!grupo.length) return null;
+                    return (
+                      <section key={t}>
+                        <h2 className="text-xs font-medium uppercase tracking-[0.08em] text-muted">
+                          {TRAMOS[t]}
+                        </h2>
+                        <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {grupo.map((x) => (
+                            <Tarjeta
+                              key={x.id}
+                              presentacion={x}
+                              onBorrada={(id) =>
+                                setLista((l) => (l ?? []).filter((y) => y.id !== id))
+                              }
+                            />
+                          ))}
+                        </ul>
+                      </section>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </>
@@ -244,16 +305,57 @@ function Tarjeta({
             {titulo}
           </h2>
         </div>
-        <p className="mt-auto pt-4 text-xs text-muted">
+        <div className="mt-auto pt-4 text-xs text-muted">
           {nombre_archivo ? (
-            <span className="block truncate" title={nombre_archivo}>
+            <p className="truncate" title={nombre_archivo}>
               {nombre_archivo}
-            </span>
+            </p>
           ) : null}
-          <span className="tabular">{fechaRelativa(creada_en)}</span>
-        </p>
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            <span className="tabular">{fechaRelativa(creada_en)}</span>
+            <Anclaje secciones={presentacion.secciones} verificadas={presentacion.verificadas} />
+          </div>
+        </div>
       </Link>
       </FilaDeslizable>
     </li>
+  );
+}
+
+
+/**
+ * Cuantas secciones quedaron ancladas al documento.
+ *
+ * **Es el unico dato que distingue a este sistema, y la biblioteca no lo ensenaba.** Estaba
+ * guardado desde el principio dentro del payload, pero el listado no puede leer el payload -un
+ * deck con ilustraciones son megas por fila-, asi que ahora los dos numeros se guardan aparte al
+ * guardar y viajan en el resumen.
+ *
+ * Verde cuando estan todas; ambar cuando falta alguna, que es el mismo color con el que la
+ * aplicacion dice que no pudo verificar algo. Y si el dato no esta -presentaciones guardadas antes
+ * de que esto existiera- no se ensena nada: inventarlo seria peor que callarlo.
+ */
+function Anclaje({
+  secciones,
+  verificadas,
+}: {
+  secciones: number | null;
+  verificadas: number | null;
+}) {
+  if (secciones === null || verificadas === null || secciones === 0) return null;
+  const todas = verificadas === secciones;
+  return (
+    <span className="inline-flex items-center gap-1.5" title="Secciones ancladas al documento">
+      <span
+        aria-hidden
+        className={`h-1.5 w-1.5 shrink-0 rounded-full ${todas ? "bg-verified" : "bg-warning"}`}
+      />
+      <span className={todas ? "text-muted" : "text-warning"}>
+        <span className="tabular">
+          {verificadas} de {secciones}
+        </span>{" "}
+        ancladas
+      </span>
+    </span>
   );
 }
