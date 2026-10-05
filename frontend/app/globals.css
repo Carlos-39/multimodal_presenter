@@ -547,6 +547,133 @@ body {
 }
 
 /*
+ * El papel de cada acto del «cómo se construyó». La historia se va aclarando: arranca en el tono
+ * hundido —los cimientos— y acaba en el de las tarjetas. El tono entra en dos segundos, que es lo
+ * que evita el fogonazo de un color cambiando de golpe donde alguien está leyendo.
+ */
+.papel {
+  background-color: var(--background);
+  transition: background-color 2000ms ease;
+}
+.papel[data-asentado="true"].acto-cimiento {
+  background-color: color-mix(in srgb, var(--surface-sunken) 80%, var(--background));
+}
+.papel[data-asentado="true"].acto-trazabilidad {
+  background-color: color-mix(in srgb, var(--surface-sunken) 40%, var(--background));
+}
+.papel[data-asentado="true"].acto-midiendo {
+  background-color: var(--background);
+}
+.papel[data-asentado="true"].acto-usable {
+  background-color: color-mix(in srgb, var(--surface) 42%, var(--background));
+}
+.papel[data-asentado="true"].acto-cierre {
+  background-color: color-mix(in srgb, var(--surface) 85%, var(--background));
+}
+
+/* El rótulo del acto, al margen, como el titulillo de un libro: aparece cuando ya llevas un rato
+   leyendo, que es cuando sirve saber en qué parte de la historia estás. */
+.rotulo {
+  opacity: 0;
+  transition: opacity 1200ms ease;
+}
+.rotulo[data-visible="true"] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .papel,
+  .rotulo {
+    transition: none;
+  }
+}
+
+/*
+ * El árbol del índice del «cómo se construyó».
+ *
+ * El tronco y los codos son bordes, no un SVG: los títulos de estos capítulos ocupan dos líneas y
+ * un dibujo con las filas calculadas a altura fija se descuadra en cuanto una envuelve.
+ *
+ * En la portada el árbol **se dibuja**: baja el tronco de cada acto y detrás van saliendo sus
+ * ramas. Es el mismo gesto que el trazo de las figuras, y es lo único que se mueve solo en esa
+ * página — una vez, al llegar, y se acabó.
+ */
+.rama {
+  position: relative;
+}
+.tronco {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 10px;
+  width: 1px;
+  background: var(--border);
+  transform-origin: top;
+}
+.rama > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 14px;
+  height: 15px;
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-bottom-left-radius: 8px;
+}
+/* La rama donde estás, y el tronco por encima de ella, en acento: no marca el sitio, marca el
+   recorrido hasta él. */
+.rama > li[data-actual]::before {
+  border-color: var(--accent);
+}
+.rama > li[data-actual]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  top: -2000px;
+  width: 1px;
+  background: var(--accent);
+}
+.rama {
+  overflow: hidden;
+}
+
+@keyframes tronco-baja {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes rama-sale {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tronco.trazando {
+  animation: tronco-baja 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.surgiendo {
+  animation: rama-sale 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tronco.trazando,
+  .surgiendo {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
  * El área de trabajo, iluminada desde arriba.
  *
  * **No es una trama, es luz.** Se probaron seis fondos con patrón —rejilla, puntos, pautado— y

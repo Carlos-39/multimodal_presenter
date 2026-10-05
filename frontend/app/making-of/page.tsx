@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { CaretRight } from "@phosphor-icons/react/dist/ssr";
+import { Indice } from "@/components/makingof/Indice";
 import { CAPITULOS } from "@/content/makingOf";
 import { ACTOS, escrito, type Acto } from "@/lib/makingOf";
 
@@ -33,7 +35,15 @@ export default function IndiceMakingOf() {
         Cada capítulo lleva su conclusión debajo: leyendo solo esas líneas ya está la historia.
       </p>
 
-      <div className="mt-12 flex flex-col gap-12">
+      {/* El árbol primero y la lista después, que es el mismo progressive disclosure que aplica
+          la aplicación: aquí está la forma entera de un vistazo —cinco actos, catorce capítulos,
+          cuál es más largo— y abajo cada uno con lo que concluye. Es lo único que se mueve solo en
+          esta página: se dibuja una vez al llegar y se acabó. */}
+      <div className="mt-10 rounded-xl border border-border bg-surface/60 px-5 py-4 sm:px-6">
+        <Indice variante="portada" />
+      </div>
+
+      <div className="mt-14 flex flex-col gap-12">
         {actos.map((acto) => (
           <Seccion key={acto} acto={acto} />
         ))}
@@ -60,12 +70,18 @@ function Seccion({ acto }: { acto: Acto }) {
           const fila = (
             <>
               <div className="flex items-baseline gap-3">
-                <span className="w-5 shrink-0 font-mono text-xs tabular-nums text-muted">
+                <span
+                  className={`w-5 shrink-0 font-mono text-xs tabular-nums transition-colors ${
+                    listo ? "text-muted group-hover:text-accent" : "text-muted"
+                  }`}
+                >
                   {capitulo.numero}
                 </span>
                 <h3
-                  className={`font-serif text-[1.125rem] leading-snug ${
-                    listo ? "text-foreground" : "text-foreground-secondary"
+                  className={`font-serif text-[1.125rem] leading-snug transition-colors ${
+                    listo
+                      ? "text-foreground underline decoration-transparent decoration-1 underline-offset-[5px] group-hover:decoration-accent"
+                      : "text-foreground-secondary"
                   }`}
                 >
                   {capitulo.titulo}
@@ -84,14 +100,32 @@ function Seccion({ acto }: { acto: Acto }) {
           return (
             <li key={capitulo.slug} className="border-b border-border last:border-b-0">
               {listo ? (
+                /*
+                 * Que se vea que esto se pulsa **sin pasar el ratón por encima**. Antes la fila
+                 * era un enlace sin ninguna marca: solo se enteraba quien ya lo sospechaba, y en
+                 * una pantalla táctil no se entera nadie.
+                 *
+                 * En reposo ya hay dos señales: el filo a la izquierda —la misma rama del árbol
+                 * de arriba— y el ángulo a la derecha. Al pasar por encima las dos se encienden en
+                 * acento y el título se subraya, que es lo que confirma lo que ya se intuía.
+                 */
                 <Link
                   href={`/making-of/${capitulo.slug}`}
-                  className="block py-4 transition-colors hover:bg-surface-sunken/40"
+                  className="group relative block py-4 pl-4 pr-8 transition-colors hover:bg-surface-sunken/40"
                 >
+                  <span
+                    aria-hidden
+                    className="absolute bottom-3.5 left-0 top-3.5 w-px bg-border transition-colors group-hover:bg-accent"
+                  />
                   {fila}
+                  <CaretRight
+                    size={14}
+                    aria-hidden
+                    className="absolute right-2 top-[1.35rem] text-muted opacity-45 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-accent group-hover:opacity-100 motion-reduce:transition-none"
+                  />
                 </Link>
               ) : (
-                <div className="py-4 opacity-70">{fila}</div>
+                <div className="py-4 pl-4 opacity-70">{fila}</div>
               )}
             </li>
           );
