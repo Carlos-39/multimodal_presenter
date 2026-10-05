@@ -11,6 +11,7 @@ import { Carrusel } from "./Carrusel";
 import { ComoFunciona } from "./ComoFunciona";
 import { Demostracion } from "./Demostracion";
 import { Preguntas } from "./Preguntas";
+import { Firma } from "./Firma";
 import { Problema } from "./Problema";
 import { Trama } from "./Trama";
 
@@ -187,9 +188,18 @@ function Cierre({ onInvitado }: { onInvitado: () => void }) {
           </div>
         </div>
 
+        {/*
+         * El nombre, enseñando sus propias líneas de construcción, justo encima del enlace al
+         * «cómo se construyó». Ese sitio es la mitad de la idea: en cualquier otro punto de la
+         * portada sería un efecto bonito; aquí dice algo.
+         */}
+        <div className="mt-20 h-24 sm:h-32">
+          <Firma />
+        </div>
+
         <Link
           href="/making-of"
-          className="group mt-14 flex flex-col gap-4 border-t border-border pt-8 sm:flex-row sm:items-end sm:justify-between"
+          className="group mt-6 flex flex-col gap-4 border-t border-border pt-8 sm:flex-row sm:items-end sm:justify-between"
         >
           <div>
             <h3 className="font-sans text-xl font-medium tracking-[-0.015em] text-foreground">Cómo se construyó</h3>
