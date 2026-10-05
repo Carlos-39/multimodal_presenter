@@ -547,6 +547,51 @@ body {
 }
 
 /*
+ * Las preguntas frecuentes de la portada.
+ *
+ * **La respuesta sube desde detrás del renglón** en vez de aparecer de golpe: el contenedor
+ * recorta y el párrafo entra desde abajo. Es el gesto del menú escalonado que me gustaba, hecho
+ * con dos reglas en lugar de con 70 kB de librería — y, sobre todo, sin tocar los `details`
+ * nativos, que son los que hacen que esto funcione con teclado, con lector de pantalla y aunque
+ * el JavaScript no llegue a cargar.
+ *
+ * La numeración sale de un contador CSS: no hay que mantenerla a mano ni se descoloca si mañana
+ * se añade una pregunta en medio.
+ */
+.preguntas {
+  counter-reset: faq;
+}
+.preguntas > details {
+  counter-increment: faq;
+}
+.preguntas .numero::before {
+  content: counter(faq, decimal-leading-zero);
+}
+.preguntas > details:not([open]) .numero {
+  opacity: 0.45;
+}
+
+@keyframes respuesta-sube {
+  from {
+    transform: translateY(0.75em);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.preguntas > details[open] .respuesta > * {
+  animation: respuesta-sube 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preguntas > details[open] .respuesta > * {
+    animation: none;
+  }
+}
+
+/*
  * El papel de cada acto del «cómo se construyó». La historia se va aclarando: arranca en el tono
  * hundido —los cimientos— y acaba en el de las tarjetas. El tono entra en dos segundos, que es lo
  * que evita el fogonazo de un color cambiando de golpe donde alguien está leyendo.

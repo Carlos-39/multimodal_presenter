@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, X } from "@phosphor-icons/react";
@@ -29,11 +29,45 @@ import { Trama } from "./Trama";
  */
 export function Landing({ onEntrar }: { onEntrar: () => void }) {
   const [acceso, setAcceso] = useState(false);
+  const cabecera = useRef<HTMLElement>(null);
+
+  // El umbral es la altura de la propia cabecera: encoge en cuanto lo de arriba deja de verse.
+  useEffect(() => {
+    const n = cabecera.current;
+    if (!n) return;
+    let raf = 0;
+    const leer = () => {
+      raf = 0;
+      n.dataset.reducida = String(window.scrollY > 56);
+    };
+    const alScroll = () => {
+      if (!raf) raf = requestAnimationFrame(leer);
+    };
+    leer(); // por si se entra con la página ya desplazada (una recarga a media portada)
+    window.addEventListener("scroll", alScroll, { passive: true });
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", alScroll);
+    };
+  }, []);
 
   return (
     <div className="min-h-[100dvh] bg-background">
-      <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-5">
+      {/*
+       * La cabecera encoge al bajar: deja de ser una barra pegada al borde y se queda en una
+       * píldora flotando, más estrecha y más corta.
+       *
+       * **No lleva estado de React.** Lo que cambia es un atributo en el DOM y el resto lo hace
+       * CSS: meter el scroll en estado volvería a renderizar la portada entera en cada rueda de
+       * ratón. Mismo criterio que el pulgar del segmentado o el reloj de la espera.
+       *
+       * El cristal es `backdrop-filter: blur()` del de toda la vida. Descarté el componente de
+       * cristal con filtro SVG: se desactiva solo en Safari y en Firefox, lee claro/oscuro del
+       * sistema operativo en vez de nuestro tema, y su aberración cromática pelearía con una
+       * paleta que es de una sola tinta.
+       */}
+      <header ref={cabecera} data-reducida="false" className="group sticky top-0 z-30">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 border-b border-border bg-background/85 px-5 backdrop-blur-sm transition-[max-width,height,border-radius,margin,padding,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[reducida=true]:mt-2.5 group-data-[reducida=true]:h-12 group-data-[reducida=true]:max-w-3xl group-data-[reducida=true]:rounded-full group-data-[reducida=true]:border group-data-[reducida=true]:border-border group-data-[reducida=true]:bg-surface/75 group-data-[reducida=true]:px-5 group-data-[reducida=true]:shadow-float group-data-[reducida=true]:backdrop-blur-md motion-reduce:transition-none">
           <span className="text-sm font-semibold tracking-tight text-foreground">
             Multimodal Presenter
           </span>
