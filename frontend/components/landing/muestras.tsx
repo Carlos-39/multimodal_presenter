@@ -52,7 +52,7 @@ const DESPUES = " Duran apenas unos milisegundos, lo que explica que tardaran ta
 
 function DocumentoTexto({ activa }: { activa: string | null }) {
   return (
-    <p className="font-serif text-[0.8125rem] leading-[1.75] text-muted sm:leading-[1.9]">
+    <p className="font-serif text-[0.9375rem] leading-[1.7] text-muted sm:leading-[1.8]">
       {ANTES}
       <Frase encendida={activa === "txt-donde"}>{FRASE_DONDE}</Frase>{" "}
       <Frase encendida={activa === "txt-color"}>{FRASE_COLOR}</Frase>
@@ -111,7 +111,7 @@ function DocumentoPdf({ activa }: { activa: string | null }) {
           );
         })}
       </div>
-      <span className="absolute bottom-2 right-3 font-mono text-[0.5625rem] tabular-nums text-muted">
+      <span className="absolute bottom-2 right-3 font-mono text-[0.625rem] tabular-nums text-muted">
         p. 4
       </span>
     </div>
@@ -162,7 +162,7 @@ function DocumentoAudio({ activa }: { activa: string | null }) {
             style={{ left: `${avance}%` }}
           />
         </div>
-        <span className="font-mono text-[0.625rem] tabular-nums text-muted">{reloj(segundo)}</span>
+        <span className="font-mono text-[0.6875rem] tabular-nums text-muted">{reloj(segundo)}</span>
       </div>
 
       <ul className="mt-2.5 flex flex-col gap-1.5">
@@ -174,12 +174,12 @@ function DocumentoAudio({ activa }: { activa: string | null }) {
             }`}
           >
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-[0.625rem] text-accent">{t.quien}</span>
-              <span className="font-mono text-[0.5625rem] tabular-nums text-muted">
+              <span className="text-[0.6875rem] text-accent">{t.quien}</span>
+              <span className="font-mono text-[0.625rem] tabular-nums text-muted">
                 {reloj(t.en)}
               </span>
             </div>
-            <p className="mt-0.5 font-serif text-[0.75rem] leading-[1.5] text-foreground-secondary">
+            <p className="mt-0.5 font-serif text-[0.8125rem] leading-[1.55] text-foreground-secondary">
               {t.dice}
             </p>
           </li>

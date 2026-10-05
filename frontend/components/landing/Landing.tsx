@@ -12,6 +12,7 @@ import { ComoFunciona } from "./ComoFunciona";
 import { Demostracion } from "./Demostracion";
 import { Preguntas } from "./Preguntas";
 import { Problema } from "./Problema";
+import { Trama } from "./Trama";
 
 /**
  * La portada.
@@ -60,6 +61,7 @@ export function Landing({ onEntrar }: { onEntrar: () => void }) {
 
       <main>
         <Hero onInvitado={onEntrar} onAcceso={() => setAcceso(true)} />
+        <Muestra />
         <Problema />
         <ComoFunciona />
         <Carrusel />
@@ -91,7 +93,24 @@ export function Landing({ onEntrar }: { onEntrar: () => void }) {
  */
 function Hero({ onInvitado, onAcceso }: { onInvitado: () => void; onAcceso: () => void }) {
   return (
-    <section className="mx-auto max-w-6xl px-5 pb-20 pt-14 lg:pt-20">
+    <section className="relative isolate flex min-h-[calc(100dvh-3.5rem)] items-center overflow-hidden">
+      {/*
+       * La trama del hero.
+       *
+       * **Un semitono es cómo se imprime un tono continuo con UNA sola tinta**, que es exactamente
+       * lo que hace esta paleta desde el segundo rediseño: el fondo acaba diciendo lo mismo que el
+       * sistema de color. Unos anillos habrían quedado bonitos sin significar nada.
+       *
+       * Va SOLO aquí. La aplicación es seria a propósito y la bitácora es para leer; la portada es
+       * el único sitio donde alguien todavía no sabe qué es esto y hay que llamarlo.
+       *
+       * El alto es la ventana menos la cabecera, así que el borde de la sección siguiente queda
+       * justo en el filo y no asoma por abajo.
+       */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <Trama opacity={0.5} patternDensity={0.78} />
+      </div>
+      <div className="mx-auto w-full max-w-6xl px-5 py-16">
       <h1
         className="surgir max-w-[26ch] font-sans text-[2.6rem] font-medium leading-[1.08] tracking-[-0.028em] text-foreground sm:text-[3.1rem] lg:text-[3.6rem]"
         style={{ animationDelay: "0.05s" }}
@@ -120,11 +139,24 @@ function Hero({ onInvitado, onAcceso }: { onInvitado: () => void; onAcceso: () =
           Entrar
         </button>
       </div>
-      <p className="surgir mt-4 text-[0.8125rem] text-muted" style={{ animationDelay: "0.4s" }}>
-        Sin cuenta funciona todo. Entrar sirve para guardar y volver.
-      </p>
+        <p className="surgir mt-4 text-[0.8125rem] text-muted" style={{ animationDelay: "0.4s" }}>
+          Sin cuenta funciona todo. Entrar sirve para guardar y volver.
+        </p>
+      </div>
+    </section>
+  );
+}
 
-      <div className="mt-11">
+/**
+ * La demostración, ya fuera del héroe.
+ *
+ * Sigue siendo lo segundo que se ve, y a propósito: es lo único de la portada que enseña lo que la
+ * aplicación HACE, y no lo que promete. El titular convence; esto demuestra.
+ */
+function Muestra() {
+  return (
+    <section className="border-t border-border">
+      <div className="mx-auto max-w-6xl px-5 py-16 lg:py-20">
         <Demostracion />
       </div>
     </section>

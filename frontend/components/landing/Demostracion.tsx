@@ -103,7 +103,7 @@ export function Demostracion() {
               tabIndex={puesta ? 0 : -1}
               onClick={() => elegirMuestra(i)}
               onKeyDown={(e) => teclas(e, i)}
-              className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors ${
+              className={`flex items-center gap-1.5 rounded-md border px-3 py-2 text-[0.8125rem] transition-colors ${
                 puesta
                   ? "border-accent bg-accent-subtle text-accent"
                   : "border-border text-foreground-secondary hover:border-border-strong hover:text-foreground"
@@ -134,14 +134,14 @@ export function Demostracion() {
           {/* El documento va primero también en móvil: al pulsar una sección, lo que se enciende
               tiene que estar ya en pantalla, no debajo del pulgar. */}
           <div ref={panelDoc}>
-            <p className="mb-2 text-[0.6875rem] text-muted">Tu documento</p>
+            <p className="mb-2.5 text-[0.75rem] text-muted">Tu documento</p>
             <div className="rounded-lg border border-dashed border-border px-3 py-2.5">
               <muestra.Documento activa={activa} />
             </div>
           </div>
 
           <div>
-            <p className="mb-2 text-[0.6875rem] text-muted">Lo que la aplicación escribe</p>
+            <p className="mb-2.5 text-[0.75rem] text-muted">Lo que la aplicación escribe</p>
             <div className="flex flex-col gap-2">
               {muestra.secciones.map((s, j) => {
                 const puesta = s.id === activa;
@@ -155,8 +155,8 @@ export function Demostracion() {
                       puesta ? "border-accent" : "border-border hover:border-border-strong"
                     }`}
                   >
-                    <h3 className="font-serif text-[0.8125rem] text-foreground">{s.titulo}</h3>
-                    <p className="mt-1 font-serif text-xs leading-[1.55] text-foreground-secondary">
+                    <h3 className="font-serif text-[0.9375rem] text-foreground">{s.titulo}</h3>
+                    <p className="mt-1.5 font-serif text-[0.8125rem] leading-[1.6] text-foreground-secondary">
                       {s.cuerpo}
                     </p>
                     {puesta ? (
@@ -167,7 +167,7 @@ export function Demostracion() {
                           aria-hidden
                           className="mt-[3px] shrink-0 text-muted"
                         />
-                        <span className="font-serif text-[0.6875rem] italic leading-[1.45] text-foreground-secondary">
+                        <span className="font-serif text-[0.75rem] italic leading-[1.5] text-foreground-secondary">
                           {s.cita}{" "}
                           <span className="whitespace-nowrap not-italic text-muted">— {s.pie}</span>
                         </span>
@@ -182,7 +182,7 @@ export function Demostracion() {
 
         {/* Sin región viva: con el recorrido andando, un lector de pantalla estaría anunciando
             una nota nueva cada cuatro segundos. El texto sigue ahí para quien lo recorra. */}
-        <p className="mt-3 border-t border-border pt-2.5 text-[0.6875rem] leading-[1.5] text-muted">
+        <p className="mt-3 border-t border-border pt-2.5 text-[0.75rem] leading-[1.55] text-muted">
           {encendido ? muestra.nota : "Pulsa una sección para ver de dónde salió."}
         </p>
       </div>
