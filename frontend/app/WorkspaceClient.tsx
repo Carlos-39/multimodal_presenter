@@ -1,6 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Books } from "@phosphor-icons/react";
+import { AvisoBiblioteca } from "@/components/shell/AvisoBiblioteca";
+import { avisoPendiente, marcarAvisoVisto } from "@/lib/avisos";
 import { AppShell } from "@/components/shell/AppShell";
 import { Workspace } from "@/components/shell/Workspace";
 import { ChatPanel } from "@/components/shell/ChatPanel";
@@ -81,7 +86,15 @@ function synthGrounding(sourceKind: SourceKind, entries: SectionGrounding[]): Gr
 /** Tramo del reloj de modo. `deck` es un tramo PROPIO, no un nivel de detalle: ver `modeBucketRef`. */
 type ModeBucket = DetailLevel | "deck";
 
-export default function WorkspaceClient() {
+/**
+ * `abrir`: el id de una presentación guardada con la que llegas desde la biblioteca. Se restaura
+ * por el MISMO camino que al abrirla desde el cajón (`restaurar`), no por uno propio: ese camino
+ * limpia todos los estados del documento anterior, y duplicarlo significaría que cada estado que
+ * alguien añada después habría que acordarse de limpiarlo en dos sitios.
+ */
+export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
+  const router = useRouter();
+  const [avisoBiblioteca, setAvisoBiblioteca] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -404,6 +417,7 @@ export default function WorkspaceClient() {
       if (yaGuardada) {
         await actualizarPresentacion(yaGuardada, titulo, payload);
         setGuardando("guardada");
+        if (avisoPendiente("biblioteca")) setAvisoBiblioteca(true);
         return;
       }
 
@@ -425,6 +439,9 @@ export default function WorkspaceClient() {
       const audio = narration.audioGenerado();
       if (audio) void guardarNarracion(guardada.id, audio);
       setGuardando("guardada");
+      // La única pista de bienvenida de la aplicación, y llega cuando hay una pregunta que
+      // responder: acabas de guardar y no sabes a dónde fue.
+      if (avisoPendiente("biblioteca")) setAvisoBiblioteca(true);
     } catch {
       setGuardando("error");
     }
@@ -658,6 +675,20 @@ export default function WorkspaceClient() {
     void quienSoy().then(setUsuario);
   }, []);
 
+  // Llegada desde la biblioteca. Una sola vez por id: si fallara —la borraste en otra pestaña, se
+  // te venció la sesión— se queda el área de trabajo vacía, que es un estado honesto, en vez de
+  // reintentar en bucle contra algo que ya no está.
+  // El ref se actualiza en un efecto y no en el render: la regla de pureza del proyecto prohíbe
+  // tocar un ref mientras se renderiza.
+  const restaurarRef = useRef(restaurar);
+  useEffect(() => {
+    restaurarRef.current = restaurar;
+  });
+  useEffect(() => {
+    if (!abrir) return;
+    void restaurarRef.current(abrir);
+  }, [abrir]);
+
   useEffect(() => {
     initTelemetry();
     modeEnteredAtRef.current = Date.now(); // línea base del primer modo (resumen, al montar)
@@ -723,6 +754,31 @@ export default function WorkspaceClient() {
       deckOpen={deckOpen}
       acciones={
         <>
+          {/* La biblioteca, con su sitio en el núcleo fijo y no enterrada en el cajón. Solo
+              aparece con cuenta: para un invitado sería una promesa que no puede cumplir. */}
+          {usuario ? (
+            <span className="relative">
+              <Link
+                href="/biblioteca"
+                className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors ${
+                  avisoBiblioteca
+                    ? "border-accent bg-accent-subtle text-accent"
+                    : "border-border text-foreground-secondary hover:border-border-strong hover:text-foreground"
+                }`}
+              >
+                <Books size={13} aria-hidden />
+                Biblioteca
+              </Link>
+              {avisoBiblioteca ? (
+                <AvisoBiblioteca
+                  onCerrar={() => {
+                    marcarAvisoVisto("biblioteca");
+                    setAvisoBiblioteca(false);
+                  }}
+                />
+              ) : null}
+            </span>
+          ) : null}
           {hasContent && usuario ? (
             <button
               type="button"
@@ -870,7 +926,13 @@ export default function WorkspaceClient() {
         <div className="drawer-enter h-full w-80 max-w-[85vw] border-l border-border shadow-2xl">
           <AccountPanel
             usuario={usuario}
-            onUsuario={setUsuario}
+            onUsuario={(u) => {
+              setUsuario(u);
+              // Al ENTRAR se aterriza en la biblioteca, no de vuelta en el área de trabajo: lo
+              // primero que quiere ver quien acaba de identificarse es lo suyo. Solo al pasar de
+              // fuera a dentro — cerrar sesión deja donde estabas, que es lo correcto.
+              if (u) router.push("/biblioteca");
+            }}
             onAbrir={(id) => void restaurar(id)}
             onBorrada={(id) => {
               // Si se borró la que se está viendo, ya no hay dónde guardar su conversación. Sin

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fechaRelativa } from "./fechas";
+import { fechaRelativa, tramoDe } from "./fechas";
 
 const AHORA = new Date("2026-10-03T12:00:00Z");
 
@@ -45,5 +45,42 @@ describe("fechaRelativa", () => {
 
   it("una fecha ilegible no rompe la fila", () => {
     expect(fechaRelativa("no soy una fecha", AHORA)).toBe("");
+  });
+});
+
+describe("tramoDe", () => {
+  /*
+   * Las fechas se construyen en hora LOCAL y no con cadenas en UTC a propósito.
+   *
+   * `tramoDe` agrupa por el día del calendario de quien mira, que es lo correcto —«hoy» significa
+   * hoy para ti—, así que depende de la zona horaria. Escribí la primera versión de este test con
+   * cadenas terminadas en `Z` y falló en una máquina en UTC−5: `2026-10-05T01:00:00Z` es el día 4
+   * por la tarde aquí. El fallo era del test, no de la función.
+   */
+  const alas = (dia: number, hora: number) => new Date(2026, 9, dia, hora, 0).toISOString();
+  const ahora = new Date(2026, 9, 5, 14, 0);
+
+  it("hoy es el mismo día del calendario, no las últimas 24 horas", () => {
+    expect(tramoDe(alas(5, 1), ahora)).toBe("hoy");
+    // Tres horas antes, pero ya es otro día: va a «esta semana», no a «hoy».
+    expect(tramoDe(alas(4, 23), new Date(2026, 9, 5, 2, 0))).toBe("semana");
+  });
+
+  it("la semana llega hasta el sexto día", () => {
+    expect(tramoDe(alas(4, 10), ahora)).toBe("semana");
+    expect(tramoDe(new Date(2026, 8, 30, 10, 0).toISOString(), ahora)).toBe("semana");
+  });
+
+  it("a partir del séptimo día, antes", () => {
+    expect(tramoDe(new Date(2026, 8, 28, 10, 0).toISOString(), ahora)).toBe("antes");
+    expect(tramoDe(new Date(2025, 0, 1, 10, 0).toISOString(), ahora)).toBe("antes");
+  });
+
+  it("una fecha futura cuenta como hoy, no como error", () => {
+    expect(tramoDe(alas(6, 10), ahora)).toBe("hoy");
+  });
+
+  it("una fecha ilegible no revienta: cae en el último montón", () => {
+    expect(tramoDe("no es una fecha", ahora)).toBe("antes");
   });
 });

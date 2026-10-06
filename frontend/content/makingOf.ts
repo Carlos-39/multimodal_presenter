@@ -1070,7 +1070,7 @@ export const CAPITULOS: Capitulo[] = [
     titulo: "La piel",
     hitos: "Hito 5k",
     conclusion:
-      "Un rediseño que no tocó la arquitectura, y que empezó por medir por qué la anterior se sentía plana.",
+      "Dos rediseños. El primero arregló lo que medí; el segundo, lo que no se me ocurrió medir.",
     bloques: [
       {
         tipo: "prosa",
@@ -1096,6 +1096,42 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "hallazgo",
         texto: "Todos los pares de texto y fondo superan 4,5:1, en claro y en oscuro. Calculado, no estimado a ojo.",
+      },
+
+      { tipo: "encabezado", texto: "Y meses después, el mismo capítulo otra vez" },
+      {
+        tipo: "prosa",
+        texto:
+          "Todo lo anterior sigue siendo verdad, y aun así **la respuesta estaba mal**. El diagnóstico era correcto —faltaba contraste de temperatura— y la solución resolvió el problema medido. Lo que no vi es hacia dónde lo resolvía.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Lo dijo el autor del proyecto mirando la aplicación terminada: *«está bonito, pero parece un producto de Anthropic»*. Y tenía razón. **Papel crema con serifa para el cuerpo es, literalmente, la casa de Claude** — es así como se componen sus respuestas. La guía de diseño que usé para hacer este rediseño advierte del fondo crema cercano a `#F4F1EA` como el tic más repetido de interfaz generada, y aterricé justo ahí sin verlo.",
+      },
+      {
+        tipo: "hallazgo",
+        texto: "Elegí lo más defendible en cada decisión, y la suma de decisiones defendibles me dejó donde está todo el mundo.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La corrección no fue quitar el calor, porque entonces el acento frío dejaría de destacar y volvería la planitud del principio. **Fue mover dónde vive.** Los neutros pasan a frío-neutros, el acento sigue siendo tinta, y el contraste de temperatura lo aporta ahora el amarillo del resaltador.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y eso convierte el color de la verificación en **la única temperatura de la pantalla**. No es una idea estética que se le ocurrió a alguien: es el mismo criterio con el que el resaltador ya estaba reservado al rastro de verificación, llevado hasta el final. Los semánticos conservan su temperatura a propósito, porque son alertas y leerlos importa más que la coherencia del ambiente.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "La tipografía cambió con la paleta, y de paso corrigió una incoherencia que llevaba meses ahí. El sistema dice que la serifa es la voz del documento y la sans la de la herramienta. Pero «Entiende un documento difícil» **no lo dice el documento, lo dice la aplicación**, e iba en serifa. Los titulares pasaron a la sans; la prosa, lo que simula contenido del documento y este relato entero conservan la serifa.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Medir antes volvió a pagar: dos tonos de la paleta nueva no llegaban. El atenuado daba ==4,22:1== sobre el fondo y el borde fuerte ==2,81:1==, por debajo del 3:1 que pide un borde. Se oscurecieron lo justo para pasar, y se comprobó sobre lo que de verdad pinta el navegador y no sobre la tabla de hex.",
       },
 
       { tipo: "encabezado", texto: "Dos voces tipográficas, y lo que significan" },
@@ -1462,6 +1498,11 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "hallazgo",
         texto: "Una suite en verde dice que lo que probaste funciona. No dice nada de lo que no se te ocurrió probar.",
+      },
+      {
+        tipo: "prosa",
+        texto:
+          "Y el capítulo 11 añade el límite de ese método, que es el más incómodo de todos. **Medir solo responde la pregunta que hiciste.** El primer rediseño midió por qué la interfaz se sentía plana, lo arregló, y la dejó pareciéndose a otro producto — porque «¿a qué se parece esto?» no era una de las preguntas. Lo encontró alguien mirándola, meses después.",
       },
       {
         tipo: "prosa",

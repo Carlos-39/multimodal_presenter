@@ -4,6 +4,7 @@ import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useAvanceSolo } from "@/hooks/useAvanceSolo";
 import { useEnPantalla } from "@/hooks/useEnPantalla";
 import { CAPACIDADES } from "./capacidades";
+import { Baraja } from "./Baraja";
 
 /**
  * Las piezas que el sistema sabe hacer, una a una.
@@ -39,7 +40,7 @@ export function Carrusel() {
     // y no toca el eje vertical, donde recortaría los anillos de foco.
     <section className="overflow-x-clip border-t border-border bg-surface-sunken/40">
       <div ref={ref} className="mx-auto max-w-6xl px-5 py-20" {...pausa}>
-        <h2 className="max-w-[22ch] font-serif text-[1.75rem] leading-tight text-foreground sm:text-[2.25rem]">
+        <h2 className="max-w-[22ch] font-sans text-[2rem] font-medium leading-[1.08] tracking-[-0.025em] text-foreground sm:text-[2.6rem]">
           Todo lo que puedes hacer con un documento
         </h2>
 
@@ -47,8 +48,8 @@ export function Carrusel() {
           <div>
             {/* `key` fuerza el remontaje para que la entrada se repita en cada cambio. */}
             <div key={capacidad.id} className="pasar" data-sentido={sentido}>
-              <h3 className="font-serif text-xl text-foreground">{capacidad.titulo}</h3>
-              <p className="mt-3 max-w-[42ch] text-sm leading-6 text-foreground-secondary">
+              <h3 className="font-sans text-[1.375rem] font-medium tracking-[-0.016em] text-foreground">{capacidad.titulo}</h3>
+              <p className="mt-3 max-w-[42ch] text-[0.9375rem] leading-[1.6] text-foreground-secondary">
                 {capacidad.descripcion}
               </p>
             </div>
@@ -98,15 +99,10 @@ export function Carrusel() {
             </div>
           </div>
 
-          {/* El marco no se mueve: lo que entra por el lado es la lámina. Mover también la caja
-              haría saltar el layout de la sección entera en cada paso. */}
-          <div className="flex min-h-[15rem] items-center justify-center overflow-hidden rounded-xl border border-border bg-surface p-7 lg:min-h-[19rem]">
-            <div key={capacidad.id} className="pasar w-full" data-sentido={sentido}>
-              <div className="flex justify-center">
-                <capacidad.Lamina />
-              </div>
-            </div>
-          </div>
+          {/* La baraja en lugar del panel único: así se ve que hay cinco y cuáles son, que es lo
+              que unos puntos no pueden decir. El comportamiento no cambia — sigue siendo el mismo
+              `useAvanceSolo` con sus flechas, sus puntos y su cuenta. */}
+          <Baraja indice={indice} />
         </div>
       </div>
     </section>

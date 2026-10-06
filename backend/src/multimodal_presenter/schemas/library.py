@@ -97,6 +97,13 @@ class ResumenPresentacion(_Strict):
     source_kind: SourceKind
     nombre_archivo: str | None
     creada_en: str
+    # Cuántas secciones tiene y cuántas quedaron ancladas al documento. `None` en las que se
+    # guardaron antes de que esto existiera: la biblioteca no inventa un dato que no tiene.
+    secciones: int | None = None
+    verificadas: int | None = None
+    # El principio de la primera seccion, recortado. No es el resumen del documento: es lo primero
+    # que alguien leeria al abrirla, que es lo que sirve para distinguir una tarjeta de otra.
+    resumen: str | None = None
 
 
 class ListaPresentaciones(_Strict):

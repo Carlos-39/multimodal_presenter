@@ -21,6 +21,30 @@ from ..schemas.library import (
 from .db import ahora
 
 
+#: Cuanto del principio de la primera seccion se guarda para la tarjeta de la biblioteca.
+LARGO_RESUMEN = 240
+
+
+def _resumen(payload: PayloadGuardado) -> str | None:
+    """El principio de la primera seccion, si es texto.
+
+    Se calcula AQUI y no al listar porque listar no puede abrir el payload: un deck con
+    ilustraciones son megas por fila. Y se recorta ya: guardar entera una seccion larga para
+    ensenar dos lineas seria pagar el almacenamiento dos veces.
+
+    Si la primera seccion no es texto -una tabla, un grafico- no hay nada que asomar y se deja
+    vacio. La tarjeta se las arregla sin ello.
+    """
+    secciones = payload.presentation.sections
+    if not secciones:
+        return None
+    contenido = secciones[0].content
+    texto = getattr(contenido, "text", None)
+    if not isinstance(texto, str) or not texto.strip():
+        return None
+    return texto.strip()[:LARGO_RESUMEN]
+
+
 async def guardar(
     conn: aiosqlite.Connection,
     *,
@@ -49,8 +73,9 @@ async def guardar(
     )
     await conn.execute(
         "INSERT INTO presentaciones "
-        "  (id, usuario_id, document_id, titulo, version_contrato, payload_json, creada_en) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "  (id, usuario_id, document_id, titulo, version_contrato, payload_json, creada_en, "
+        "   secciones, verificadas, resumen) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             presentacion_id,
             usuario_id,
@@ -59,6 +84,9 @@ async def guardar(
             VERSION_CONTRATO,
             payload.model_dump_json(),
             momento,
+            payload.grounding.total_sections,
+            payload.grounding.verified_sections,
+            _resumen(payload),
         ),
     )
     await conn.commit()
@@ -84,9 +112,19 @@ async def actualizar(
     toca el documento, que es el mismo por definición — si cambiara, sería otra presentación.
     """
     cur = await conn.execute(
-        "UPDATE presentaciones SET titulo = ?, version_contrato = ?, payload_json = ? "
+        "UPDATE presentaciones SET titulo = ?, version_contrato = ?, payload_json = ?, "
+        "  secciones = ?, verificadas = ?, resumen = ? "
         "WHERE id = ? AND usuario_id = ?",
-        (titulo, VERSION_CONTRATO, payload.model_dump_json(), presentacion_id, usuario_id),
+        (
+            titulo,
+            VERSION_CONTRATO,
+            payload.model_dump_json(),
+            payload.grounding.total_sections,
+            payload.grounding.verified_sections,
+            _resumen(payload),
+            presentacion_id,
+            usuario_id,
+        ),
     )
     await conn.commit()
     return cur.rowcount > 0
@@ -99,7 +137,7 @@ async def listar(conn: aiosqlite.Connection, usuario_id: str) -> list[ResumenPre
     de qué es cada cosa.
     """
     async with conn.execute(
-        "SELECT p.id, p.document_id, p.creada_en, "
+        "SELECT p.id, p.document_id, p.creada_en, p.secciones, p.verificadas, p.resumen, "
         "       COALESCE(p.titulo, '(sin título)') AS titulo, "
         "       d.source_kind, d.nombre_archivo "
         "FROM presentaciones p "
@@ -118,6 +156,9 @@ async def listar(conn: aiosqlite.Connection, usuario_id: str) -> list[ResumenPre
             source_kind=f["source_kind"],
             nombre_archivo=f["nombre_archivo"],
             creada_en=f["creada_en"],
+            secciones=f["secciones"],
+            verificadas=f["verificadas"],
+            resumen=f["resumen"],
         )
         for f in filas
     ]

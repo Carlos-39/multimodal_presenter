@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowLeft, ArrowRight } from "@phosphor-icons/react/dist/ssr";
+import { RotuloActo } from "@/components/makingof/Armazon";
 import { Bloques } from "@/components/makingof/Bloques";
 import { CAPITULOS, capituloPorSlug } from "@/content/makingOf";
 import { ACTOS, escrito } from "@/lib/makingOf";
@@ -38,7 +39,8 @@ export default async function CapituloPage({ params }: { params: Promise<{ slug:
   const siguiente = escritos[i + 1];
 
   return (
-    <main className="mx-auto max-w-3xl px-5 py-12 sm:py-16">
+    <main className="relative mx-auto max-w-3xl px-5 py-12 sm:py-16">
+      <RotuloActo acto={capitulo.acto} />
       <p className="text-xs text-muted">
         <span className="font-mono tabular-nums">{capitulo.numero}</span> · {ACTOS[capitulo.acto]}
       </p>

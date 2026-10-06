@@ -9,6 +9,7 @@ import { GroundingIndicator } from "@/components/GroundingIndicator";
 import { SectionNav } from "./SectionNav";
 import { DetailLevelControl } from "./DetailLevelControl";
 import { GeneratePanel } from "./GeneratePanel";
+import { Interruptor } from "./Interruptor";
 import { Segmented } from "./Segmented";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -172,18 +173,9 @@ export function AppShell({
                   ? "Reintentar"
                   : "Presentación"}
             </button>
-            <button
-              type="button"
-              onClick={onToggleChat}
-              aria-pressed={chatOpen}
-              className={`rounded-md border px-2.5 py-1 text-xs transition-colors ${
-                chatOpen
-                  ? "border-accent bg-accent-subtle font-medium text-accent"
-                  : "border-border text-foreground-secondary hover:border-border-strong hover:text-foreground"
-              }`}
-            >
-              Chat
-            </button>
+            {/* El chat no es una acción que pasa y se acaba: es un estado que se queda. Un
+                rectángulo que cambia de color obliga a recordar qué color era «abierto». */}
+            <Interruptor label="Chat" checked={chatOpen} onChange={onToggleChat} />
             <ThemeToggle />
           </div>
           {acciones ? (
@@ -221,8 +213,10 @@ export function AppShell({
           </div>
         </aside>
 
-        {/* Zona dinámica: contenido + columnas opcionales (Workspace, Escala 2 del Hito 5e) */}
-        <main className="flex-1 overflow-hidden">{children}</main>
+        {/* Zona dinámica: contenido + columnas opcionales (Workspace, Escala 2 del Hito 5e).
+            El foco vive AQUÍ y no en el armazón entero: el rail y la cabecera son el marco, y un
+            marco no se ilumina. */}
+        <main className="foco flex-1 overflow-hidden">{children}</main>
       </div>
     </div>
   );

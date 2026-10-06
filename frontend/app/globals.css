@@ -4,11 +4,24 @@
  * IDENTIDAD VISUAL — tokens de diseño en un solo lugar (rediseño sobre la base del Hito 5a).
  *
  * Dirección: herramienta rigurosa de trabajo con información, no "demo de IA".
- * - Neutros CÁLIDOS (papel sobre mesa, off-black cálido) con un acento FRÍO: la "tinta". El
- *   contraste de temperatura es lo que da profundidad; el acento se reserva a lo interactivo o
- *   activo (sección activa, control encendido, enlaces, foco).
+ *
+ * **Lo único cálido de toda la interfaz es la prueba.** El 5a y el 5k se apoyaron en neutros
+ * CÁLIDOS contra un acento frío, y el diagnóstico de entonces era correcto: hacía falta contraste
+ * de temperatura. Lo que no se vio es hacia dónde se resolvía — papel crema con serifa para el
+ * cuerpo es, literalmente, la casa de Claude, y la propia guía de diseño que se usó advierte del
+ * crema cercano a #F4F1EA como el tic más repetido de interfaz generada.
+ *
+ * Aquí el calor no se quita: se MUEVE. Los neutros pasan a frío-neutros y el acento sigue siendo
+ * tinta, así que el contraste de temperatura se conserva — pero ahora lo aporta el amarillo del
+ * resaltador, que es la única nota cálida que queda. El color de la verificación deja de ser un
+ * color más y pasa a ser la única temperatura de la pantalla.
+ *
+ * - El acento se reserva a lo interactivo o activo (sección activa, control encendido, enlaces,
+ *   foco).
  * - "Resaltador": único color con licencia propia, y solo en el rastro de verificación (la cita
  *   al pie de una sección y el pasaje marcado en el documento fuente comparten color).
+ * - Los semánticos (verificado, aviso) conservan su temperatura: son alertas, se usan poco y a
+ *   propósito, y leerlos es más importante que la coherencia del ambiente.
  * - Dos voces tipográficas: lo que viene del DOCUMENTO va en serif (`font-serif`); lo que es de
  *   la HERRAMIENTA, en sans. Los NÚMEROS siguen en Geist Mono tabular (tablas, ejes).
  * - Radios por jerarquía: 6px controles (`rounded-md`), 10px contenedores (`rounded-lg`),
@@ -25,22 +38,22 @@
   color-scheme: light dark;
 
   /* Superficies: mesa → papel → hundido (campos, pistas) */
-  --background: light-dark(#f4f3ef, #171512);
-  --surface: light-dark(#fdfcfa, #1f1d19);
-  --surface-sunken: light-dark(#eceae4, #110f0d);
-  --border: light-dark(#dedbd3, #35322c);
-  --border-strong: light-dark(#8c867a, #6e695f);
+  --background: light-dark(#f0f2f1, #0f1215);
+  --surface: light-dark(#fafbfa, #171b20);
+  --surface-sunken: light-dark(#e4e8e7, #0a0d10);
+  --border: light-dark(#d6dad9, #262c33);
+  --border-strong: light-dark(#848c93, #6b7480);
 
   /* Texto */
-  --foreground: light-dark(#1c1a17, #ece8e0);
-  --foreground-secondary: light-dark(#46423b, #c9c4b9);
-  --muted: light-dark(#6b665d, #9c968a);
+  --foreground: light-dark(#14181c, #e7eaee);
+  --foreground-secondary: light-dark(#434a51, #b6bdc5);
+  --muted: light-dark(#676f77, #878f98);
 
   /* Acento "tinta" */
-  --accent: light-dark(#213f87, #9db2ec);
-  --accent-hover: light-dark(#18306b, #b8c7f3);
-  --accent-foreground: light-dark(#ffffff, #14171f);
-  --accent-subtle: light-dark(#e5eaf6, #252c42);
+  --accent: light-dark(#1e3c84, #6b96f0);
+  --accent-hover: light-dark(#16306f, #89abf4);
+  --accent-foreground: light-dark(#ffffff, #101418);
+  --accent-subtle: light-dark(#e3e8f4, #1d2433);
 
   /* Papel fijo (igual en claro y oscuro): marco de las ilustraciones generadas, que vienen con
      fondo claro. */
@@ -56,7 +69,7 @@
   /* Forma */
   --radius: 0.375rem;
   --radius-container: 0.625rem;
-  --elevation-float: 0 12px 32px -12px light-dark(rgb(40 34 22 / 0.28), rgb(0 0 0 / 0.7));
+  --elevation-float: 0 12px 32px -12px light-dark(rgb(16 20 26 / 0.26), rgb(0 0 0 / 0.72));
 
   /* Gráficos — chrome */
   --chart-ink: var(--foreground);
@@ -101,9 +114,9 @@
   --radius-md: var(--radius);
   --radius-lg: var(--radius-container);
   --shadow-float: var(--elevation-float);
-  --font-sans: var(--font-geist-sans);
-  --font-serif: var(--font-source-serif);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-app-sans);
+  --font-serif: var(--font-doc-serif);
+  --font-mono: var(--font-app-mono);
 }
 
 body {
@@ -191,42 +204,10 @@ body {
   animation: skeleton-sweep 1.6s ease-in-out infinite;
 }
 
-@keyframes progress-slide {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(350%);
-  }
-}
-
-.progress-indeterminate {
-  position: relative;
-  height: 2px;
-  overflow: hidden;
-  border-radius: 1px;
-  background: var(--border);
-}
-
-.progress-indeterminate::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  width: 40%;
-  background: var(--accent);
-  animation: progress-slide 1.4s ease-in-out infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;
     background-image: none;
-  }
-
-  .progress-indeterminate::after {
-    animation: none;
-    width: 100%;
-    opacity: 0.5;
   }
 }
 
@@ -514,6 +495,418 @@ body {
   animation-play-state: paused;
 }
 
+/*
+ * La espera larga: ocho celdas dando una vuelta.
+ *
+ * Es indeterminada A PROPÓSITO. Generar una presentación no avisa de por dónde va, así que una
+ * barra que se llena sería una promesa inventada —justo lo contrario del puntico del carrusel y de
+ * la mecha, que recorren un tiempo que SÍ se conoce—. Lo único cierto aquí es que sigue viva y
+ * cuánto llevas esperando, y eso es lo que se enseña.
+ *
+ * Cada celda se enciende con su retraso y se apaga antes de que acabe el ciclo, así que lo que
+ * recorre el borde es una cola de dos o tres y no un punto suelto: la diferencia entre algo que
+ * gira y algo que avanza.
+ */
+@keyframes espera-vuelta {
+  0%,
+  100% {
+    opacity: 0.16;
+  }
+  12%,
+  30% {
+    opacity: 1;
+  }
+  48% {
+    opacity: 0.16;
+  }
+}
+.espera-celda {
+  opacity: 0.16;
+  animation: espera-vuelta var(--espera-ciclo) linear infinite;
+  animation-delay: var(--espera-retraso);
+}
+
+/*
+ * Lo que aparece detrás de una tarjeta al arrastrarla.
+ *
+ * Mientras no se ha llegado al umbral es un lavado del color de aviso: se ve que hay algo ahí sin
+ * prometer que vaya a pasar. Al cruzarlo se pone macizo, y ESO es la promesa: si sueltas aquí,
+ * ocurre. Así el dedo sabe cuándo soltar sin tener que medir cuánto ha arrastrado.
+ */
+.fila-trasera {
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  color: var(--warning);
+  /* Apagada salvo durante el arrastre: si no, al atenuarse la tarjeta se transparenta y asoma una
+     papelera suelta en mitad del contenido. */
+  opacity: 0;
+  transition:
+    background-color 160ms ease,
+    opacity 140ms ease;
+}
+.fila-trasera[data-activa="true"] {
+  opacity: 1;
+}
+.fila-trasera[data-listo="true"] {
+  background: var(--warning);
+  color: var(--background);
+}
+.fila-trasera > svg {
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * Las preguntas frecuentes de la portada.
+ *
+ * **La respuesta sube desde detrás del renglón** en vez de aparecer de golpe: el contenedor
+ * recorta y el párrafo entra desde abajo. Es el gesto del menú escalonado que me gustaba, hecho
+ * con dos reglas en lugar de con 70 kB de librería — y, sobre todo, sin tocar los `details`
+ * nativos, que son los que hacen que esto funcione con teclado, con lector de pantalla y aunque
+ * el JavaScript no llegue a cargar.
+ *
+ * La numeración sale de un contador CSS: no hay que mantenerla a mano ni se descoloca si mañana
+ * se añade una pregunta en medio.
+ */
+.preguntas {
+  counter-reset: faq;
+}
+.preguntas > details {
+  counter-increment: faq;
+}
+.preguntas .numero::before {
+  content: counter(faq, decimal-leading-zero);
+}
+.preguntas > details:not([open]) .numero {
+  opacity: 0.45;
+}
+
+@keyframes respuesta-sube {
+  from {
+    transform: translateY(0.75em);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.preguntas > details[open] .respuesta > * {
+  animation: respuesta-sube 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preguntas > details[open] .respuesta > * {
+    animation: none;
+  }
+}
+
+/*
+ * El papel de cada acto del «cómo se construyó». La historia se va aclarando: arranca en el tono
+ * hundido —los cimientos— y acaba en el de las tarjetas. El tono entra en dos segundos, que es lo
+ * que evita el fogonazo de un color cambiando de golpe donde alguien está leyendo.
+ */
+.papel {
+  background-color: var(--background);
+  transition: background-color 2000ms ease;
+}
+.papel[data-asentado="true"].acto-cimiento {
+  background-color: color-mix(in srgb, var(--surface-sunken) 80%, var(--background));
+}
+.papel[data-asentado="true"].acto-trazabilidad {
+  background-color: color-mix(in srgb, var(--surface-sunken) 40%, var(--background));
+}
+.papel[data-asentado="true"].acto-midiendo {
+  background-color: var(--background);
+}
+.papel[data-asentado="true"].acto-usable {
+  background-color: color-mix(in srgb, var(--surface) 42%, var(--background));
+}
+.papel[data-asentado="true"].acto-cierre {
+  background-color: color-mix(in srgb, var(--surface) 85%, var(--background));
+}
+
+/* El rótulo del acto, al margen, como el titulillo de un libro: aparece cuando ya llevas un rato
+   leyendo, que es cuando sirve saber en qué parte de la historia estás. */
+.rotulo {
+  opacity: 0;
+  transition: opacity 1200ms ease;
+}
+.rotulo[data-visible="true"] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .papel,
+  .rotulo {
+    transition: none;
+  }
+}
+
+/*
+ * El árbol del índice del «cómo se construyó».
+ *
+ * El tronco y los codos son bordes, no un SVG: los títulos de estos capítulos ocupan dos líneas y
+ * un dibujo con las filas calculadas a altura fija se descuadra en cuanto una envuelve.
+ *
+ * En la portada el árbol **se dibuja**: baja el tronco de cada acto y detrás van saliendo sus
+ * ramas. Es el mismo gesto que el trazo de las figuras, y es lo único que se mueve solo en esa
+ * página — una vez, al llegar, y se acabó.
+ */
+.rama {
+  position: relative;
+}
+.tronco {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 10px;
+  width: 1px;
+  background: var(--border);
+  transform-origin: top;
+}
+.rama > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 14px;
+  height: 15px;
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-bottom-left-radius: 8px;
+}
+/* La rama donde estás, y el tronco por encima de ella, en acento: no marca el sitio, marca el
+   recorrido hasta él. */
+.rama > li[data-actual]::before {
+  border-color: var(--accent);
+}
+.rama > li[data-actual]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  top: -2000px;
+  width: 1px;
+  background: var(--accent);
+}
+.rama {
+  overflow: hidden;
+}
+
+@keyframes tronco-baja {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes rama-sale {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tronco.trazando {
+  animation: tronco-baja 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.surgiendo {
+  animation: rama-sale 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tronco.trazando,
+  .surgiendo {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * El área de trabajo, iluminada desde arriba.
+ *
+ * **No es una trama, es luz.** Se probaron seis fondos con patrón —rejilla, puntos, pautado— y
+ * todos tenían el mismo problema: dan algo que seguir con la vista justo donde hay que leer. Esto
+ * no dibuja nada. El papel se aclara hacia donde está el texto y se apaga hacia los bordes, así
+ * que el vacío de los lados deja de pesar lo mismo que el centro sin que aparezca ni una línea.
+ *
+ * **El techo es el color de las tarjetas, y no se toca.** El punto más claro se queda por debajo
+ * de `--surface`: si lo alcanzara, arriba del todo las tarjetas perderían su borde contra el papel
+ * y dejarían de ser objetos. Por eso el recorrido se gana sobre todo **bajando los bordes**, no
+ * subiendo el centro.
+ *
+ * Sin movimiento, a propósito: esta es la pantalla donde alguien está leyendo algo difícil.
+ */
+/*
+ * **El grano no es una segunda decoración: es cómo se apaga el papel.**
+ *
+ * La luz y los puntos son UNA sola capa pintada en dos tiempos. El grano va debajo y la luz
+ * encima; donde la luz es opaca —el centro, que es donde se lee— tapa los puntos del todo, y según
+ * se desvanece hacia los bordes los va destapando. O sea: la densidad de la trama sigue a la luz
+ * sin que nadie la calcule, y detrás del texto no hay ni un punto.
+ *
+ * Sin máscara (que recortaría también a los hijos), sin lienzo y sin una línea de JavaScript. Y
+ * quieto: esta es la pantalla donde alguien está leyendo algo que le cuesta.
+ */
+.foco {
+  background-color: color-mix(in srgb, var(--surface-sunken) 70%, var(--background));
+  background-image:
+    radial-gradient(
+      ellipse 58rem 40rem at 50% 0%,
+      color-mix(in srgb, var(--surface) 55%, var(--background)),
+      transparent 70%
+    ),
+    radial-gradient(color-mix(in srgb, var(--foreground) 10%, transparent) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    18px 18px;
+  background-repeat: no-repeat, repeat;
+}
+
+/*
+ * La tarjeta de la biblioteca: lo que se ilumina es el BORDE, por donde pasa el puntero.
+ *
+ * La primera versión reusaba `.luz`, el foco macizo del botón de la portada, y estaba mal por dos
+ * motivos. Uno de bulto: en oscuro salía un manchón blanco en mitad de la tarjeta, y en claro no
+ * se veía nada —el relleno de `.luz` es blanco, que sobre papel claro es invisible—. Y uno de
+ * orden: yo había puesto aquí un color de acento, pero `.tarjeta-luz` estaba ANTES que `.luz` en
+ * la hoja y, a igual especificidad, gana la última. El acento no llegaba a aplicarse nunca.
+ *
+ * Un relleno tapa; un borde encendido señala. Y funciona igual en los dos temas porque el acento
+ * cambia con ellos, cosa que el blanco no hace.
+ *
+ * El anillo sale de pintar un degradado y recortarlo a la franja del borde con dos máscaras que
+ * se restan (`mask-composite: exclude`): la de fuera menos la de dentro.
+ */
+.borde-luz {
+  position: relative;
+}
+.borde-luz::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(
+    13rem circle at var(--luz-x, 50%) var(--luz-y, 50%),
+    var(--accent),
+    transparent 70%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: var(--luz-o, 0);
+  transition: opacity 260ms ease;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .borde-luz::after {
+    transition: none;
+  }
+}
+
+/*
+ * El signo de más del estado vacío: se traza al entrar y gira al señalarlo.
+ *
+ * El trazo es el mismo gesto que las figuras del «cómo se construyó» — ahí dibuja una idea, aquí
+ * dibuja la única acción que queda por hacer en una pantalla vacía.
+ */
+@keyframes mas-traza {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.mas svg {
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mas:hover svg,
+.mas:focus-visible svg {
+  transform: rotate(90deg);
+}
+.mas-trazo {
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  /* `pathLength="1"` va en el elemento, no aquí: normaliza el largo del trazo para que el dibujo
+     dure lo mismo mida lo que mida la línea. */
+  stroke-dasharray: 1;
+  animation: mas-traza 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mas svg {
+    transition: none;
+  }
+  .mas:hover svg,
+  .mas:focus-visible svg {
+    transform: none;
+  }
+  .mas-trazo {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}
+
+/*
+ * El brillo que sigue al puntero en el botón principal de la portada.
+ *
+ * **Solo en la portada.** La aplicación es seria a propósito y un botón que reluce dentro del área
+ * de trabajo sería ruido; la portada es lo primero que ve alguien que todavía no sabe qué es esto,
+ * y ahí una superficie que responde al dedo dice «esto está vivo» antes que cualquier frase.
+ *
+ * **Solo contesta, nunca empieza.** No hay brillo hasta que alguien señala el botón: es respuesta
+ * a un gesto, no una animación corriendo sola para pedir atención. Por eso SUSTITUYE al oscurecido
+ * del hover en vez de sumarse — dos respuestas distintas al mismo gesto se estorban.
+ *
+ * El `z-index` negativo con `isolation` es lo que lo mete ENTRE el fondo del botón y su texto. Un
+ * pseudoelemento posicionado sin eso se pinta por encima de la palabra y la deslava.
+ */
+.luz {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  --luz-x: 50%;
+  --luz-y: 50%;
+  --luz-o: 0;
+  --luz-color: light-dark(rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.2));
+}
+.luz::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    9rem circle at var(--luz-x) var(--luz-y),
+    var(--luz-color),
+    transparent 62%
+  );
+  opacity: var(--luz-o);
+  transition: opacity 240ms ease;
+}
+.fila-trasera[data-listo="true"] > svg {
+  transform: scale(1.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fila-trasera,
+  .fila-trasera > svg {
+    transition: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .revelar,
   .revelar[data-visible="true"] {
@@ -543,6 +936,13 @@ body {
   .cuenta[data-contando="true"] {
     animation: none;
     transform: scaleX(1);
+  }
+  /* La vuelta se para y queda el anillo quieto: quien lleva la señal de vida es el reloj, que
+     sigue contando. Mismo reparto que en la mecha, donde el número aguanta lo que la animación
+     deja de decir. */
+  .espera-celda {
+    animation: none;
+    opacity: 0.4;
   }
 }
 

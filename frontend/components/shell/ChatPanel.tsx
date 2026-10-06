@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CircleNotch, Microphone, Question, Stop } from "@phosphor-icons/react";
+import { CircleNotch, Question } from "@phosphor-icons/react";
 import { ContentRenderer } from "@/components/content/ContentRenderer";
 import { SkeletonText } from "@/components/content/Skeleton";
 import { SourceCitation, UnanchoredNotice } from "@/components/content/SourceCitation";
 import type { ChatMessage } from "@/hooks/useChat";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { PastillaVoz } from "./PastillaVoz";
 import { track } from "@/lib/telemetry";
 import type { CitedRegion, GroundingStatus, SourceReference } from "@/lib/types";
 
@@ -149,27 +150,12 @@ export function ChatPanel({
         ) : null}
 
         <div className="flex items-end gap-2">
-          <button
-            type="button"
-            onClick={voice.toggle}
-            disabled={disabled || voice.status === "transcribing"}
-            aria-label={voice.status === "recording" ? "Detener grabación" : "Grabar pregunta por voz"}
-            aria-pressed={voice.status === "recording"}
-            title="Preguntar por voz"
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border transition-colors active:scale-95 disabled:opacity-40 ${
-              voice.status === "recording"
-                ? "animate-pulse border-warning text-warning"
-                : "border-border text-muted hover:border-border-strong hover:text-foreground"
-            }`}
-          >
-            {voice.status === "transcribing" ? (
-              <CircleNotch size={16} className="animate-spin" aria-hidden />
-            ) : voice.status === "recording" ? (
-              <Stop size={14} weight="fill" aria-hidden />
-            ) : (
-              <Microphone size={16} aria-hidden />
-            )}
-          </button>
+          <PastillaVoz
+            estado={voice.status}
+            nivel={voice.nivel}
+            onToggle={voice.toggle}
+            disabled={disabled}
+          />
 
           <textarea
             value={input}

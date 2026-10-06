@@ -30,6 +30,12 @@ export default async function Page({
   // participante, justo en algo que no se puede repetir.
   if (parametros.p !== undefined) return <WorkspaceClient />;
 
+  // Llegas de la biblioteca a abrir algo concreto: ni portada ni nada en medio. El parámetro es
+  // `abrir` y no `p` porque `p` ya es la etiqueta del participante del Hito 8, y colisionar con
+  // ella mandaría una sesión de evaluación a restaurar una presentación ajena.
+  const abrir = typeof parametros.abrir === "string" ? parametros.abrir : undefined;
+  if (abrir) return <WorkspaceClient abrir={abrir} />;
+
   // Quien ya entró alguna vez no necesita que le presenten.
   //
   // Se mira el VALOR y no la presencia: cerrar sesión no borra una cookie, la deja vacía, y

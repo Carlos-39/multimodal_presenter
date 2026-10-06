@@ -1,8 +1,9 @@
 "use client";
 
-import { CircleNotch, Presentation, SpeakerHigh } from "@phosphor-icons/react";
+import { Presentation, SpeakerHigh } from "@phosphor-icons/react";
 import type { NarrationStatus } from "@/hooks/useNarration";
 import { AudioControls } from "./AudioControls";
+import { Espera } from "./Espera";
 
 /**
  * "Generar": lo que el sistema puede CREAR a partir del documento, reunido en un solo lugar del
@@ -65,16 +66,22 @@ export function GeneratePanel({
             Diapositivas con guion propio, listas para exponer.
           </ItemHeading>
 
-          {deckError ? (
-            <p className="mt-2 text-xs text-warning">No se pudo generar la presentación.</p>
-          ) : null}
-          {deckLoading ? (
+          {/* Error y espera comparten bloque, y ese bloque es la MISMA `Espera` en la misma
+              posición del árbol: así, cuando la generación falla, el cronómetro no se reinicia ni
+              desaparece — se queda parado en lo que llegó a costar, que es la única pista de si
+              reventó al empezar o a mitad de camino. */}
+          {deckLoading || deckError ? (
             <div className="mt-2.5" role="status">
-              <div className="progress-indeterminate" aria-hidden />
-              <p className="mt-2 text-xs leading-4 text-muted">
-                {deckReady
-                  ? "Recuperando las diapositivas que guardaste."
-                  : "Puedes seguir leyendo: se abrirá sola al terminar."}
+              <Espera
+                estado={deckLoading ? "trabajando" : "error"}
+                className={deckLoading ? "text-accent" : "text-warning"}
+              />
+              <p className={`mt-1.5 text-xs leading-4 ${deckLoading ? "text-muted" : "text-warning"}`}>
+                {deckLoading
+                  ? deckReady
+                    ? "Recuperando las diapositivas que guardaste."
+                    : "Puedes seguir leyendo: se abrirá sola al terminar."
+                  : "No se pudo generar la presentación."}
               </p>
             </div>
           ) : null}
@@ -92,7 +99,8 @@ export function GeneratePanel({
                   : "bg-accent text-accent-foreground hover:bg-accent-hover disabled:hover:bg-accent"
             }`}
           >
-            {deckLoading ? <CircleNotch size={14} className="animate-spin" aria-hidden /> : null}
+            {/* Sin girito aquí: el bloque de arriba ya está diciendo que esto corre, y con cuánto
+                tiempo encima. Dos cosas moviéndose por el mismo motivo es una de más. */}
             {deckLoading
               ? deckReady
                 ? "Abriendo…"

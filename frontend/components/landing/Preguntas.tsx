@@ -45,24 +45,39 @@ export function Preguntas() {
   return (
     <section className="border-t border-border">
       <div className="mx-auto max-w-3xl px-5 py-20">
-        <h2 className="font-serif text-[1.75rem] leading-tight text-foreground sm:text-[2.25rem]">
+        <h2 className="font-sans text-[2rem] font-medium leading-[1.08] tracking-[-0.025em] text-foreground sm:text-[2.6rem]">
           Preguntas frecuentes
         </h2>
 
-        <div className="mt-9">
+        <div className="preguntas mt-9">
           {PREGUNTAS.map(({ p, r }) => (
             <details key={p} className="group border-b border-border first:border-t">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-left [&::-webkit-details-marker]:hidden">
-                <span className="font-serif text-[1.0625rem] leading-snug text-foreground">
+              <summary className="flex cursor-pointer list-none items-start gap-4 py-4 text-left [&::-webkit-details-marker]:hidden">
+                {/* El número no es adorno: estas preguntas se citan («la tercera dice que…») y
+                    numerarlas da con qué citarlas. En acento, que es lo que las separa del resto
+                    de la página sin inventar un color nuevo. */}
+                <span
+                  aria-hidden
+                  className="numero mt-[0.3rem] shrink-0 font-mono text-[0.75rem] tabular-nums text-accent transition-opacity"
+                />
+                <span className="flex-1 font-sans text-[1.125rem] font-medium leading-snug tracking-[-0.012em] text-foreground transition-colors group-open:text-accent">
                   {p}
                 </span>
                 <CaretDown
                   size={15}
                   aria-hidden
-                  className="shrink-0 text-muted transition-transform group-open:rotate-180"
+                  className="mt-[0.35rem] shrink-0 text-muted transition-transform group-open:rotate-180 group-open:text-accent motion-reduce:transition-none"
                 />
               </summary>
-              <p className="max-w-[64ch] pb-5 text-sm leading-6 text-foreground-secondary">{r}</p>
+              {/* La respuesta sube desde detrás del renglón en vez de aparecer de golpe. Es el
+                  único gesto que me traje del menú escalonado, y es CSS: así los `details` siguen
+                  siendo nativos —teclado, lector de pantalla, y abren aunque el JavaScript no
+                  cargue—, que es por lo que se eligieron. */}
+              <div className="respuesta overflow-hidden">
+                <p className="ml-9 max-w-[64ch] pb-5 text-[0.9375rem] leading-[1.65] text-foreground-secondary">
+                  {r}
+                </p>
+              </div>
             </details>
           ))}
         </div>

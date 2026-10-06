@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
+  ArrowRight,
+  Books,
   FileAudio,
   FilePdf,
   FileText,
@@ -36,6 +39,9 @@ import { AuthForm } from "./AuthForm";
  * El formulario de acceso no vive aquí sino en `AuthForm`, para que la futura landing lo reuse en
  * vez de copiarlo.
  */
+/** Cuántas caben en el cajón sin convertirlo en una lista para buscar. */
+const ULTIMAS = 4;
+
 export function AccountPanel({
   usuario,
   onUsuario,
@@ -186,11 +192,30 @@ function Biblioteca({
       ) : lista.length === 0 ? (
         <Vacia />
       ) : (
-        <ul className="flex flex-col gap-1.5">
-          {lista.map((p) => (
-            <Fila key={p.id} presentacion={p} onAbrir={onAbrir} onBorrar={onBorrar} />
-          ))}
-        </ul>
+        <>
+          {/* Solo las últimas cuatro. Un cajón no es un sitio para buscar: con la lista entera
+              había que desplazarse dentro de un panel estrecho para encontrar algo, y la
+              biblioteca de verdad —donde sí se puede buscar— quedaba sin motivo para existir. */}
+          <ul className="flex flex-col gap-1.5">
+            {lista.slice(0, ULTIMAS).map((p) => (
+              <Fila key={p.id} presentacion={p} onAbrir={onAbrir} onBorrar={onBorrar} />
+            ))}
+          </ul>
+          <Link
+            href="/biblioteca"
+            className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2.5 text-xs text-foreground-secondary transition-colors hover:border-accent hover:text-foreground"
+          >
+            <span className="flex items-center gap-1.5">
+              <Books size={14} aria-hidden />
+              Ver toda tu biblioteca
+            </span>
+            {lista.length > ULTIMAS ? (
+              <span className="tabular text-muted">{lista.length}</span>
+            ) : (
+              <ArrowRight size={13} aria-hidden className="text-muted" />
+            )}
+          </Link>
+        </>
       )}
     </div>
   );

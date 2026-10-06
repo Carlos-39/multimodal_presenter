@@ -1,6 +1,7 @@
-import { CircleNotch, Pause, Play, Rewind, FastForward, Stop } from "@phosphor-icons/react/dist/ssr";
+import { Pause, Play, Rewind, FastForward, Stop } from "@phosphor-icons/react/dist/ssr";
 import { formatTimestamp } from "@/lib/audio";
 import { NARRATION_SKIP_S, type NarrationStatus } from "@/hooks/useNarration";
+import { Espera } from "./Espera";
 
 /**
  * Controles de la narración tipo audiolibro (núcleo fijo, Punto 8 · Hito 5g Parte 3). Viven
@@ -56,9 +57,9 @@ export function AudioControls({
           aria-label={playing ? "Pausar narración" : "Reproducir narración"}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-subtle text-accent transition-colors hover:text-accent-hover active:scale-95 disabled:opacity-45 disabled:hover:text-accent"
         >
-          {loading ? (
-            <CircleNotch size={15} className="animate-spin" aria-hidden />
-          ) : playing ? (
+          {/* Mientras genera, este botón se queda quieto y deshabilitado: lo que está en marcha se
+              cuenta abajo, con su reloj, y no hacen falta dos cosas girando en 190 px de rail. */}
+          {playing ? (
             <Pause size={15} weight="fill" aria-hidden />
           ) : (
             <Play size={15} weight="fill" aria-hidden />
@@ -138,7 +139,16 @@ export function AudioControls({
         </div>
       ) : null}
 
-      {loading ? <div className="progress-indeterminate mt-2.5" aria-hidden /> : null}
+      {/* La misma pieza para los dos estados y en la misma posición, para que el reloj sobreviva al
+          fallo y diga cuánto se estuvo intentando antes de rendirse. */}
+      {loading || status === "error" ? (
+        <div className="mt-2.5">
+          <Espera
+            estado={loading ? "trabajando" : "error"}
+            className={loading ? "text-accent" : "text-warning"}
+          />
+        </div>
+      ) : null}
 
       {status === "error" ? (
         <button

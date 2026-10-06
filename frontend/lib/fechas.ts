@@ -40,3 +40,34 @@ export function fechaRelativa(iso: string, ahora: Date = new Date()): string {
   if (transcurrido < LIMITE_RELATIVO) return RELATIVO.format(-Math.floor(transcurrido / DIA), "day");
   return ABSOLUTO.format(momento);
 }
+
+/** En qué montón va algo de la biblioteca. El orden del tipo es el orden en que se muestran. */
+export type Tramo = "hoy" | "semana" | "antes";
+
+export const TRAMOS: Record<Tramo, string> = {
+  hoy: "Hoy",
+  semana: "Esta semana",
+  antes: "Antes",
+};
+
+/**
+ * A qué montón pertenece una fecha.
+ *
+ * «Hoy» es el MISMO DÍA del calendario, no «hace menos de 24 horas»: a las dos de la madrugada,
+ * algo guardado ayer a las once de la noche es de ayer, aunque hayan pasado tres horas. La gente
+ * agrupa por días, no por ventanas rodantes.
+ *
+ * `ahora` es un parámetro por lo mismo que en `fechaRelativa`: para poder fijar el presente en los
+ * tests en vez de aproximarlo.
+ */
+export function tramoDe(iso: string, ahora: Date = new Date()): Tramo {
+  const momento = new Date(iso);
+  if (Number.isNaN(momento.getTime())) return "antes";
+
+  const dia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diasAtras = Math.round((dia(ahora) - dia(momento)) / DIA);
+
+  if (diasAtras <= 0) return "hoy";
+  if (diasAtras < 7) return "semana";
+  return "antes";
+}

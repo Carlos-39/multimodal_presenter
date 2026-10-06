@@ -53,7 +53,15 @@ app = FastAPI(
 
 # Instrumenta FastAPI (span por request) y PydanticAI (llamadas al modelo, tokens, reintentos).
 logfire.instrument_fastapi(app)
-logfire.instrument_pydantic_ai()
+
+# `include_content=False`: las trazas siguen trayendo lo que sirve para operar —duración, tokens,
+# modelo, reintentos, errores— pero NO el cuerpo de los prompts ni de las respuestas.
+#
+# Por defecto PydanticAI envía el contenido, así que el texto de cada documento acababa en un panel
+# de un tercero. Para documentos propios es una decisión; para las sesiones del Hito 8 sería un
+# problema, porque el consentimiento promete anonimato y los documentos serán de otras personas.
+# El coste de apagarlo es depurar un prompt a ciegas, que se hace a mano cuando hace falta.
+logfire.instrument_pydantic_ai(include_content=False)
 
 app.include_router(pipeline_router)
 app.include_router(auth_router)
