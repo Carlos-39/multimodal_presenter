@@ -20,20 +20,19 @@ from ..schemas.library import (
 )
 from .db import ahora
 
-
-#: Cuanto del principio de la primera seccion se guarda para la tarjeta de la biblioteca.
+#: Cuánto del principio de la primera sección se guarda para la tarjeta de la biblioteca.
 LARGO_RESUMEN = 240
 
 
 def _resumen(payload: PayloadGuardado) -> str | None:
-    """El principio de la primera seccion, si es texto.
+    """El principio de la primera sección, si es texto.
 
-    Se calcula AQUI y no al listar porque listar no puede abrir el payload: un deck con
-    ilustraciones son megas por fila. Y se recorta ya: guardar entera una seccion larga para
-    ensenar dos lineas seria pagar el almacenamiento dos veces.
+    Se calcula AQUÍ y no al listar porque listar no puede abrir el payload: un deck con
+    ilustraciones son megas por fila. Y se recorta ya: guardar entera una sección larga para
+    enseñar dos líneas sería pagar el almacenamiento dos veces.
 
-    Si la primera seccion no es texto -una tabla, un grafico- no hay nada que asomar y se deja
-    vacio. La tarjeta se las arregla sin ello.
+    Si la primera sección no es texto —una tabla, un gráfico— no hay nada que asomar y se deja
+    vacío. La tarjeta se las arregla sin ello.
     """
     secciones = payload.presentation.sections
     if not secciones:
