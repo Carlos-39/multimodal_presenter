@@ -36,3 +36,21 @@ jobs:
 
       - name: Tests (pytest)
         run: uv run pytest
+
+      # Va al FINAL porque deja el entorno sin el grupo de desarrollo.
+      #
+      # Existe por un fallo que ninguno de los 330 tests podía ver: `render_pagina` dibuja el PDF
+      # con `to_pil()`, que necesita Pillow, y Pillow llegaba de rebote por matplotlib —que es de
+      # desarrollo—. En mi máquina y aquí funcionaba; en la imagen de producción, instalada con
+      # `--no-dev`, el visor de página respondía 502.
+      #
+      # Así que esto monta el entorno de producción DE VERDAD y comprueba que puede dibujar. Es
+      # la única forma de cazar esa clase de fallo sin desplegar.
+      - name: El entorno de producción tiene lo que el código usa
+        run: |
+          uv sync --frozen --no-dev
+          uv run --no-dev python -c "
+          from multimodal_presenter.pipeline.pdf_locator import render_pagina
+          import PIL
+          print('el visor de página puede dibujar; Pillow', PIL.__version__)
+          "
