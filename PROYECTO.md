@@ -55,6 +55,7 @@ Cada capa existe porque una decisión de diseño la requiere. No es arquitectura
 - **Frontend:** Next.js + Tailwind, con Generative UI.
 - **Observabilidad:** Pydantic Logfire (del mismo equipo que PydanticAI, integración nativa, capa gratuita generosa). Conectar desde el Hito 0.
 - **Herramientas candidatas** (a confirmar en sus hitos, del inventario ya investigado): anydoc de Firecrawl y/o Docling para parseo; CopilotKit/AG-UI para transporte (AG-UI ya está adoptado oficialmente por PydanticAI); pgvector + Qdrant y LightRAG para el subsistema RAG posterior.
+- **Despliegue:** dos contenedores y un volumen. El navegador habla solo con el frontend, que reenvía `/api/*` al backend por una red privada; el backend **no tiene dominio propio**. Un solo origen, así que no hay CORS ni cookies de terceros, y el portón de acceso puede cubrir también la API. La persistencia sigue siendo SQLite sobre el volumen: con una sola instancia siempre encendida es justo el caso para el que SQLite está hecho, y migrar a Postgres costaría más que todo el despliegue junto. Lo que no puede perderse —base, documentos, narraciones y los JSONL de telemetría— vive ahí dentro. Ver el README para el detalle operativo.
 
 ---
 
