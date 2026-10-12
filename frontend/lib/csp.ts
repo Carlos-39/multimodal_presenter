@@ -37,7 +37,14 @@ export const HASH_SCRIPT_TEMA = `sha256-${createHash("sha256")
  * decide es una cookie. Una política que dependiera de eso sería una política que cambia sola.
  */
 function esDeLaAplicacion(ruta: string): boolean {
-  return ruta === "/" || ruta.startsWith("/biblioteca") || ruta.startsWith("/galeria");
+  return (
+    ruta === "/" ||
+    ruta.startsWith("/biblioteca") ||
+    ruta.startsWith("/galeria") ||
+    // El portón también: se renderiza por petición de todas formas, así que la política fuerte
+    // sale gratis, y es la pantalla donde se escribe un secreto.
+    ruta.startsWith("/acceso")
+  );
 }
 
 /**
