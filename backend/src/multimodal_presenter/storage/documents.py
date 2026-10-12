@@ -23,12 +23,15 @@ import aiosqlite
 
 from ..config import Settings
 from ..pipeline.extraction import compute_document_id
-from .db import ahora, resolve_data_dir
+from .db import ahora, resolve_data_dir, valida_id_de_ruta
 
 
 def ruta_de(settings: Settings, document_id: str) -> Path:
-    """Ruta en disco de un documento. Se DERIVA del id, nunca se guarda en la base."""
-    return resolve_data_dir(settings) / "documentos" / document_id
+    """Ruta en disco de un documento. Se DERIVA del id, nunca se guarda en la base.
+
+    Lanza `ValueError` si el id no tiene forma de id: ver `valida_id_de_ruta`.
+    """
+    return resolve_data_dir(settings) / "documentos" / valida_id_de_ruta(document_id)
 
 
 async def guardar(
@@ -70,8 +73,15 @@ async def guardar(
 
 
 async def leer(settings: Settings, document_id: str) -> bytes | None:
-    """Los bytes del documento, o `None` si no está. Nunca lanza por un documento ausente."""
-    destino = ruta_de(settings, document_id)
+    """Los bytes del documento, o `None` si no está. Nunca lanza por un documento ausente.
+
+    Un id que no tiene forma de id tampoco tiene documento, así que también es `None`: para quien
+    llama es la misma ausencia, y lanzar aquí convertiría un 404 honesto en un 500.
+    """
+    try:
+        destino = ruta_de(settings, document_id)
+    except ValueError:
+        return None
     if not destino.exists():
         return None
     return destino.read_bytes()

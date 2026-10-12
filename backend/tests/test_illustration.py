@@ -80,3 +80,30 @@ def test_ninguna_califica_lista_vacia(monkeypatch, mock_presentation: dict) -> N
     r = client.post("/illustrations", json={"presentation": mock_presentation})
     assert r.status_code == 200
     assert r.json()["illustrations"] == []
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://cdn.ideogram.ai/a.png",  # sin cifrar
+        "https://169.254.169.254/latest/meta-data/",  # metadatos de la nube
+        "https://127.0.0.1/a.png",
+        "https://[::1]/a.png",
+        "https://localhost/a.png",  # un nombre sin puntos es la red de dentro
+        "https://backend.railway.internal:8000/health",
+        "file:///etc/passwd",
+    ],
+)
+def test_no_se_descarga_cualquier_url_que_diga_el_proveedor(url: str) -> None:
+    """Es la única petición saliente cuyo destino no está escrito en el código: la devuelve el
+    proveedor y el servidor se trae lo que haya ahí. Eso es la forma de un SSRF."""
+    with pytest.raises(RuntimeError, match="no es descargable"):
+        illustration._url_descargable(url)
+
+
+def test_una_url_normal_del_proveedor_si_se_descarga() -> None:
+    """Y no se comprueba el dominio a propósito: un allowlist se rompería en silencio el día que
+    cambien de CDN, dejando sin ilustraciones por una medida de seguridad."""
+    url = "https://ideogram.ai/api/images/direct/abc123.png"
+    assert illustration._url_descargable(url) == url
+    assert illustration._url_descargable("https://cdn.otro-proveedor.com/x.png")

@@ -13,6 +13,7 @@ que es como está hecho el resto del proyecto.
 from __future__ import annotations
 
 import os
+import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -46,6 +47,29 @@ def db_path(settings: Settings) -> Path:
 def ahora() -> str:
     """Marca de tiempo UTC en ISO-8601. SQLite no tiene tipo fecha: se guarda texto ordenable."""
     return datetime.now(UTC).isoformat()
+
+
+#: Las dos formas de id que el sistema convierte en nombre de archivo: `doc-` y doce dígitos
+#: hexadecimales (el principio del sha256 del contenido) y `pre-` y dieciséis (un uuid recortado).
+_FORMAS_DE_ID = re.compile(r"doc-[0-9a-f]{12}|pre-[0-9a-f]{16}")
+
+
+def valida_id_de_ruta(identificador: str) -> str:
+    """Devuelve el id si puede formar parte de una ruta; lanza `ValueError` si no.
+
+    **No es validación de entrada: es cerrar la puerta por dentro.** Hoy no se puede llegar aquí
+    con un id inventado, porque los dos caminos que leen del disco comprueban antes la propiedad
+    contra la base y un id con `..` dentro no está en ninguna tabla. Pero esa defensa vive en los
+    endpoints, no en la función que arma la ruta: el día que alguien añada un tercer camino y se le
+    olvide, `resolve_data_dir() / id` se sale de la carpeta de datos sin que nada lo impida.
+
+    Así que la comprobación va donde se construye la ruta, que es el único sitio donde no se puede
+    olvidar. Y comprueba la FORMA en vez de buscar `..`: una lista de lo que se admite no se queda
+    corta, y una lista de lo que se prohíbe siempre acaba quedándose corta.
+    """
+    if not _FORMAS_DE_ID.fullmatch(identificador):
+        raise ValueError(f"id con forma inválida para una ruta: {identificador!r}")
+    return identificador
 
 
 @asynccontextmanager

@@ -11,6 +11,8 @@ un acto explícito y lleva consigo lo que hace falta para que lo guardado siga s
 
 from __future__ import annotations
 
+from urllib.parse import quote
+
 import aiosqlite
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 
@@ -286,9 +288,12 @@ async def narracion_endpoint(
     return Response(
         content=audio,
         media_type="audio/mpeg",
-        # Privada y revalidable: el audio de una presentación no cambia mientras no se regenere,
-        # pero no es inmutable como un documento (cuyo id ES su hash).
-        headers={"Cache-Control": "private, max-age=3600"},
+        headers={
+            # Privada y revalidable: el audio de una presentación no cambia mientras no se
+            # regenere, pero no es inmutable como un documento (cuyo id ES su hash).
+            "Cache-Control": "private, max-age=3600",
+            "X-Content-Type-Options": "nosniff",
+        },
     )
 
 
@@ -321,9 +326,33 @@ async def documento_endpoint(
     return Response(
         content=contenido,
         media_type=tipo,
-        # El contenido de un id NUNCA cambia: es un hash de esos mismos bytes.
-        headers={"Cache-Control": "private, max-age=86400, immutable"},
+        headers={
+            # El contenido de un id NUNCA cambia: es un hash de esos mismos bytes.
+            "Cache-Control": "private, max-age=86400, immutable",
+            # El tipo lo decidimos NOSOTROS, por los magic bytes del archivo y contra una
+            # allowlist (ver `pipeline/uploads.py`), no por lo que diga el cliente. `nosniff` le
+            # dice al navegador que no lo adivine por su cuenta: estos son bytes de otra persona
+            # servidos desde nuestro propio origen, y ahí es donde adivinar sale caro.
+            "X-Content-Type-Options": "nosniff",
+            "Content-Disposition": _disposicion(fila["nombre_archivo"]),
+        },
     )
+
+
+def _disposicion(nombre: str | None) -> str:
+    """`Content-Disposition` para servir un documento, con su nombre original si lo tiene.
+
+    Se muestra en el navegador (`inline`), que es lo que necesita el panel de fuente: el visor de
+    PDF y el `<img>` no descargan, enseñan.
+
+    **El nombre lo eligió quien subió el archivo, así que se codifica en vez de interpolarse.** Un
+    nombre con un salto de línea dentro partiría la cabecera en dos y dejaría añadir las que
+    quisiera. La forma `filename*=UTF-8''…` de la RFC 6266 es además la única que admite acentos,
+    así que lo seguro y lo correcto coinciden.
+    """
+    if not nombre:
+        return "inline"
+    return f"inline; filename*=UTF-8''{quote(nombre, safe='')}"
 
 
 @router.delete("/presentaciones/{presentacion_id}", status_code=204)

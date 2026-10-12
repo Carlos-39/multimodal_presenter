@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import ipaddress
+from urllib.parse import urlsplit
 
 import httpx
 import logfire
@@ -185,6 +187,49 @@ async def _gemini_image(settings: Settings, prompt: str) -> str:
     raise RuntimeError("Gemini no devolvió imagen (¿filtro de seguridad?)")
 
 
+#: Tope de lo que se admite descargar de un proveedor de imágenes. Una ilustración cuadrada de 1K
+#: pesa menos de 2 MB; con doce hay margen de sobra para cualquier formato que devuelvan.
+_MAX_IMAGEN_BYTES = 12 * 1024 * 1024
+
+#: Sufijos que no son de internet. Los cuatro primeros los reserva la RFC 6761 para uso interno;
+#: `.internal` es además el que usa la red privada de Railway entre servicios del mismo proyecto.
+_SUFIJOS_RESERVADOS = (".internal", ".local", ".localhost", ".home.arpa", ".test", ".invalid")
+
+
+def _url_descargable(url: str) -> str:
+    """Comprueba la URL que el proveedor dice que hay que descargar. Lanza si no es admisible.
+
+    **Es la única petición saliente del backend cuyo destino no está escrito en el código.** No la
+    pone el usuario —la devuelve Ideogram en su respuesta, autenticada con nuestra clave—, pero el
+    servidor la busca y se trae lo que haya ahí, y eso es exactamente la forma de un SSRF.
+
+    Tres comprobaciones cierran la clase de ataque que importa (hacer que el servidor pida una
+    dirección de la red de dentro) sin atarnos a qué CDN use Ideogram mañana: tiene que ser
+    `https`, el anfitrión no puede ser una IP literal (`169.254.169.254` y compañía), y no puede
+    acabar en uno de los sufijos RESERVADOS, que es donde vive lo interno.
+
+    Ese tercer punto no estaba y hacía falta: `backend.railway.internal` tiene puntos y no es una
+    IP, así que pedir «un nombre de dominio con puntos» lo dejaba pasar — y es exactamente el
+    vecino que tendrá este servicio cuando esté desplegado.
+
+    Un allowlist de dominios sería más estricto, pero se rompería en silencio el día que cambien
+    de CDN y nos dejaría sin ilustraciones por una medida de seguridad. Lo que se prohíbe aquí son
+    nombres que ningún CDN puede usar: los reserva la RFC 6761 precisamente para esto.
+    """
+    partes = urlsplit(url)
+    host = (partes.hostname or "").rstrip(".")
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        es_ip = False
+    else:
+        es_ip = True
+    reservado = host == "localhost" or host.endswith(_SUFIJOS_RESERVADOS)
+    if partes.scheme != "https" or es_ip or "." not in host or reservado:
+        raise RuntimeError(f"la URL de la imagen no es descargable: {url!r}")
+    return url
+
+
 async def _ideogram_image(settings: Settings, prompt: str) -> str:
     """Genera con Ideogram v3 (primario). Devuelve data URI. Lanza si falla."""
     async with httpx.AsyncClient(timeout=120) as client:
@@ -200,11 +245,21 @@ async def _ideogram_image(settings: Settings, prompt: str) -> str:
             },
         )
         resp.raise_for_status()
-        url = resp.json()["data"][0]["url"]
-        img = await client.get(url)
-        img.raise_for_status()
-        ctype = img.headers.get("content-type", "image/png").split(";")[0]
-        b64 = base64.b64encode(img.content).decode("ascii")
+        url = _url_descargable(resp.json()["data"][0]["url"])
+        # Se lee por trozos abortando al pasarse del tope, igual que las subidas del usuario
+        # (`pipeline/uploads.py`): la respuesta es de un tercero, así que su tamaño no lo
+        # decidimos nosotros, y una imagen enorme en un contenedor de 512 MB lo tumba.
+        async with client.stream("GET", url) as img:
+            img.raise_for_status()
+            trozos: list[bytes] = []
+            total = 0
+            async for trozo in img.aiter_bytes():
+                total += len(trozo)
+                if total > _MAX_IMAGEN_BYTES:
+                    raise RuntimeError("la imagen del proveedor excede el tope")
+                trozos.append(trozo)
+            ctype = img.headers.get("content-type", "image/png").split(";")[0]
+        b64 = base64.b64encode(b"".join(trozos)).decode("ascii")
         return f"data:{ctype};base64,{b64}"
 
 

@@ -249,3 +249,42 @@ def test_los_metadatos_quedan_registrados(migrada: Settings) -> None:
     assert fila["nombre_archivo"] == "duendes.pdf"
     assert fila["media_type"] == "application/pdf"
     assert fila["tamano_bytes"] == len(CONTENIDO)
+
+
+def test_un_id_con_forma_de_ruta_no_construye_ruta(ajustes: Settings) -> None:
+    """La comprobación va donde se arma la ruta, no en los endpoints que hoy la protegen.
+
+    Hoy no se llega aquí con un id inventado: los dos caminos que leen del disco comprueban antes
+    la propiedad contra la base, y un id con `..` dentro no está en ninguna tabla. Este test fija
+    que la puerta quede cerrada también por dentro, para el día que alguien añada un camino nuevo.
+    """
+    for malo in (
+        "../../.env",
+        "doc-../../.env",
+        "doc-000000000000/../../.env",
+        "doc-ZZZZZZZZZZZZ",  # fuera del alfabeto hexadecimal
+        "doc-00000000000",  # un dígito de menos
+        "doc-000000000000.bak",
+        "",
+    ):
+        with pytest.raises(ValueError, match="forma inválida"):
+            documents.ruta_de(ajustes, malo)
+
+
+def test_la_ruta_de_un_id_valido_se_queda_dentro_de_la_carpeta_de_datos(ajustes: Settings) -> None:
+    doc_id = compute_document_id(CONTENIDO)
+    ruta = documents.ruta_de(ajustes, doc_id).resolve()
+    assert ruta.is_relative_to(db.resolve_data_dir(ajustes).resolve())
+
+
+def test_leer_un_id_con_forma_invalida_es_ausencia_no_error(ajustes: Settings) -> None:
+    """Para quien llama es la misma ausencia, y lanzar convertiría un 404 honesto en un 500."""
+    assert asyncio.run(documents.leer(ajustes, "../../.env")) is None
+
+
+def test_el_id_de_la_presentacion_tambien_se_comprueba(ajustes: Settings) -> None:
+    """El mp3 de la narración se nombra con el id de la presentación, así que es otra ruta
+    derivada de un id que llega por la URL."""
+    with pytest.raises(ValueError, match="forma inválida"):
+        db.valida_id_de_ruta("pre-../../../etc/passwd")
+    assert db.valida_id_de_ruta("pre-0123456789abcdef") == "pre-0123456789abcdef"
