@@ -312,3 +312,25 @@ def test_preguntar_por_correos_ajenos_tambien_se_corta(client: TestClient) -> No
         r = client.post("/auth/registro", json=CREDENCIALES)
         assert r.status_code == 400
     assert client.post("/auth/registro", json=CREDENCIALES).status_code == 429
+
+
+def test_el_formulario_puede_preguntar_si_hay_registro(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Para no ofrecer una puerta cerrada. La verdad sigue viviendo en un solo sitio: el ajuste
+    del backend, en vez de una variable pública duplicada en el frontend."""
+    from multimodal_presenter.config import get_settings
+
+    r = client.get("/auth/estado")
+    assert r.status_code == 200
+    assert r.json() == {"registro_abierto": True}
+
+    monkeypatch.setenv("REGISTRO_ABIERTO", "false")
+    get_settings.cache_clear()
+    assert client.get("/auth/estado").json() == {"registro_abierto": False}
+
+
+def test_preguntar_por_el_estado_no_exige_sesion_ni_cuenta_nada(client: TestClient) -> None:
+    """Dice si una puerta está abierta: es información del servicio, no de ninguna persona."""
+    for _ in range(10):
+        assert client.get("/auth/estado").status_code == 200

@@ -17,7 +17,7 @@ import aiosqlite
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 
 from ..config import Settings, get_settings
-from ..schemas.auth import CredencialesRequest, UsuarioResponse
+from ..schemas.auth import CredencialesRequest, EstadoDeCuentas, UsuarioResponse
 from ..storage import conectar
 from ..storage.users import (
     DURACION_SESION,
@@ -170,6 +170,18 @@ async def salir_endpoint(
             await cerrar_sesion(conn, mmp_sesion)
     respuesta.delete_cookie(COOKIE, path="/")
     return Response(status_code=204)
+
+
+@router.get("/estado", response_model=EstadoDeCuentas)
+async def estado_endpoint(settings: Settings = Depends(get_settings)) -> EstadoDeCuentas:
+    """Si se pueden crear cuentas. Lo consulta el formulario para no ofrecer lo que no hay.
+
+    No pide sesión y no cuenta nada de nadie: dice si una puerta está abierta, que es información
+    del servicio y no de ninguna persona. No va dentro de `/auth/yo` porque ese endpoint responde
+    `null` cuando no hay sesión —el estado normal de esta aplicación— y un campo dentro de `null`
+    no se puede leer.
+    """
+    return EstadoDeCuentas(registro_abierto=settings.registro_abierto)
 
 
 @router.get("/yo", response_model=UsuarioResponse | None)

@@ -29,3 +29,14 @@ class UsuarioResponse(_Strict):
 
     id: str
     email: str
+
+
+class EstadoDeCuentas(_Strict):
+    """Qué puertas están abiertas, para que la interfaz no ofrezca una que no lo está.
+
+    Existe porque la alternativa era duplicar el ajuste en el frontend con una variable pública, y
+    dos copias de la misma verdad se separan en silencio: el formulario seguiría ofreciendo crear
+    cuenta meses después de que el backend dejara de permitirlo. Aquí la verdad sigue siendo una.
+    """
+
+    registro_abierto: bool

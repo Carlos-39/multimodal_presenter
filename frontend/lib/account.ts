@@ -89,6 +89,23 @@ async function json<T>(res: Response): Promise<T> {
   return (await res.json()) as T;
 }
 
+/**
+ * Si se pueden crear cuentas. Lo decide el backend, que es donde vive el ajuste.
+ *
+ * Ante la duda, **cerrado**: si la pregunta falla, el formulario ofrece solo entrar. Ofrecer una
+ * puerta que a lo mejor no existe es peor que no ofrecerla, porque el error llega después de
+ * escribir un correo y una contraseña.
+ */
+export async function registroAbierto(): Promise<boolean> {
+  try {
+    const res = await fetch("/api/auth/estado");
+    if (!res.ok) return false;
+    return (await res.json())?.registro_abierto === true;
+  } catch {
+    return false;
+  }
+}
+
 export async function registrarse(email: string, contrasena: string): Promise<Usuario> {
   return json(
     await fetch("/api/auth/registro", {
