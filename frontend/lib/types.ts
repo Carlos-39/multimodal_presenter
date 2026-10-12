@@ -13,6 +13,9 @@
 export type SectionRole = "core" | "satellite";
 export type ChartType = "line" | "bar" | "pie" | "scatter";
 
+/** Estado del adelanto inicial (Hito 5g): sin pedir, en curso, listo o fallido. */
+export type SummaryStatus = "idle" | "loading" | "done" | "error";
+
 export interface SourceReference {
   document_id: string;
   quote: string;
@@ -65,12 +68,47 @@ export type SectionContent =
   | TimelineContent
   | ChartContent;
 
+/**
+ * Ilustración de apoyo GENERADA (Hito 5h Parte 1). NO es contenido trazable: no tiene `source` ni
+ * estado de grounding. Siempre se muestra con su etiqueta permanente.
+ */
+export interface GeneratedIllustration {
+  kind: "generated_illustration";
+  image_url: string;
+  alt: string;
+  label: string;
+}
+
 export interface Section {
   id: string;
   title: string | null;
   role: SectionRole;
   source: SourceReference;
   content: SectionContent;
+  illustration?: GeneratedIllustration | null;
+}
+
+/**
+ * Presentación GENERADA en diapositivas (guion propio, desde la fuente). Artefacto on-demand,
+ * separado de `Presentation`. Trazabilidad por slide: `source` anclada, o `is_synthesis` si es una
+ * simplificación declarada.
+ */
+export interface GeneratedSlide {
+  title: string;
+  body: string | null;
+  bullets: string[];
+  source: SourceReference | null;
+  grounding: GroundingStatus;
+  /** Solo audio: momento de la cita, para que el reproductor del panel arranque ahí. */
+  start_s: number | null;
+  /** Solo PDF: dónde está la cita dentro de la página. Ausente o `null` = fidelidad de página. */
+  region?: CitedRegion | null;
+  is_synthesis: boolean;
+  illustration: GeneratedIllustration | null;
+}
+
+export interface GeneratedDeck {
+  slides: GeneratedSlide[];
 }
 
 export interface Presentation {
@@ -79,7 +117,7 @@ export interface Presentation {
 }
 
 export type GroundingStatus = "verified" | "unverified" | "not_found";
-export type SourceKind = "text" | "pdf" | "image";
+export type SourceKind = "text" | "pdf" | "image" | "audio";
 
 export interface SectionGrounding {
   section_id: string;
@@ -87,6 +125,57 @@ export interface SectionGrounding {
   char_start: number | null;
   char_end: number | null;
   page: number | null;
+  /**
+   * Solo audio: momento aproximado del que viene la cita, para llevar el reproductor ahí (el
+   * análogo de `page` en PDF). El estado sigue siendo `unverified`: la cita se LOCALIZA en la
+   * transcripción del modelo de percepción, no se verifica contra la señal.
+   */
+  start_s: number | null;
+  /** Solo PDF con capa de texto: dónde está la cita dentro de `page`. `null` = solo la página. */
+  region?: CitedRegion | null;
+}
+
+/** Un recuadro dentro de la página, en fracciones 0-1 con origen arriba-izquierda.
+ *
+ * En fracciones y no en píxeles: aquí solo se multiplica por el tamaño del contenedor. Las
+ * escalas y la rotación de la página ya las resolvió el backend, con el mismo motor que dibuja
+ * la imagen, así que el recuadro no puede descuadrarse respecto a lo que se ve. */
+export interface RegionBox {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/** Dónde está la cita DENTRO de la página citada. Un recuadro por renglón.
+ *
+ * No existe un valor "página" aquí: la fidelidad de página (lo de siempre, llevar a la página sin
+ * señalar dentro) es la AUSENCIA de este objeto. `approximate` obliga a decirlo en la interfaz —
+ * marcar como exacto algo aproximado sería la sobre-afirmación que eliminó el Hito 8A.1. */
+export interface CitedRegion {
+  /** Página en la que están los recuadros. NO se da por supuesto que sea la de la cita: si el
+   * modelo erró el número y la frase estaba en una página vecina, los recuadros son de esa. */
+  page: number;
+  quality: "exact" | "approximate";
+  boxes: RegionBox[];
+}
+
+export interface OriginalSource {
+  text: string | null;
+  file: File | null;
+  /**
+   * Solo audio: la evidencia acústica de la fase de percepción, como bloque OPACO (el frontend
+   * no la interpreta). Se reenvía al chat, a las sugeridas y al deck para que relean el MISMO
+   * documento sin volver a percibir el audio — ni pagar de nuevo, ni arriesgarse a que la
+   * anotación cambie entre turnos.
+   */
+  audioEvidence: string | null;
+  /**
+   * Solo en una presentación RESTAURADA: el documento vive en el almacén del backend, no en el
+   * navegador. Es lo que permite seguir usándola —chat, deck, panel de fuente— sin tener el
+   * `File`, que es justo lo que no se tiene al abrirla desde otro equipo al día siguiente.
+   */
+  documentId: string | null;
 }
 
 export interface GroundingReport {
@@ -120,10 +209,22 @@ export interface TransformResponse {
   grounding: GroundingReport;
   semantic: SemanticCoherenceReport;
   chart_notes: ChartNote[];
+  /** Solo audio: lo que oyó la fase de percepción. `null` para texto, PDF e imagen. */
+  transcript: string | null;
+  /** Solo audio: la evidencia acústica serializada, bloque opaco que se reenvía. */
+  audio_evidence: string | null;
 }
 
 /** Eventos SSE de POST /transform/stream (Hito 5d). */
 export type StreamEvent =
+  /**
+   * Solo audio: lo que la fase de percepción oyó, emitido ANTES del título. Llega durante los
+   * segundos que esa fase consume, así que es lo que llena el adelanto del audio; y alimenta la
+   * transcripción con la cita resaltada del panel de fuente.
+   *
+   * No es verificable contra la señal: es lo que el modelo oyó, y la UI lo dice.
+   */
+  | { type: "transcript"; text: string; speaker_count: number; evidence: string }
   | { type: "start"; title: string }
   | {
       type: "section";
@@ -147,11 +248,24 @@ export interface ChatTurn {
   text: string;
 }
 
-/** Respuesta del chat: contenido renderizable (misma union del contrato) + anclaje verificado. */
+/** Cognitive Forcing Function (opción D): pedido de aclaración ante ambigüedad real.
+ * Invitación de cortesía, nunca un obstáculo; `options` son interpretaciones clicables (opcional). */
+export interface ClarificationNeeded {
+  question: string;
+  options: string[];
+}
+
+/** Respuesta del chat: contenido renderizable (misma union del contrato) + anclaje verificado.
+ * Si `clarification` está presente, este turno pide aclaración y no es una respuesta anclada. */
 export interface ChatResponse {
   content: SectionContent;
   source: SourceReference | null; // null = no se pudo anclar
   grounding: GroundingStatus;
+  clarification?: ClarificationNeeded | null;
+  /** Solo audio: momento de la cita, para que el reproductor del panel salte ahí. */
+  start_s?: number | null;
+  /** Solo PDF: dónde está la cita dentro de la página. */
+  region?: CitedRegion | null;
 }
 
 /** Eventos SSE de POST /chat/stream. Texto en vivo; el ancla llega en `done`. */

@@ -1,0 +1,17 @@
+# Lo que NO entra en la imagen.
+
+# Secretos. `.env.local` es donde va el código del portón en local.
+.env
+.env.*
+
+# Se instalan dentro, para la arquitectura de la imagen y no la de mi máquina.
+node_modules/
+
+# Resultados de compilar aquí: la imagen construye lo suyo.
+.next/
+out/
+tsconfig.tsbuildinfo
+
+# Configuración de cómo trabajo, no del producto.
+CLAUDE.md
+AGENTS.md

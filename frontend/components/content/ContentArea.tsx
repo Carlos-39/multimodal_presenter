@@ -2,8 +2,10 @@
 
 import { useEffect } from "react";
 import type { DetailLevel } from "@/lib/detail";
-import type { ChartNote, Section, SemanticObservation } from "@/lib/types";
-import { SectionRenderer } from "./SectionRenderer";
+import type { ChartNote, GroundingStatus, Section, SemanticObservation } from "@/lib/types";
+import { PendingNotice } from "./PendingNotice";
+import { SectionCard } from "./SectionCard";
+import { SectionSkeleton, SkeletonLine } from "./Skeleton";
 
 /**
  * Zona de contenido dinámico. Renderiza SOLO las secciones visibles según el nivel de detalle
@@ -19,6 +21,9 @@ interface ContentAreaProps {
   observations?: SemanticObservation[];
   onOpenSource?: (section: Section) => void;
   activeSourceKey?: string | null;
+  groundingBySection?: Record<string, GroundingStatus>; // estado de anclaje por sección (Hito 8)
+  streaming?: boolean; // la transformación sigue en curso: aún pueden llegar secciones
+  illustrationsPending?: boolean; // se están preparando ilustraciones de apoyo (llegan después)
 }
 
 export function ContentArea({
@@ -30,6 +35,9 @@ export function ContentArea({
   observations = [],
   onOpenSource,
   activeSourceKey = null,
+  groundingBySection = {},
+  streaming = false,
+  illustrationsPending = false,
 }: ContentAreaProps) {
   // Re-ancla la vista a la sección activa al navegar o al cambiar de nivel (no perder el lugar).
   useEffect(() => {
@@ -41,65 +49,39 @@ export function ContentArea({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-6 pb-10">
-      <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>
+      {title ? (
+        <h1 className="text-balance font-serif text-[1.75rem] font-semibold leading-[2.125rem] tracking-[-0.012em] text-foreground">
+          {title}
+        </h1>
+      ) : streaming ? (
+        // El título llega con el primer evento del stream; hasta entonces, su hueco.
+        <SkeletonLine className="h-7 w-3/5" />
+      ) : null}
 
-      {sections.map((section, i) => {
-        const degraded = chartNotes.find(
-          (n) => n.section_id === section.id && n.kind === "degraded",
-        );
-        const observation = observations.find((o) => o.section_id === section.id);
-        const isSatellite = section.role === "satellite";
-        const active = section.id === activeSectionId;
+      {sections.map((section, i) => (
+        <SectionCard
+          key={section.id}
+          section={section}
+          index={i}
+          chartNotes={chartNotes}
+          observations={observations}
+          groundingBySection={groundingBySection}
+          onOpenSource={onOpenSource}
+          activeSourceKey={activeSourceKey}
+          active={section.id === activeSectionId}
+          anchorId
+        />
+      ))}
 
-        return (
-          <section
-            key={section.id}
-            id={`section-${section.id}`}
-            className={`section-enter scroll-mt-4 rounded-md border bg-surface p-5 ${
-              active ? "border-accent" : "border-border"
-            } ${isSatellite ? "border-l-2 border-l-muted" : ""}`}
-          >
-            <header className="mb-3 flex items-center justify-between gap-2">
-              <h2
-                className={`text-base font-medium ${
-                  isSatellite ? "text-muted" : "text-foreground"
-                }`}
-              >
-                {section.title ?? `Sección ${i + 1}`}
-              </h2>
-              <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-muted">
-                {isSatellite ? "satélite · detalle" : "núcleo"}
-              </span>
-            </header>
+      {/* Mientras dura el streaming, el hueco de la sección que viene: avisa que falta contenido
+          y evita que la página "termine" antes de tiempo. Desaparece con el evento final. */}
+      {streaming ? <SectionSkeleton /> : null}
 
-            <SectionRenderer section={section} />
-
-            {degraded ? <p className="mt-3 text-xs text-muted">{degraded.detail}</p> : null}
-
-            {observation ? (
-              <p className="mt-3 flex items-start gap-1.5 text-xs text-warning">
-                <span
-                  className="mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full bg-warning"
-                  aria-hidden
-                />
-                <span>Posible discrepancia con la fuente: {observation.issue}</span>
-              </p>
-            ) : null}
-
-            <footer className="mt-4 border-t border-border pt-2">
-              <button
-                type="button"
-                onClick={() => onOpenSource?.(section)}
-                className={`text-left text-xs hover:text-foreground ${
-                  section.id === activeSourceKey ? "text-foreground" : "text-muted"
-                }`}
-              >
-                Fuente: “{section.source.quote}” · ver en el documento
-              </button>
-            </footer>
-          </section>
-        );
-      })}
+      {/* Las ilustraciones llegan después del contenido y no se sabe de antemano en qué
+          secciones: se avisa que vienen, en vez de que aparezcan de golpe. */}
+      {illustrationsPending ? (
+        <PendingNotice>Preparando ilustraciones de apoyo…</PendingNotice>
+      ) : null}
     </div>
   );
 }

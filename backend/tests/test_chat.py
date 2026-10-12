@@ -27,6 +27,18 @@ def _answer(text: str, *, quote: str | None = None, page: int | None = None) -> 
     )
 
 
+def _clarify(question: str, options: list[str]) -> str:
+    """JSON de un ChatAnswer que PIDE aclaración (opción D) en vez de responder."""
+    return json.dumps(
+        {
+            "content": {"content_type": "text", "text": question},
+            "source_quote": None,
+            "source_page": None,
+            "clarification": {"question": question, "options": options},
+        }
+    )
+
+
 async def _collect(gen):
     return [event async for event in gen]
 
@@ -34,29 +46,29 @@ async def _collect(gen):
 # ── ground_quote: la Fase 3 determinista reusada por el chat ──
 def test_ground_quote_verified_in_text(input_text: str) -> None:
     ext = prepare_input(text=input_text)
-    source, status = ground_quote(QUOTE_OK, None, ext)
-    assert status == "verified"
-    assert source is not None and source.char_start is not None
+    ancla = ground_quote(QUOTE_OK, None, ext)
+    assert ancla.status == "verified"
+    assert ancla.source is not None and ancla.source.char_start is not None
 
 
 def test_ground_quote_not_found_when_quote_absent(input_text: str) -> None:
     ext = prepare_input(text=input_text)
-    source, status = ground_quote("esta cita no existe en el documento", None, ext)
-    assert status == "not_found"
-    assert source is not None and source.char_start is None
+    ancla = ground_quote("esta cita no existe en el documento", None, ext)
+    assert ancla.status == "not_found"
+    assert ancla.source is not None and ancla.source.char_start is None
 
 
 def test_ground_quote_no_quote_is_ungrounded(input_text: str) -> None:
     ext = prepare_input(text=input_text)
-    source, status = ground_quote(None, None, ext)
-    assert source is None and status == "not_found"
+    ancla = ground_quote(None, None, ext)
+    assert ancla.source is None and ancla.status == "not_found"
 
 
 def test_ground_quote_binary_is_unverified_with_page(pdf_bytes: bytes) -> None:
     ext = prepare_input(binary=pdf_bytes, media_type="application/pdf")
-    source, status = ground_quote("cualquier cosa", 2, ext)
-    assert status == "unverified"
-    assert source is not None and source.page == 2
+    ancla = ground_quote("cualquier cosa", 2, ext)
+    assert ancla.status == "unverified"
+    assert ancla.source is not None and ancla.source.page == 2
 
 
 # ── chat_stream: eventos y anclaje ──
@@ -79,6 +91,25 @@ def test_chat_stream_ungrounded_when_no_quote(input_text: str) -> None:
     done = events[-1]
     assert done.response.grounding == "not_found"
     assert done.response.source is None
+
+
+# ── Opción D: Cognitive Forcing Function (pedido de aclaración) ──
+def test_chat_stream_clarification_is_not_an_answer(input_text: str) -> None:
+    model = TestModel(
+        custom_output_text=_clarify("¿Te refieres a 2023 o a 2024?", ["2023", "2024"])
+    )
+    ext = prepare_input(text=input_text)
+    events = asyncio.run(
+        _collect(chat_stream(model, extraction=ext, history=[], question="¿y el otro?"))
+    )
+    done = events[-1]
+    assert done.type == "done"
+    # Un pedido de aclaración NO es una respuesta anclada: sin fuente, grounding not_found.
+    assert done.response.clarification is not None
+    assert done.response.clarification.question == "¿Te refieres a 2023 o a 2024?"
+    assert done.response.clarification.options == ["2023", "2024"]
+    assert done.response.source is None
+    assert done.response.grounding == "not_found"
 
 
 # ── Endpoint SSE ──

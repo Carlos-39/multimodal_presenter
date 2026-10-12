@@ -67,11 +67,11 @@ def test_a3_midstream_failure_surfaces_error(monkeypatch, input_text: str) -> No
     real_ground = streaming.ground_section
     calls = {"n": 0}
 
-    def failing_ground(section, extraction):
+    def failing_ground(section, extraction, localizador=None):
         calls["n"] += 1
         if calls["n"] >= 2:
             raise RuntimeError("simulated provider drop mid-stream")
-        return real_ground(section, extraction)
+        return real_ground(section, extraction, localizador)
 
     monkeypatch.setattr(streaming, "ground_section", failing_ground)
     try:

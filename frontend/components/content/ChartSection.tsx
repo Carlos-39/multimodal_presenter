@@ -6,6 +6,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Legend,
   Line,
   LineChart,
@@ -18,6 +19,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { columnDecimals, formatNumber } from "@/lib/format";
 import type { ChartContent } from "@/lib/types";
 
 // Paleta categórica validada (CVD-safe, guía dataviz), vía tokens CSS → cambia con el tema.
@@ -35,12 +38,52 @@ const PALETTE = [
 const AXIS = "var(--chart-muted)";
 const GRID = "var(--chart-grid)";
 const HEIGHT = 288;
-// Ejes/etiquetas en monoespaciada tabular (números como "herramienta de datos").
-const TICK = { fontFamily: "var(--font-geist-mono)", fontSize: 12, fill: AXIS } as const;
+const MARGIN = { top: 20, right: 8, bottom: 0, left: 0 } as const;
+const ANIMATION_MS = 400;
+// Con pocas marcas, el valor se escribe sobre cada una (no hay que ir a leerlo al eje).
+const MAX_LABELED_MARKS = 10;
+// Una línea con pocos puntos los marca; con muchos, los puntos estorban.
+const MAX_DOTTED_POINTS = 12;
+
+// Números en monoespaciada tabular (señal de "herramienta de datos"); los nombres de categoría
+// son texto, así que van en la sans de la interfaz.
+const NUMBER_TICK = { fontFamily: "var(--font-geist-mono)", fontSize: 12, fill: AXIS } as const;
+const NAME_TICK = { fontSize: 12, fill: AXIS } as const;
+const VALUE_LABEL = {
+  fontFamily: "var(--font-geist-mono)",
+  fontSize: 11,
+  fill: "var(--foreground-secondary)",
+} as const;
+
+const formatValue = (value: unknown) =>
+  typeof value === "number" ? formatNumber(value) : String(value ?? "");
+
+// Chrome del gráfico (tooltip, leyenda) con los tokens del sistema: sigue al tema claro/oscuro.
+const TOOLTIP = {
+  contentStyle: {
+    background: "var(--surface)",
+    border: "1px solid var(--border)",
+    borderRadius: 6,
+    boxShadow: "var(--elevation-float)",
+    fontSize: 12,
+    color: "var(--foreground)",
+  },
+  labelStyle: { color: "var(--muted)", marginBottom: 2 },
+  itemStyle: { color: "var(--foreground)", fontFamily: "var(--font-geist-mono)" },
+  cursor: { fill: "var(--surface-sunken)", stroke: "var(--border)" },
+  formatter: formatValue,
+} as const;
+const LEGEND = {
+  itemSorter: null, // mismo orden que las series (no alfabético)
+  iconSize: 10,
+  wrapperStyle: { fontSize: 12, paddingTop: 8 },
+  formatter: (value: string) => <span style={{ color: "var(--foreground-secondary)" }}>{value}</span>,
+} as const;
 
 /**
- * Render de gráficos con Recharts. En este hito renderiza lo que llega; la regla
- * determinista de isomorfismo (qué tipo de gráfico admite cada forma de datos) es Hito 5.
+ * Render de gráficos con Recharts. Renderiza lo que llega: el TIPO ya viene decidido por la regla
+ * determinista de isomorfismo del backend (Hito 5a); aquí solo se cuida la lectura — números en
+ * español, valores a la vista cuando caben, y nada que compita con los datos.
  */
 // SSR-safe: false en el servidor, true en el cliente — sin setState en un efecto.
 const subscribe = () => () => {};
@@ -51,19 +94,18 @@ export function ChartSection({ content }: { content: ChartContent }) {
     () => true,
     () => false,
   );
+  const reducedMotion = usePrefersReducedMotion();
 
   // Evita medir con ancho 0 durante el SSR/hidratación.
   if (!mounted) {
-    return (
-      <div
-        style={{ height: HEIGHT }}
-        className="rounded-md border border-border bg-surface"
-        aria-hidden
-      />
-    );
+    return <div style={{ height: HEIGHT }} className="skeleton rounded-md" aria-hidden />;
   }
 
   const { chart_type, data } = content;
+  const motion = { isAnimationActive: !reducedMotion, animationDuration: ANIMATION_MS } as const;
+  // Con una sola serie la leyenda solo repetiría su nombre: se omite (va como pie del gráfico).
+  const showLegend = data.series.length > 1;
+  const showValues = data.categories.length * data.series.length <= MAX_LABELED_MARKS;
 
   // Datos categóricos → filas para line/bar.
   const rows = data.categories.map((category, i) => {
@@ -72,38 +114,88 @@ export function ChartSection({ content }: { content: ChartContent }) {
     return row;
   });
 
+  // Etiqueta de valor de una serie: todos sus números con los mismos decimales, sin redondear.
+  const valueLabel = (values: number[]) => {
+    const decimals = columnDecimals(values);
+    return (value: unknown) => (typeof value === "number" ? formatNumber(value, decimals) : "");
+  };
+
   let chart: React.ReactElement;
   switch (chart_type) {
     case "line":
       chart = (
-        <LineChart data={rows}>
+        <LineChart data={rows} margin={MARGIN}>
           <CartesianGrid stroke={GRID} vertical={false} />
-          <XAxis dataKey="name" stroke={AXIS} tick={TICK} />
-          <YAxis stroke={AXIS} tick={TICK} />
-          <Tooltip />
-          <Legend />
-          {data.series.map((s, i) => (
-            <Line
-              key={s.name}
-              type="monotone"
-              dataKey={s.name}
-              stroke={PALETTE[i % PALETTE.length]}
-              dot={false}
-            />
-          ))}
+          {/* Aire a los lados: el primer y el último punto (y su valor) no quedan contra el borde. */}
+          <XAxis
+            dataKey="name"
+            stroke={AXIS}
+            tick={NAME_TICK}
+            tickLine={false}
+            padding={{ left: 28, right: 28 }}
+          />
+          <YAxis tick={NUMBER_TICK} tickFormatter={formatValue} axisLine={false} tickLine={false} />
+          <Tooltip {...TOOLTIP} />
+          {showLegend ? <Legend {...LEGEND} /> : null}
+          {data.series.map((s, i) => {
+            const color = PALETTE[i % PALETTE.length];
+            return (
+              <Line
+                key={s.name}
+                type="monotone"
+                dataKey={s.name}
+                stroke={color}
+                strokeWidth={2}
+                dot={
+                  data.categories.length <= MAX_DOTTED_POINTS
+                    ? { r: 3, strokeWidth: 0, fill: color }
+                    : false
+                }
+                activeDot={{ r: 4 }}
+                {...motion}
+              >
+                {showValues ? (
+                  <LabelList
+                    dataKey={s.name}
+                    position="top"
+                    offset={8}
+                    formatter={valueLabel(s.values)}
+                    {...VALUE_LABEL}
+                  />
+                ) : null}
+              </Line>
+            );
+          })}
         </LineChart>
       );
       break;
     case "bar":
       chart = (
-        <BarChart data={rows}>
+        <BarChart data={rows} margin={MARGIN} barCategoryGap="28%" barGap={4}>
           <CartesianGrid stroke={GRID} vertical={false} />
-          <XAxis dataKey="name" stroke={AXIS} tick={TICK} />
-          <YAxis stroke={AXIS} tick={TICK} />
-          <Tooltip />
-          <Legend />
+          <XAxis dataKey="name" stroke={AXIS} tick={NAME_TICK} tickLine={false} />
+          <YAxis tick={NUMBER_TICK} tickFormatter={formatValue} axisLine={false} tickLine={false} />
+          <Tooltip {...TOOLTIP} />
+          {showLegend ? <Legend {...LEGEND} /> : null}
           {data.series.map((s, i) => (
-            <Bar key={s.name} dataKey={s.name} fill={PALETTE[i % PALETTE.length]} />
+            <Bar
+              key={s.name}
+              dataKey={s.name}
+              fill={PALETTE[i % PALETTE.length]}
+              maxBarSize={64}
+              radius={[3, 3, 0, 0]}
+              {...motion}
+            >
+              {showValues ? (
+                <LabelList
+                  dataKey={s.name}
+                  position="top"
+                  offset={6}
+                  formatter={valueLabel(s.values)}
+                  {...VALUE_LABEL}
+                />
+              ) : null}
+            </Bar>
           ))}
         </BarChart>
       );
@@ -115,31 +207,66 @@ export function ChartSection({ content }: { content: ChartContent }) {
       }));
       chart = (
         <PieChart>
-          <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={100}>
+          {/* Anillo con separación entre porciones: se distinguen por forma además de por color. */}
+          <Pie
+            data={pieData}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={56}
+            outerRadius={100}
+            stroke="var(--table-bg, var(--surface))"
+            strokeWidth={2}
+            {...motion}
+          >
             {pieData.map((_, i) => (
               <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
             ))}
+            {showValues ? (
+              <LabelList
+                dataKey="value"
+                position="outside"
+                offset={12}
+                stroke="none"
+                formatter={valueLabel(pieData.map((d) => d.value))}
+                {...VALUE_LABEL}
+              />
+            ) : null}
           </Pie>
-          <Tooltip />
-          <Legend />
+          <Tooltip {...TOOLTIP} />
+          <Legend {...LEGEND} />
         </PieChart>
       );
       break;
     }
     case "scatter":
       chart = (
-        <ScatterChart>
+        <ScatterChart margin={MARGIN}>
           <CartesianGrid stroke={GRID} />
-          <XAxis dataKey="x" type="number" stroke={AXIS} tick={TICK} />
-          <YAxis dataKey="y" type="number" stroke={AXIS} tick={TICK} />
-          <Tooltip />
-          <Legend />
+          <XAxis
+            dataKey="x"
+            type="number"
+            stroke={AXIS}
+            tick={NUMBER_TICK}
+            tickFormatter={formatValue}
+            tickLine={false}
+          />
+          <YAxis
+            dataKey="y"
+            type="number"
+            tick={NUMBER_TICK}
+            tickFormatter={formatValue}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip {...TOOLTIP} />
+          {showLegend ? <Legend {...LEGEND} /> : null}
           {data.series.map((s, i) => (
             <Scatter
               key={s.name}
               name={s.name}
               data={s.values.map((v, idx) => ({ x: idx, y: v }))}
               fill={PALETTE[i % PALETTE.length]}
+              {...motion}
             />
           ))}
         </ScatterChart>
@@ -159,6 +286,10 @@ export function ChartSection({ content }: { content: ChartContent }) {
           {chart}
         </ResponsiveContainer>
       </div>
+      {/* Con una sola serie no hay leyenda: su nombre va como pie del gráfico, para no perderlo. */}
+      {!showLegend && chart_type !== "pie" && data.series[0] ? (
+        <p className="pt-2 text-center text-xs text-muted">{data.series[0].name}</p>
+      ) : null}
       {chart_type === "scatter" ? (
         <p className="pt-2 text-xs text-muted">
           Nota: la forma de datos para dispersión (x/y) se refina en un hito posterior

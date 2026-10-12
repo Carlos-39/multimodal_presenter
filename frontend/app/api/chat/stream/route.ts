@@ -9,20 +9,23 @@
  * sigue por el rewrite.
  */
 
+import { cabecerasHaciaElBackend } from "@/lib/proxyToBackend";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 
 export async function POST(request: Request): Promise<Response> {
-  const contentType = request.headers.get("content-type") ?? "";
   const body = await request.arrayBuffer();
 
   let upstream: Response;
   try {
     upstream = await fetch(`${BACKEND_URL}/chat/stream`, {
       method: "POST",
-      headers: { "content-type": contentType },
+      // La cookie de sesión va incluida: sin ella, preguntarle al chat sobre una presentación
+      // guardada de PDF daba 401. Ver `cabecerasHaciaElBackend`.
+      headers: cabecerasHaciaElBackend(request),
       body,
     });
   } catch {

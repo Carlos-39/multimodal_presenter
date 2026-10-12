@@ -40,10 +40,18 @@ backend/tests/fixtures/local/*
 !backend/tests/fixtures/local/README.md
 # Salidas del arnés de métricas (Hito 5f A4): reportes con datos, no código.
 backend/scripts/outputs/
+# Salidas del spike F0 (PNGs y el PDF rotado que fabrica): se regeneran corriendo el script.
+backend/experiments/outputs/
 
 # Experimento del Hito 7 (RAG vs GraphRAG): documentos, índices, corridas y datasets con
 # datos reales NO se commitean; solo el código del experimento sí.
 backend/experiments/data/
+
+# Telemetría de comportamiento (Hito 8): JSONL/CSV con datos de sesiones de personas reales.
+# NO se commitea (por defecto vive fuera del repo; esto cubre el caso de apuntar TELEMETRY_DIR
+# dentro del repo). Solo el código de la instrumentación se versiona.
+backend/telemetry/
+*.jsonl
 
 # ─────────────────────────────────────────────────────────────
 # Node / Next.js (frontend)
@@ -57,6 +65,15 @@ yarn-debug.log*
 yarn-error.log*
 
 # ─────────────────────────────────────────────────────────────
+# Material de diseño LOCAL (rediseño visual 5k) — NO va al repositorio
+# ─────────────────────────────────────────────────────────────
+# La galería de referencia /galeria (ruta con fixtures) y las capturas/propuesta del rediseño:
+# son útiles SOLO en local (referencia de diseño), no deben servirse en producción ni versionarse.
+# Los archivos siguen en disco; /galeria funciona en `npm run dev` de esta máquina.
+frontend/app/galeria/
+docs/diseno/
+
+# ─────────────────────────────────────────────────────────────
 # Editores / SO
 # ─────────────────────────────────────────────────────────────
 .vscode/
@@ -64,3 +81,37 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 *.swp
+
+# ─────────────────────────────────────────────────────────────
+# Bitácora de hitos: se versiona en SU PROPIO repositorio
+# ─────────────────────────────────────────────────────────────
+# `docs/Registro_de_Hitos.md` es la bitácora larga del proyecto y nunca viaja al remoto. Vivía
+# trackeada aquí y bloqueada por un hook `pre-push`, pero eso dejaba `develop` local impusheable
+# para siempre: cada rama cortada de él arrastraba esos commits como ancestros. Peor todavía,
+# obligaba a dejar el commit del Registro fuera de la rama que se sube, y cuando el PR se mergeaba
+# ese commit se quedaba solo en una rama local que luego moría — así se perdieron cuatro entradas
+# sin que nadie lo notara.
+#
+# Ahora la versiona `.registro.git`, un repositorio aparte sobre el mismo árbol de trabajo. El
+# archivo NO se movió (README e Inventario lo siguen referenciando igual): lo que vive aparte es
+# el `.git`. Se opera con `.\registro.ps1 <comando de git>`.
+docs/Registro_de_Hitos.md
+.registro.git/
+registro.ps1
+
+# Herramientas de mi máquina, no del proyecto.
+#
+# Igual que `registro.ps1` y el hook de pre-push: configuración de cómo trabajo yo, que no tiene
+# por qué viajar con el código ni aparecer en el repositorio de un trabajo de grado. Estaban sin
+# ignorar, así que un `git add -A` despistado se las habría llevado enteras.
+.claude/
+skills-lock.json
+
+# Lo mismo, pero dentro de `frontend/`, y estos sí estaban publicados: se colaron en el andamio
+# del Hito 3 y llevaban ahí desde entonces, a la vista de cualquiera que abriera la carpeta.
+#
+# `AGENTS.md` no lo escribí yo: lo regenera `next dev` en cada arranque, así que borrarlo no
+# sirve de nada y tiene que ir ignorado o vuelve en el siguiente diff. `CLAUDE.md` solo lo
+# incluye.
+frontend/CLAUDE.md
+frontend/AGENTS.md

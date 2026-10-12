@@ -38,7 +38,7 @@ from .common import (
 )
 from .generate import generate_answer
 from .graph_rag import GraphRAGIndex
-from .judge import judge_answer
+from .judge import apply_unanswerable_gate, judge_answer
 from .transcription import transcribe_pages
 from .vector_rag import VoyagePageIndex
 
@@ -192,6 +192,11 @@ async def query_phase() -> None:
                         answer, gen = await generate_answer(pages_pdf, q["question"])
                         correctness, judge = await judge_answer(
                             q["question"], q["reference_answer"], answer
+                        )
+                        # Gate post-auditoría: en `unanswerable`, abstenerse sin recuperar nada
+                        # no puntúa como recuperar y verificar la ausencia (baseline exento).
+                        correctness = apply_unanswerable_gate(
+                            q["category"], cond, pages if cond != "baseline" else [], correctness
                         )
                     except Exception as exc:  # noqa: BLE001 — un fallo es un HALLAZGO, se registra
                         print(f"  [ERROR] {cond}/{q['id']}: {type(exc).__name__}: {exc}")

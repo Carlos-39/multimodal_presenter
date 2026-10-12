@@ -64,3 +64,29 @@ export function resolveWorkspace(openOrder: PanelId[], width: number): Workspace
   }
   return layout;
 }
+
+// ── Ancho ajustable de las columnas opcionales ──
+//
+// El usuario puede ensanchar o angostar cada columna arrastrando su borde. NO cambia la regla de
+// emplazamiento de arriba (columna | overlay | oculto): solo el ancho de una columna ya visible, y
+// siempre dentro de topes para que ni el panel ni el contenido queden ilegibles.
+
+export const PANEL_DEFAULT_WIDTH: Record<PanelId, number> = { source: 416, chat: 320 };
+export const PANEL_MIN_WIDTH: Record<PanelId, number> = { source: 320, chat: 280 };
+export const PANEL_MAX_WIDTH: Record<PanelId, number> = { source: 720, chat: 520 };
+/** Ancho mínimo que debe conservar el contenido cuando hay columnas abiertas. */
+export const CONTENT_MIN_WIDTH = 420;
+
+/**
+ * Ajusta el ancho pedido de una columna a sus topes.
+ *
+ * @param id        panel que se redimensiona.
+ * @param desired   ancho pedido en px.
+ * @param available px que quedan para ESTE panel + el contenido (ancho del área de trabajo menos
+ *                  las demás columnas visibles).
+ */
+export function clampPanelWidth(id: PanelId, desired: number, available: number): number {
+  const max = Math.min(PANEL_MAX_WIDTH[id], available - CONTENT_MIN_WIDTH);
+  // Si no cabe ni el mínimo respetando el contenido, gana el mínimo del panel (sigue siendo usable).
+  return Math.round(Math.max(PANEL_MIN_WIDTH[id], Math.min(desired, max)));
+}

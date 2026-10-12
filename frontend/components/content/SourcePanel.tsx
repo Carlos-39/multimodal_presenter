@@ -1,8 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import { X } from "@phosphor-icons/react";
+import { formatTimestamp } from "@/lib/audio";
 import { highlightSegments } from "@/lib/highlight";
-import type { GroundingStatus, SourceKind, SourceReference } from "@/lib/types";
+import type {
+  CitedRegion,
+  GroundingStatus,
+  OriginalSource,
+  SourceKind,
+  SourceReference,
+} from "@/lib/types";
+import { ImageExplanation } from "./ImageExplanation";
+import { PdfRegionView } from "./PdfRegionView";
+import { urlDelDocumento } from "@/lib/documentForm";
 
 /**
  * Panel de documento fuente (atribución interactiva, Punto 4 · Hito 5c). Lo comparten la
@@ -16,18 +27,20 @@ import type { GroundingStatus, SourceKind, SourceReference } from "@/lib/types";
  * - PDF: documento navegable (iframe nativo), navega a `source.page`. Fidelidad de PÁGINA,
  *   no de región. TODO(Hito5x): resaltado de región en PDF/imagen.
  * - imagen: imagen completa, sin navegación.
+ * - audio: reproductor nativo que arranca en el momento de la cita (`startS`), el análogo de
+ *   la fidelidad de página del PDF. Se dice explícitamente que el contenido verbal proviene
+ *   de la percepción del modelo y no es verificable contra la señal: el estado es `unverified`
+ *   y la UI no finge lo contrario (misma honestidad que el aviso de `not_found` del 8A.1).
  */
-interface OriginalSource {
-  text: string | null;
-  file: File | null;
-}
-
 interface SourcePanelProps {
   original: OriginalSource;
   sourceKind: SourceKind;
   source: SourceReference;
   status: GroundingStatus;
   sourceKey: string; // reancla el resaltado al cambiar de fuente (sección o chat)
+  startS?: number | null; // solo audio: segundo en el que arranca la cita
+  region?: CitedRegion | null; // solo PDF: dónde está la cita dentro de la página
+  transcript?: string | null; // solo audio: lo que oyó la fase de percepción
   onClose: () => void;
 }
 
@@ -37,34 +50,67 @@ export function SourcePanel({
   source,
   status,
   sourceKey,
+  startS = null,
+  region = null,
+  transcript = null,
   onClose,
 }: SourcePanelProps) {
-  const fileUrl = useMemo(
-    () => (original.file ? URL.createObjectURL(original.file) : null),
-    [original.file],
-  );
+  // El object URL se crea y se revoca en el MISMO efecto, para que cada montaje tenga el suyo.
+  //
+  // Antes se creaba en un `useMemo` y se revocaba en el cleanup de un efecto aparte, y eso se
+  // rompe con el doble montaje de StrictMode: monta → el cleanup revoca la URL → vuelve a
+  // montar, pero el `useMemo` está cacheado y devuelve la MISMA URL, ya muerta. Se descubrió al
+  // añadir el audio: el `<iframe>` del PDF y el `<img>` alcanzaban a cargar antes del revoke,
+  // pero el `<audio>` carga sus metadatos más tarde y se encontraba la URL revocada
+  // (`MEDIA_ELEMENT_ERROR: Format error`). Solo se manifestaba en desarrollo; aun así, depender
+  // de ese orden de carga era frágil para los tres tipos de fuente.
+  // Con `File` se crea un object URL como siempre; en una presentación RESTAURADA no hay archivo
+  // y se apunta al endpoint que sirve el documento guardado. Sin esto, lo guardado se podría leer
+  // pero no VERIFICAR — y poder verificar es lo que este proyecto promete.
+  const fuente = useMemo(() => urlDelDocumento(original), [original]);
+  const fileUrl = fuente?.url ?? null;
+  // Se revoca la URL ANTERIOR cuando cambia el documento, NO al cerrar el panel: cerrar y
+  // reabrir la fuente del mismo archivo debe seguir funcionando. La última queda viva hasta
+  // que se descarga la página, que es cuando el navegador la libera igual.
+  const urlPrevia = useRef<string | null>(null);
+  const eraObjeto = useRef(false);
   useEffect(() => {
-    return () => {
-      if (fileUrl) URL.revokeObjectURL(fileUrl);
-    };
-  }, [fileUrl]);
+    const anterior = urlPrevia.current;
+    const anteriorEraObjeto = eraObjeto.current;
+    urlPrevia.current = fileUrl;
+    eraObjeto.current = fuente?.esObjeto ?? false;
+    // Solo se revocan los object URL. La URL del documento guardado es una ruta normal del
+    // backend: revocarla no haría nada, pero pedirlo sobre algo que no es un object URL es
+    // justamente el tipo de llamada que luego nadie entiende por qué está ahí.
+    if (anteriorEraObjeto && anterior && anterior !== fileUrl) URL.revokeObjectURL(anterior);
+  }, [fileUrl, fuente]);
 
   return (
-    <aside className="flex h-full w-full flex-col bg-surface">
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
-          Documento fuente
-        </h2>
+    <aside className="section-enter flex h-full w-full flex-col bg-surface">
+      <header className="flex items-center justify-between border-b border-border py-2 pl-4 pr-2">
+        <h2 className="text-[0.8125rem] font-medium text-foreground">Documento fuente</h2>
         <button
           type="button"
           onClick={onClose}
-          className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
+          aria-label="Cerrar el documento fuente"
+          title="Cerrar"
+          className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-sunken hover:text-foreground"
         >
-          cerrar
+          <X size={15} aria-hidden />
         </button>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      {/* La clave REMONTA el contenido al cambiar de fuente activa (otra sección o una respuesta
+          del chat). Es necesario para el PDF: su página se fija por el fragmento `#page=N` del
+          `src` del <iframe>, y los navegadores NO re-navegan un iframe cuando solo cambia el
+          hash — remontarlo lo fuerza a cargar en la página correcta. Robusto ante clics rápidos
+          (React reconcilia al último key) y uniforme para texto, PDF, imagen y audio.
+
+          El PREFIJO no es decorativo. Este bloque y el de "explicar imagen" son hermanos, y los
+          dos se remontan con la misma fuente: con `sourceKey` pelado compartían clave, que es un
+          caso que React declara no soportado ("puede duplicar u omitir hijos"). Se vio: cada
+          apertura de fuente APILABA un visor más en lugar de reemplazarlo. */}
+      <div key={`contenido-${sourceKey}`} className="min-h-0 flex-1 overflow-y-auto">
         {sourceKind === "text" ? (
           <TextSource
             text={original.text ?? ""}
@@ -73,11 +119,48 @@ export function SourcePanel({
             sourceKey={sourceKey}
           />
         ) : sourceKind === "pdf" ? (
-          <PdfSource url={fileUrl} page={source.page} />
+          // Con región se recuadra la cita; sin ella, el visor de siempre (fidelidad de página).
+          // El <iframe> no se toca: sigue siendo la salida para todo lo que no se pudo localizar,
+          // y desde él se abre o se descarga el PDF completo.
+          region && source.page && original.file ? (
+            <PdfRegionView
+              file={original.file}
+              region={region}
+              fallback={
+                <PdfSource
+                  url={fileUrl}
+                  page={source.page}
+                  fileName={original.file?.name ?? null}
+                />
+              }
+            />
+          ) : (
+            <PdfSource url={fileUrl} page={source.page} fileName={original.file?.name ?? null} />
+          )
+        ) : sourceKind === "audio" ? (
+          <AudioSource
+            url={fileUrl}
+            quote={source.quote}
+            startS={startS}
+            transcript={transcript}
+            sourceKey={sourceKey}
+          />
         ) : (
           <ImageSource url={fileUrl} />
         )}
       </div>
+
+      {/* Explicar imagen REAL (Hito 5h Parte 3): solo para fuentes binarias (PDF/imagen). Vive
+          aquí, sobre la imagen real = trazabilidad reforzada; NO es una ilustración generada. Se
+          remonta por `sourceKey` → colapsada de nuevo al cambiar de fuente. */}
+      {sourceKind !== "text" && sourceKind !== "audio" && original.file ? (
+        <ImageExplanation
+          key={`explicar-${sourceKey}`}
+          file={original.file}
+          page={source.page ?? null}
+          context={source.quote}
+        />
+      ) : null}
     </aside>
   );
 }
@@ -101,16 +184,16 @@ function TextSource({
   }, [sourceKey]);
 
   return (
-    <div className="p-4">
+    <div className="px-5 py-4">
       {status === "not_found" ? (
-        <p className="mb-3 rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-xs text-warning">
+        <p className="mb-3 rounded-md border border-warning/40 px-3 py-2 text-xs text-warning">
           No se pudo verificar este fragmento en el documento.
         </p>
       ) : null}
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+      <p className="whitespace-pre-wrap font-serif text-[0.9375rem] leading-[1.65] text-foreground-secondary">
         {segments.before}
         {segments.mark ? (
-          <mark ref={markRef} className="rounded bg-accent px-0.5 text-accent-foreground">
+          <mark ref={markRef} className="rounded-[2px] bg-highlight px-0.5 text-foreground">
             {segments.mark}
           </mark>
         ) : null}
@@ -120,25 +203,158 @@ function TextSource({
   );
 }
 
-function PdfSource({ url, page }: { url: string | null; page: number | null }) {
+function PdfSource({
+  url,
+  page,
+  fileName,
+}: {
+  url: string | null;
+  page: number | null;
+  fileName: string | null;
+}) {
   if (!url) return <PanelMessage>No hay documento disponible.</PanelMessage>;
   const src = page ? `${url}#page=${page}` : url;
   // El <iframe>#page=N depende del visor nativo del navegador y NO funciona en la mayoría de
-  // móviles ni en navegadores sin visor embebido. El enlace es la salida siempre utilizable.
+  // móviles ni en navegadores sin visor embebido. De ahí las dos salidas del encabezado:
+  //
+  // - "Abrir en pestaña nueva": lo natural en escritorio.
+  // - "Descargar": la salida fiable donde la anterior no lo es. Abrir una URL `blob:` en una
+  //   pestaña nueva depende del navegador —algunos lo bloquean y en móvil es justo donde menos
+  //   se puede confiar—, que es precisamente el escenario para el que se creó este enlace en el
+  //   5f. El atributo `download` no depende de que exista un visor.
+  //
+  // Se AÑADE la descarga en vez de reemplazar el enlace: lo que ya funciona en escritorio sigue
+  // igual, y quien no pueda abrirlo tiene una salida que no falla.
+  const nombreDescarga = fileName || "documento.pdf";
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2 text-xs">
-        <span className="text-muted">{page ? `Referencia: página ${page}.` : "Documento PDF"}</span>
-        <a
-          href={src}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="shrink-0 text-muted underline underline-offset-2 hover:text-foreground"
-        >
-          Abrir PDF en pestaña nueva
-        </a>
+        <span className="min-w-0 truncate text-muted">
+          {page ? (
+            <>
+              Referencia: página <span className="tabular">{page}</span>
+            </>
+          ) : (
+            "Documento PDF"
+          )}
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          <a
+            href={src}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent underline decoration-1 underline-offset-2 hover:text-accent-hover"
+          >
+            Abrir en pestaña nueva
+          </a>
+          <span className="text-border" aria-hidden>
+            ·
+          </span>
+          <a
+            href={url}
+            download={nombreDescarga}
+            className="text-muted underline decoration-1 underline-offset-2 hover:text-foreground"
+          >
+            Descargar
+          </a>
+        </span>
       </div>
       <iframe src={src} title="Documento fuente (PDF)" className="min-h-0 flex-1 border-0" />
+    </div>
+  );
+}
+
+/**
+ * Fuente de audio. El equivalente honesto de la "fidelidad de página" del PDF: lleva al
+ * MOMENTO de la cita, que es el grano real que el sistema puede ofrecer sobre una señal.
+ *
+ * Dice explícitamente de dónde viene el texto de la cita (de la percepción del modelo, no de
+ * la señal verificada) en vez de presentarla como un fragmento verificado. Es la misma
+ * honestidad del aviso de `not_found` del 8A.1: lo que ancla es trazable, lo que no, se avisa.
+ */
+function AudioSource({
+  url,
+  quote,
+  startS,
+  transcript,
+  sourceKey,
+}: {
+  url: string | null;
+  quote: string;
+  startS: number | null;
+  transcript: string | null;
+  sourceKey: string;
+}) {
+  const playerRef = useRef<HTMLAudioElement | null>(null);
+  const markRef = useRef<HTMLElement>(null);
+
+  // La cita se LOCALIZA dentro de la transcripción (mismo helper que el caso de texto), pero
+  // eso NO la verifica: la transcripción es lo que el modelo oyó, no la señal. Por eso el
+  // grounding sigue en `unverified` y el pie lo dice. Si no se encuentra, no se resalta nada
+  // en vez de resaltar algo aproximado.
+  const idx = transcript ? transcript.indexOf(quote) : -1;
+  const segmentos =
+    transcript && idx !== -1 ? highlightSegments(transcript, idx, idx + quote.length) : null;
+
+  useEffect(() => {
+    markRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [sourceKey]);
+
+  // Arranca en el momento de la cita. Hay que esperar a que los metadatos carguen: antes de eso
+  // `currentTime` no se puede fijar (la duración aún no se conoce).
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player || startS === null) return;
+    const seek = () => {
+      player.currentTime = startS;
+    };
+    if (player.readyState >= 1) seek();
+    else player.addEventListener("loadedmetadata", seek, { once: true });
+    return () => player.removeEventListener("loadedmetadata", seek);
+  }, [startS, url]);
+
+  if (!url) return <PanelMessage>No hay audio disponible.</PanelMessage>;
+
+  return (
+    <div className="flex flex-col gap-4 p-4">
+      <div className="flex items-baseline justify-between gap-2 text-xs">
+        <span className="text-muted">Audio fuente</span>
+        {startS !== null ? (
+          <span className="text-muted">
+            Referencia: <span className="tabular">{formatTimestamp(startS)}</span>
+          </span>
+        ) : null}
+      </div>
+
+      <audio ref={playerRef} src={url} controls className="w-full" />
+
+      {segmentos ? (
+        // Transcripción completa con la cita resaltada: el equivalente honesto de lo que el
+        // panel hace con un documento de texto, para poder leer el contexto de la cita.
+        <div>
+          <p className="mb-2 text-xs text-muted">Transcripción</p>
+          <p className="whitespace-pre-wrap font-serif text-[0.9375rem] leading-[1.65] text-foreground-secondary">
+            {segmentos.before}
+            {segmentos.mark ? (
+              <mark ref={markRef} className="rounded-[2px] bg-highlight px-0.5 text-foreground">
+                {segmentos.mark}
+              </mark>
+            ) : null}
+            {segmentos.after}
+          </p>
+        </div>
+      ) : (
+        // Sin transcripción (o con una cita que no aparece en ella): se muestra la cita sola,
+        // sin fingir un contexto que no se tiene.
+        <figure className="border-l-2 border-border pl-3">
+          <blockquote className="text-sm leading-relaxed text-foreground">“{quote}”</blockquote>
+        </figure>
+      )}
+
+      <p className="text-xs leading-relaxed text-muted">
+        Esto es lo que el modelo <strong className="font-medium">oyó</strong> en el audio, no una
+        transcripción verificada. Puede tener errores: escucha el fragmento para confirmarlo.
+      </p>
     </div>
   );
 }

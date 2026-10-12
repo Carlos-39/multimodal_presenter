@@ -5,27 +5,60 @@ Nivel barato (determinista): grounding de fuentes, adaptado al tipo de fuente.
   offsets, o `not_found` (warning real de fabricación).
 - PDF/imagen: NO se puede verificar por substring sin aplanar el binario (contra el
   principio rector). Las secciones quedan `unverified`; para PDF se conserva la página que
-  aporta el modelo. La verificación por página/región es TODO(Hito5).
+  aporta el modelo y, si tiene capa de texto, la REGIÓN dentro de ella (ver `pdf_locator`).
+  La región localiza, no verifica: el estado no cambia. La VERIFICACIÓN sigue siendo TODO(Hito5).
+- Audio: también `unverified`, con el segundo aproximado (`start_s`) en vez de la página. La
+  cita se LOCALIZA en la transcripción de la Fase 0 para poder saltar al momento, pero eso no
+  la verifica contra la señal; ver `schemas/transform.py` para el razonamiento completo.
 
 Nivel LLM (coherencia semántica): interfaz real ya cableada, hoy no-op. TODO(Hito2.1).
 """
 
+from dataclasses import dataclass
+
+import logfire
 from pydantic_ai import Agent, BinaryContent, ToolOutput
 from pydantic_ai.models import Model
 
 from ..schemas import Presentation
 from ..schemas.presentation import ChartContent, Section, SourceReference
 from ..schemas.transform import (
+    CitedRegion,
     GroundingReport,
     GroundingStatus,
     SectionGrounding,
     SemanticCoherenceReport,
 )
+from .canon import CANON_MAP
 from .models import ExtractionResult
+from .pdf_locator import PdfLocator, abrir_localizador, region_de_cita
+
+
+@dataclass(frozen=True)
+class QuoteAnchor:
+    """Anclaje de una cita suelta (chat, diapositiva generada).
+
+    Es un objeto y no una tupla porque ya lleva cuatro datos y cada fuente aporta uno distinto:
+    offsets en texto, página en PDF, momento en audio, región dentro de la página. Desempaquetar
+    `_, _, _, region` en cada sitio escondía justo lo que se quiere leer de un vistazo.
+    """
+
+    source: SourceReference | None
+    status: GroundingStatus
+    start_s: float | None = None
+    region: CitedRegion | None = None
+
+
+def _find_quote(text: str, quote: str) -> int:
+    """Índice de `quote` en `text`: exacto primero; si falla, sobre la forma canónica (1:1)."""
+    idx = text.find(quote)
+    if idx != -1:
+        return idx
+    return text.translate(CANON_MAP).find(quote.translate(CANON_MAP))
 
 
 def ground_section(
-    section: Section, extraction: ExtractionResult
+    section: Section, extraction: ExtractionResult, localizador: PdfLocator | None = None
 ) -> tuple[Section, SectionGrounding]:
     """Ancla UNA sección a su fuente. Devuelve (sección enriquecida, entrada de grounding).
 
@@ -33,7 +66,7 @@ def ground_section(
     """
     if extraction.source_kind == "text":
         assert extraction.text is not None
-        idx = extraction.text.find(section.source.quote)
+        idx = _find_quote(extraction.text, section.source.quote)
         if idx != -1:
             start, end = idx, idx + len(section.source.quote)
             new_source = section.source.model_copy(
@@ -49,26 +82,62 @@ def ground_section(
             return section.model_copy(update={"source": new_source}), entry
         return section, SectionGrounding(section_id=section.id, status="not_found")
 
-    # Binario: no se verifica por substring (no hay texto sin aplanar). Se conserva la página.
+    if extraction.source_kind == "audio":
+        assert extraction.audio_evidence is not None
+        # `unverified`, el MISMO estado de PDF/imagen y a propósito no uno nuevo: la cita se
+        # busca contra la transcripción de la Fase 0, que es un derivado aplanado de la señal.
+        # Encontrarla ahí NO la verifica contra el audio. Lo que se gana es el momento
+        # (`start_s`), el análogo de `page`: lleva al punto del audio sin afirmar verificación.
+        new_source = section.source.model_copy(update={"document_id": extraction.document_id})
+        entry = SectionGrounding(
+            section_id=section.id,
+            status="unverified",
+            start_s=extraction.audio_evidence.locate(section.source.quote),
+        )
+        return section.model_copy(update={"source": new_source}), entry
+
+    # Binario: no se verifica por substring (no hay texto sin aplanar). Se conserva la página, y
+    # en PDF se añade DÓNDE dentro de ella. Localizar no verifica: el estado no cambia.
     new_source = section.source.model_copy(update={"document_id": extraction.document_id})
-    entry = SectionGrounding(section_id=section.id, status="unverified", page=section.source.page)
+    entry = SectionGrounding(
+        section_id=section.id,
+        status="unverified",
+        page=section.source.page,
+        region=region_de_cita(localizador, section.source.quote, section.source.page),
+    )
     return section.model_copy(update={"source": new_source}), entry
 
 
 def ground_quote(
-    quote: str | None, page: int | None, extraction: ExtractionResult
-) -> tuple[SourceReference | None, GroundingStatus]:
+    quote: str | None,
+    page: int | None,
+    extraction: ExtractionResult,
+    localizador: PdfLocator | None = None,
+) -> QuoteAnchor:
     """Ancla una CITA suelta (respuesta de chat, Hito 6) con la misma regla determinista.
 
-    - Sin cita → `(None, "not_found")`: el modelo no pudo anclar; no se inventa una fuente.
+    - Sin cita → `not_found` sin fuente: el modelo no pudo anclar; no se inventa una.
     - Texto: si la cita existe → `verified` con offsets; si no → `not_found` (fabricación).
     - Binario (PDF/imagen): `unverified`, conservando la página (Caso B del 5c).
+    - Audio: `unverified` con el MOMENTO (tercer valor), nunca `verified`. La cita se localiza
+      en la transcripción de la Fase 0, que es un derivado aplanado de la señal: encontrarla
+      ahí no la verifica contra el audio. Mismo criterio que `ground_section`.
     """
     if not quote:
-        return None, "not_found"
+        return QuoteAnchor(source=None, status="not_found")
+
+    if extraction.source_kind == "audio":
+        assert extraction.audio_evidence is not None
+        source = SourceReference(document_id=extraction.document_id, quote=quote)
+        return QuoteAnchor(
+            source=source,
+            status="unverified",
+            start_s=extraction.audio_evidence.locate(quote),
+        )
+
     if extraction.source_kind == "text":
         assert extraction.text is not None
-        idx = extraction.text.find(quote)
+        idx = _find_quote(extraction.text, quote)
         if idx != -1:
             source = SourceReference(
                 document_id=extraction.document_id,
@@ -76,11 +145,18 @@ def ground_quote(
                 char_start=idx,
                 char_end=idx + len(quote),
             )
-            return source, "verified"
-        return SourceReference(document_id=extraction.document_id, quote=quote), "not_found"
+            return QuoteAnchor(source=source, status="verified")
+        return QuoteAnchor(
+            source=SourceReference(document_id=extraction.document_id, quote=quote),
+            status="not_found",
+        )
 
     source = SourceReference(document_id=extraction.document_id, quote=quote, page=page)
-    return source, "unverified"
+    return QuoteAnchor(
+        source=source,
+        status="unverified",
+        region=region_de_cita(localizador, quote, page),
+    )
 
 
 def build_grounding_report(source_kind: str, entries: list[SectionGrounding]) -> GroundingReport:
@@ -95,16 +171,68 @@ def build_grounding_report(source_kind: str, entries: list[SectionGrounding]) ->
     )
 
 
+class SectionIdDeduper:
+    """Garantiza que los ids de sección sean ÚNICOS, de forma determinista.
+
+    El `Section.id` lo genera el LLM y el contrato no puede exigir unicidad por sección (una
+    sección sola no sabe de las demás). Cuando el modelo repite un id, dos cosas se rompen a la
+    vez, y ninguna de forma ruidosa:
+
+    1. **El join del grounding queda ambiguo:** `SectionGrounding.section_id` apunta a
+       `Section.id`, así que con ids repetidos no se sabe qué entrada corresponde a qué sección.
+    2. **El frontend puede PERDER una sección:** React usa el id como `key` de la lista y, con
+       claves repetidas, su propia documentación advierte que puede omitir o duplicar hijos.
+
+    Se observó con documentos reales (ids `sec-1` y `s1` repetidos), de forma intermitente: con
+    unos documentos pasa y con otros no, lo que lo hace más difícil de ver, no menos grave.
+
+    **Por qué se CORRIGE y no se rechaza.** Rechazar en el contrato obligaría a reintentar toda
+    la generación por un id repetido, y si el modelo insiste el usuario se queda sin nada. Es el
+    mismo criterio que la regla de isomorfismo (Hito 5a): lo determinista se corrige en código,
+    de forma reproducible, en vez de tumbar el resultado. El renombrado se traza en Logfire —se
+    corrige, no se esconde.
+
+    Es stateful a propósito: el mismo objeto recorre toda la presentación, y en streaming vive
+    durante todo el stream, para que el id ya emitido cuente al deduplicar los siguientes.
+    """
+
+    def __init__(self) -> None:
+        self._vistos: set[str] = set()
+
+    def ensure_unique(self, section: Section) -> tuple[Section, str | None]:
+        """Devuelve (sección con id único, id original si hubo que renombrar)."""
+        if section.id not in self._vistos:
+            self._vistos.add(section.id)
+            return section, None
+
+        original = section.id
+        sufijo = 2
+        while f"{original}-{sufijo}" in self._vistos:
+            sufijo += 1
+        nuevo = f"{original}-{sufijo}"
+        self._vistos.add(nuevo)
+        logfire.info("id de sección repetido: {original} → {nuevo}", original=original, nuevo=nuevo)
+        return section.model_copy(update={"id": nuevo}), original
+
+
 def verify_grounding(
     presentation: Presentation, extraction: ExtractionResult
 ) -> tuple[Presentation, GroundingReport]:
-    """Verifica el anclaje a fuente de toda la presentación y arma el reporte."""
+    """Verifica el anclaje a fuente de toda la presentación y arma el reporte.
+
+    Antes de anclar, se garantizan ids únicos: el grounding referencia las secciones por id,
+    así que un id repetido haría ambiguo el propio reporte (ver `SectionIdDeduper`).
+    """
+    deduper = SectionIdDeduper()
     new_sections: list[Section] = []
     entries: list[SectionGrounding] = []
-    for section in presentation.sections:
-        new_section, entry = ground_section(section, extraction)
-        new_sections.append(new_section)
-        entries.append(entry)
+    # El PDF se abre UNA vez para toda la presentación, no una por sección.
+    with abrir_localizador(extraction.source_kind, extraction.binary) as localizador:
+        for section in presentation.sections:
+            unica, _renombrada = deduper.ensure_unique(section)
+            new_section, entry = ground_section(unica, extraction, localizador)
+            new_sections.append(new_section)
+            entries.append(entry)
     report = build_grounding_report(extraction.source_kind, entries)
     return presentation.model_copy(update={"sections": new_sections}), report
 

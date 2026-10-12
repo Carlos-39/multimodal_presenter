@@ -1,3 +1,5 @@
+import { anexaDocumento } from "./documentForm";
+import type { OriginalSource } from "./types";
 import type { TransformResponse } from "./types";
 
 /**
@@ -5,12 +7,10 @@ import type { TransformResponse } from "./types";
  * {presentation, grounding}. Debe enviarse al menos uno de los dos.
  */
 export async function postTransform(
-  text: string | null,
-  file: File | null,
+  original: OriginalSource,
 ): Promise<TransformResponse> {
   const form = new FormData();
-  if (text && text.trim().length > 0) form.append("text", text.trim());
-  if (file) form.append("file", file);
+  anexaDocumento(form, original);
 
   const res = await fetch("/api/transform", { method: "POST", body: form });
 
