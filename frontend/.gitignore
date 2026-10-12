@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# La plantilla sí, igual que en el backend: documenta las variables con huecos, nunca valores.
+!.env.example
 
 # vercel
 .vercel

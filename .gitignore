@@ -106,3 +106,12 @@ registro.ps1
 # ignorar, así que un `git add -A` despistado se las habría llevado enteras.
 .claude/
 skills-lock.json
+
+# Lo mismo, pero dentro de `frontend/`, y estos sí estaban publicados: se colaron en el andamio
+# del Hito 3 y llevaban ahí desde entonces, a la vista de cualquiera que abriera la carpeta.
+#
+# `AGENTS.md` no lo escribí yo: lo regenera `next dev` en cada arranque, así que borrarlo no
+# sirve de nada y tiene que ir ignorado o vuelve en el siguiente diff. `CLAUDE.md` solo lo
+# incluye.
+frontend/CLAUDE.md
+frontend/AGENTS.md

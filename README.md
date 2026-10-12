@@ -43,21 +43,27 @@ Construcción **por hitos** (ver `PROYECTO.md` §7 y `docs/Registro_de_Hitos.md`
 ```
 multimodal_presenter/
 ├── PROYECTO.md            # Contexto maestro del sistema
+├── docker-compose.yml     # La aplicación entera, igual que corre desplegada
 ├── docs/                  # Diseño, decisiones y Registro_de_Hitos.md (trazabilidad)
 ├── backend/               # API Python (FastAPI + PydanticAI) — gestionada con uv
+│   ├── Dockerfile         #   imagen de producción (sin privilegios, con volumen)
+│   ├── entrypoint.sh      #   ajusta el dueño del volumen y baja privilegios
 │   ├── src/multimodal_presenter/
 │   │   ├── main.py        #   app FastAPI + health check
 │   │   ├── config.py      #   settings tipadas (lee .env)
 │   │   ├── model_provider.py  # Anthropic primario + fallback Gemini + percepción de audio
 │   │   ├── schemas/       #   contrato de datos tipado (Hito 1)
 │   │   ├── pipeline/      #   Fase 1 extracción · Fase 2 estructuración · Fase 3 validación + streaming
-│   │   └── api/routes.py  #   POST /transform y /transform/stream (SSE)
-│   ├── scripts/           #   arnés de métricas con modelo real (Hito 5f, fuera de producción)
+│   │   ├── storage/       #   SQLite + documentos en disco + migraciones numeradas
+│   │   └── api/           #   routes.py (pipeline) · auth.py · library.py · limites.py (topes)
+│   ├── scripts/           #   arnés de métricas, exportador de telemetría, respaldo de la base
 │   └── tests/             #   unitarios + integración (modelo real, -m integration)
 └── frontend/              # Next.js 16 + Tailwind v4 (App Router)
-    ├── app/               #   página, layout, API route del SSE
+    ├── Dockerfile         #   imagen de producción (salida standalone)
+    ├── proxy.ts           #   portón de acceso + política de contenido (corre antes que todo)
+    ├── app/               #   páginas, layout, route handlers del SSE, /acceso
     ├── components/        #   AppShell + Workspace (columnas) + render por tipo
-    └── lib/               #   contrato TS + detail (5b) + highlight (5c) + workspace (5e)
+    └── lib/               #   contrato TS + detail (5b) + highlight (5c) + acceso + csp
 ```
 
 > **Composición interna de una sección (Escala 1 del layout, Hito 5e):** es **spec documentada,
@@ -89,8 +95,14 @@ cp .env.example .env          # rellena ANTHROPIC_API_KEY (obligatoria para el p
 uv run uvicorn multimodal_presenter.main:app --reload
 ```
 
-`ANTHROPIC_API_KEY` es obligatoria para transformar; `OPENROUTER_API_KEY` es opcional (activa el
-fallback). Sin claves, los tests siguen corriendo porque inyectan un modelo mock.
+`ANTHROPIC_API_KEY` es obligatoria para transformar. `GOOGLE_API_KEY` es opcional para texto, PDF e
+imagen (activa el fallback de estructuración) y **obligatoria para audio**. Sin claves, los tests
+siguen corriendo porque inyectan un modelo mock.
+
+Dos variables que conviene conocer aunque tengan valor por defecto: **`REGISTRO_ABIERTO` viene en
+`false`**, así que para crearte una cuenta en tu máquina hay que ponerla en `true`; y
+`TELEMETRIA_TOKEN`, sin la cual el endpoint de volcado no existe. Las demás están explicadas una a
+una en `.env.example`.
 
 La API queda en `http://127.0.0.1:8000`. Verifica el health check:
 
@@ -129,15 +141,78 @@ uv run pytest -m integration  # tests con el modelo REAL (solo local, requiere c
 
 Desde `frontend/` (requiere Node): `npm install`, luego `npm run dev` (queda en
 `http://localhost:3000` y hace proxy de `/api/*` al backend). `npm test` corre los tests con
-vitest; `npm run build` y `npm run lint` para verificar.
+vitest; `npm run build`, `npm run lint` y `npx tsc --noEmit` para verificar. El frontend **no está
+en el CI**, así que esos tres se corren a mano.
+
+Sus variables están en `frontend/.env.example` y en desarrollo normal no hace falta ninguna.
+
+## Despliegue
+
+La aplicación son **dos piezas y un volumen**. El navegador habla solo con el frontend, que
+reenvía `/api/*` al backend por una red privada; el backend no tiene dominio propio. Un solo
+origen, así que no hay CORS ni cookies de terceros.
+
+Para levantarlo entero igual que corre desplegado:
+
+```bash
+docker compose up -d --build        # queda en http://localhost:3000
+docker compose down                 # para (el volumen SOBREVIVE)
+docker compose down -v              # para y borra los datos
+```
+
+Todo lo que hay que conservar vive en el volumen: la base SQLite, los documentos subidos, las
+narraciones y los JSONL de telemetría. Las dos variables que lo fijan (`DATA_DIR` y
+`TELEMETRY_DIR`) van explícitas, porque su valor por defecto cae en el home del usuario, que en un
+contenedor es efímero.
+
+Tres cosas que no son obvias y cuestan una tarde si se descubren tarde:
+
+- **`BACKEND_URL` se lee al COMPILAR**, no al arrancar: Next congela el destino de los `rewrites`
+  dentro del build. Va como argumento de construcción. `ACCESO_CODIGO` y las del backend, en
+  cambio, son de ejecución.
+- **Uvicorn escuchando en `::` crea un socket solo de IPv6.** Es lo correcto donde la red privada
+  es IPv6, y por eso la red de compose también lo es.
+- **El volumen se monta a nombre de root**, así que el contenedor arranca como root solo para
+  ajustar el dueño y baja a un usuario sin privilegios antes de servir (`entrypoint.sh`).
+
+Defensas que se activan **solo si se configuran**, de modo que el desarrollo local no cambia:
+`ACCESO_CODIGO` (portón delante de todo, también de `/api/*`), `REGISTRO_ABIERTO`,
+`TELEMETRIA_TOKEN` y los topes `LIMITE_*`. Están explicadas una a una en los dos `.env.example`.
+
+Para bajar la telemetría del despliegue y sacar los CSV:
+
+```bash
+cd backend
+TELEMETRIA_TOKEN=... uv run python scripts/bajar_telemetria.py --url https://<la-url>
+```
+
+Y para respaldar la base **sin copiarla en caliente** (usa `VACUUM INTO`, que espera a un punto
+coherente; con WAL, un `cp` puede dar una copia que abre y ha perdido lo último). Se lanza **dentro
+del contenedor**, que es donde está la base:
+
+```bash
+docker compose exec api python /app/scripts/respaldar_base.py --destino /datos/respaldos --mantener 7
+```
+
+Deja la copia en el propio volumen, a propósito: así la copia programada del volumen se lleva un
+respaldo ya consistente en vez de una foto del archivo vivo. Es lo que convierte «hay copias» en
+«hay copias que sirven».
 
 ## Secretos
 
 Las claves de API van **siempre** en `backend/.env` (gitignoreado desde el primer
-commit). `backend/.env.example` documenta las variables con placeholders. Nunca se
-commitea un secreto real.
+commit). `backend/.env.example` documenta las variables con placeholders, y
+`frontend/.env.example` las del frontend. Nunca se commitea un secreto real, y los `.dockerignore`
+los dejan fuera de las imágenes además de fuera de git: son dos listas distintas y cada una decide
+una cosa.
 
 ## Flujo de trabajo (git)
 
 Git-flow local: `main` (estable) ← `develop` (integración) ← `feature/hito-N-*`
 (una rama por hito). Commits convencionales y atómicos para trazabilidad completa.
+
+**Desde el despliegue, `main` significa una cosa más: lo que está publicado.** El despliegue
+observa esa rama, así que un merge a `main` pasa a ser un acto de publicación y no solo de
+integración; lo que se quede en `develop` no está en internet. Durante las sesiones de evaluación
+los autodespliegues se desactivan, para que un merge no pueda cambiar lo que un participante está
+usando en ese momento.

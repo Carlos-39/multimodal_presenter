@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BookmarkSimple, ChatCircleText, FilmSlate } from "@phosphor-icons/react";
-import { entrar, registrarse, type Usuario } from "@/lib/account";
+import { entrar, registrarse, registroAbierto, type Usuario } from "@/lib/account";
 
 /**
  * Entrar o crear cuenta. Componente propio y no un trozo del panel, a propósito.
@@ -27,13 +27,30 @@ export function AuthForm({
   const [modo, setModo] = useState<"entrar" | "registro">("entrar");
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  /** `null` mientras no se sabe. Hasta saberlo no se ofrece crear cuenta. */
+  const [sePuedeCrear, setSePuedeCrear] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let vivo = true;
+    registroAbierto().then((abierto) => {
+      if (vivo) setSePuedeCrear(abierto);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, []);
+
+  // El modo se DERIVA en vez de corregirse con un `setModo` en un efecto: así no hay un instante
+  // en el que el formulario esté en «crear cuenta» con el registro cerrado, y se respeta la regla
+  // de pureza del proyecto, que prohíbe `setState` síncrono dentro de un efecto.
+  const modoReal = sePuedeCrear === true ? modo : "entrar";
 
   async function envia(evento: React.FormEvent) {
     evento.preventDefault();
     setEnviando(true);
     setError(null);
     try {
-      const fn = modo === "entrar" ? entrar : registrarse;
+      const fn = modoReal === "entrar" ? entrar : registrarse;
       onUsuario(await fn(email.trim(), contrasena));
       setContrasena("");
     } catch (e) {
@@ -56,7 +73,7 @@ export function AuthForm({
           tipo="password"
           valor={contrasena}
           onCambio={setContrasena}
-          autoComplete={modo === "entrar" ? "current-password" : "new-password"}
+          autoComplete={modoReal === "entrar" ? "current-password" : "new-password"}
         />
 
         {error ? (
@@ -73,23 +90,36 @@ export function AuthForm({
           disabled={enviando}
           className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover disabled:opacity-50"
         >
-          {enviando ? "Un momento…" : modo === "entrar" ? "Entrar" : "Crear cuenta"}
+          {enviando ? "Un momento…" : modoReal === "entrar" ? "Entrar" : "Crear cuenta"}
         </button>
       </form>
 
-      <p className="text-center text-xs text-muted">
-        {modo === "entrar" ? "¿Todavía no tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
-        <button
-          type="button"
-          onClick={() => {
-            setModo(modo === "entrar" ? "registro" : "entrar");
-            setError(null);
-          }}
-          className="text-accent underline decoration-1 underline-offset-2 hover:text-accent-hover"
-        >
-          {modo === "entrar" ? "Crear una" : "Entrar"}
-        </button>
-      </p>
+      {/* Con el registro cerrado NO se ofrece crear cuenta, y se dice por qué no hace falta. Una
+          puerta pintada en una pared es peor que no tener puerta: el error llegaría después de
+          escribir un correo y una contraseña, que es el peor momento para enterarse.
+
+          Mientras no se sabe (`null`) no se pinta nada, para no ofrecerla y retirarla medio
+          segundo después. */}
+      {sePuedeCrear === true ? (
+        <p className="text-center text-xs text-muted">
+          {modoReal === "entrar" ? "¿Todavía no tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setModo(modoReal === "entrar" ? "registro" : "entrar");
+              setError(null);
+            }}
+            className="text-accent underline decoration-1 underline-offset-2 hover:text-accent-hover"
+          >
+            {modoReal === "entrar" ? "Crear una" : "Entrar"}
+          </button>
+        </p>
+      ) : sePuedeCrear === false ? (
+        <p className="text-center text-xs leading-4 text-muted">
+          No hay cuentas nuevas por ahora. La aplicación funciona completa sin entrar: la cuenta
+          solo añade guardar y volver.
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import {
   actualizarPresentacion,
   guardarChat,
   guardarNarracion,
+  registroAbierto,
   textoDelDocumento,
   urlDeLaNarracion,
 } from "./account";
@@ -118,5 +119,37 @@ describe("actualizarPresentacion", () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404 }) as unknown as Response));
     // Aquí el usuario PULSÓ guardar y está mirando el botón: tiene que poder decirle que no pudo.
     await expect(actualizarPresentacion("pre-1", "t", PAYLOAD)).rejects.toThrow();
+  });
+});
+
+describe("registroAbierto", () => {
+  it("dice que sí cuando el backend lo dice", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, json: async () => ({ registro_abierto: true }) }) as unknown as Response),
+    );
+    await expect(registroAbierto()).resolves.toBe(true);
+  });
+
+  it("ante la duda, cerrado", async () => {
+    // Ofrecer una puerta que a lo mejor no existe es peor que no ofrecerla: el error llegaría
+    // después de escribir un correo y una contraseña.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("sin red");
+      }),
+    );
+    await expect(registroAbierto()).resolves.toBe(false);
+
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 500 }) as unknown as Response));
+    await expect(registroAbierto()).resolves.toBe(false);
+
+    // Y un cuerpo inesperado tampoco abre la puerta.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, json: async () => ({}) }) as unknown as Response),
+    );
+    await expect(registroAbierto()).resolves.toBe(false);
   });
 });

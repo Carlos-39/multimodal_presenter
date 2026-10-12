@@ -22,6 +22,12 @@ os.environ["PYDANTIC_AI_NO_BANNER"] = "1"  # sin el banner de PydanticAI en la s
 # Se pone ANTES de importar la app, igual que el token de Logfire.
 os.environ["DATA_DIR"] = tempfile.mkdtemp(prefix="mmp-tests-")
 
+# El registro de cuentas viene CERRADO (ver `config.registro_abierto`), y la mitad de los tests de
+# persistencia empiezan registrando a alguien. Se abre aquí, para toda la suite, en vez de en cada
+# fixture: lo que esos tests comprueban es la biblioteca, no la puerta. El test de que la puerta
+# cerrada responde 403 la cierra él mismo, con un ajuste propio.
+os.environ["REGISTRO_ABIERTO"] = "true"
+
 # Claves que el CI NO tiene y que la máquina del autor SÍ tiene en su `.env`.
 _CLAVES_DE_API = (
     "ANTHROPIC_API_KEY",
@@ -29,6 +35,25 @@ _CLAVES_DE_API = (
     "OPENAI_API_KEY",
     "IDEOGRAM_API_KEY",
 )
+
+
+@pytest.fixture(autouse=True)
+def sin_cuentas_acumuladas():
+    """Vacía TODOS los contadores antes y después de cada test.
+
+    Viven en memoria de su módulo, así que sobreviven de un test al siguiente y de un ARCHIVO al
+    siguiente: cinco fallos a propósito en los tests de login dejarían a los de la biblioteca sin
+    poder registrar a nadie, y el fallo aparecería lejos de su causa.
+
+    Se vacían por el registro de `limites` y no uno a uno: así un contador nuevo queda cubierto
+    sin que haya que acordarse de añadirlo aquí, que es exactamente lo que no se recuerda.
+    """
+    from multimodal_presenter.api import routes  # noqa: F401  (registra su contador al importar)
+    from multimodal_presenter.api.limites import vacia_las_ventanas
+
+    vacia_las_ventanas()
+    yield
+    vacia_las_ventanas()
 
 
 @pytest.fixture(autouse=True)

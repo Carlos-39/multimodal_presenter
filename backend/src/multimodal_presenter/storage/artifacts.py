@@ -27,7 +27,7 @@ import aiosqlite
 
 from ..config import Settings
 from ..schemas.transform import GeneratedDeck
-from .db import ahora, resolve_data_dir
+from .db import ahora, resolve_data_dir, valida_id_de_ruta
 
 _CARPETA = "narraciones"
 
@@ -113,7 +113,9 @@ async def guardar_narracion(
     if not await _es_suya(conn, usuario_id, presentacion_id):
         return False
 
-    nombre = f"{_CARPETA}/{presentacion_id}.mp3"
+    # El id es parte del nombre del archivo, así que se comprueba su forma aquí, donde se arma la
+    # ruta, y no se confía en que la comprobación de propiedad de arriba sea suficiente.
+    nombre = f"{_CARPETA}/{valida_id_de_ruta(presentacion_id)}.mp3"
     destino = _ruta(settings, nombre)
     destino.parent.mkdir(parents=True, exist_ok=True)
     destino.write_bytes(audio)

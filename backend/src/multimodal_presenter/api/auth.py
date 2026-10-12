@@ -14,10 +14,10 @@ atarla a una cuenta la volvería identificable.
 from __future__ import annotations
 
 import aiosqlite
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 
 from ..config import Settings, get_settings
-from ..schemas.auth import CredencialesRequest, UsuarioResponse
+from ..schemas.auth import CredencialesRequest, EstadoDeCuentas, UsuarioResponse
 from ..storage import conectar
 from ..storage.users import (
     DURACION_SESION,
@@ -28,10 +28,39 @@ from ..storage.users import (
     usuario_de_sesion,
     verificar_credenciales,
 )
+from .limites import (
+    MAX_INTENTOS,
+    VENTANA_INTENTOS_S,
+    Ventana,
+    exige_cupo,
+    ip_del_cliente,
+)
 
 router = APIRouter(prefix="/auth", tags=["cuenta"])
 
 COOKIE = "mmp_sesion"
+
+#: Contador de fallos compartido por los dos endpoints que piden credenciales. Es de módulo
+#: porque tiene que sobrevivir a la petición: un contador por petición no cuenta nada.
+_intentos = Ventana(VENTANA_INTENTOS_S)
+
+
+def _exige_intentos(llaves: tuple[str, ...]) -> None:
+    """Corta si alguna de las llaves agotó sus intentos."""
+    espera = max((_intentos.espera(llave, MAX_INTENTOS) for llave in llaves), default=0)
+    exige_cupo(espera, "Demasiados intentos.")
+
+
+def _llaves(request: Request, email: str, settings: Settings) -> tuple[str, ...]:
+    """Las dos llaves con las que se cuenta este intento: la dirección y el correo.
+
+    El correo se normaliza igual que al guardarlo, o `Carlos@X.com` y `carlos@x.com` tendrían
+    contadores distintos y el límite se esquivaría cambiando una mayúscula.
+    """
+    return (
+        f"ip:{ip_del_cliente(request, settings.proxies_confiables)}",
+        f"correo:{email.strip().lower()}",
+    )
 
 
 def _pon_cookie(respuesta: Response, token: str, settings: Settings) -> None:
@@ -73,15 +102,36 @@ async def usuario_actual(
 async def registro_endpoint(
     datos: CredencialesRequest,
     respuesta: Response,
+    request: Request,
     settings: Settings = Depends(get_settings),
 ) -> UsuarioResponse:
-    """Crea la cuenta y deja la sesión abierta: registrarse y tener que entrar es un paso de más."""
+    """Crea la cuenta y deja la sesión abierta: registrarse y tener que entrar es un paso de más.
+
+    Se puede cerrar con `REGISTRO_ABIERTO=false`, y viene cerrado. Cerrarlo **no** cierra el login
+    ni toca el modo invitado: son tres cosas distintas y así se pueden decidir por separado.
+
+    El límite de intentos también cuenta aquí, y no por simetría: el error de «ese correo ya está
+    registrado» es un oráculo de quién tiene cuenta. Sin límite, se puede preguntar por una lista
+    entera de correos; con él, por cinco cada cuarto de hora.
+    """
+    if not settings.registro_abierto:
+        raise HTTPException(
+            status_code=403,
+            detail="El registro de cuentas nuevas está cerrado.",
+        )
+
+    llaves = _llaves(request, datos.email, settings)
+    _exige_intentos(llaves)
     async with conectar(settings) as conn:
         try:
             usuario_id = await crear_usuario(conn, datos.email, datos.contrasena)
         except ErrorDeCuenta as exc:
+            for llave in llaves:
+                _intentos.marca(llave)
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         token = await abrir_sesion(conn, usuario_id)
+    for llave in llaves:
+        _intentos.olvida(llave)
     _pon_cookie(respuesta, token, settings)
     return UsuarioResponse(id=usuario_id, email=datos.email.strip().lower())
 
@@ -90,18 +140,29 @@ async def registro_endpoint(
 async def entrar_endpoint(
     datos: CredencialesRequest,
     respuesta: Response,
+    request: Request,
     settings: Settings = Depends(get_settings),
 ) -> UsuarioResponse:
     """Inicia sesión.
 
     El mensaje de error no distingue entre correo desconocido y contraseña incorrecta: contarlo
     permitiría averiguar quién tiene cuenta sin saber ninguna contraseña.
+
+    **Y por eso mismo el límite de intentos cuenta igual los dos casos.** Si solo contara las
+    contraseñas falladas de cuentas que existen, el 429 aparecería únicamente con correos
+    registrados y sería el oráculo que el mensaje de error evita con tanto cuidado.
     """
+    llaves = _llaves(request, datos.email, settings)
+    _exige_intentos(llaves)
     async with conectar(settings) as conn:
         usuario_id = await verificar_credenciales(conn, datos.email, datos.contrasena)
         if usuario_id is None:
+            for llave in llaves:
+                _intentos.marca(llave)
             raise HTTPException(status_code=401, detail="Correo o contraseña incorrectos.")
         token = await abrir_sesion(conn, usuario_id)
+    for llave in llaves:
+        _intentos.olvida(llave)
     _pon_cookie(respuesta, token, settings)
     return UsuarioResponse(id=usuario_id, email=datos.email.strip().lower())
 
@@ -121,6 +182,18 @@ async def salir_endpoint(
             await cerrar_sesion(conn, mmp_sesion)
     respuesta.delete_cookie(COOKIE, path="/")
     return Response(status_code=204)
+
+
+@router.get("/estado", response_model=EstadoDeCuentas)
+async def estado_endpoint(settings: Settings = Depends(get_settings)) -> EstadoDeCuentas:
+    """Si se pueden crear cuentas. Lo consulta el formulario para no ofrecer lo que no hay.
+
+    No pide sesión y no cuenta nada de nadie: dice si una puerta está abierta, que es información
+    del servicio y no de ninguna persona. No va dentro de `/auth/yo` porque ese endpoint responde
+    `null` cuando no hay sesión —el estado normal de esta aplicación— y un campo dentro de `null`
+    no se puede leer.
+    """
+    return EstadoDeCuentas(registro_abierto=settings.registro_abierto)
 
 
 @router.get("/yo", response_model=UsuarioResponse | None)

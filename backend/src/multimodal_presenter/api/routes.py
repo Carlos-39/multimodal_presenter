@@ -8,9 +8,20 @@
 """
 
 import json
+import secrets
 
 import logfire
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+)
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 from pydantic_ai.models import Model
@@ -48,10 +59,52 @@ from ..schemas.transform import (
 )
 from ..telemetry import record_ux_event, resolve_telemetry_dir
 from .auth import usuario_opcional
+from .limites import VENTANA_GASTO_S, Ventana, exige_cupo, ip_del_cliente
 
 router = APIRouter(tags=["pipeline"])
 
 MAX_CHAT_HISTORY = 12  # se acotan los turnos que viajan al modelo (prompt bounded)
+
+
+#: Contador de lo que cuesta dinero. Las dos categorías comparten ventana —una hora— y se
+#: diferencian en el prefijo de la llave y en el tope, que viene de los ajustes.
+_gasto = Ventana(VENTANA_GASTO_S)
+
+
+def _cupo(categoria: str, atributo: str, mensaje: str):
+    """Construye la dependencia que corta antes de gastar.
+
+    Va como dependencia y no dentro del endpoint a propósito: FastAPI las resuelve ANTES de entrar
+    al cuerpo, así que un 429 no llega a tocar el modelo. Si estuviera dentro, el tope ya habría
+    costado lo que pretende evitar.
+
+    Se marca aunque la petición acabe en un 400: lo que se limita es el gasto POTENCIAL por
+    dirección, y distinguir cuáles llegaron al modelo obligaría a contar después de responder, que
+    es justo cuando ya no sirve.
+    """
+
+    async def comprueba(request: Request, settings: Settings = Depends(get_settings)) -> None:
+        llave = f"{categoria}:{ip_del_cliente(request, settings.proxies_confiables)}"
+        exige_cupo(_gasto.espera(llave, getattr(settings, atributo)), mensaje)
+        _gasto.marca(llave)
+
+    return comprueba
+
+
+#: Lo caro: transformar un documento son unas décimas de dólar, y el deck y las ilustraciones
+#: generan imágenes. Un participante hace una transformación, quizá dos.
+cupo_de_generacion = _cupo(
+    "gen",
+    "limite_generacion_por_hora",
+    "Se alcanzó el límite de documentos por hora.",
+)
+#: Lo barato pero no gratis: cada turno de chat, cada tanda de sugeridas y cada adelanto son una
+#: llamada al modelo. Una sesión de evaluación hace del orden de treinta o cuarenta.
+cupo_de_conversacion = _cupo(
+    "conv",
+    "limite_conversacion_por_hora",
+    "Se alcanzó el límite de preguntas por hora.",
+)
 
 
 def get_model(settings: Settings = Depends(get_settings)) -> Model:
@@ -192,7 +245,11 @@ async def _documento_del_almacen(
     return None, contenido, fila["media_type"], fila["nombre_archivo"]
 
 
-@router.post("/transform", response_model=TransformResponse)
+@router.post(
+    "/transform",
+    response_model=TransformResponse,
+    dependencies=[Depends(cupo_de_generacion)],
+)
 async def transform_endpoint(
     response: Response,
     text: str | None = Form(default=None),
@@ -234,7 +291,10 @@ async def transform_endpoint(
     )
 
 
-@router.post("/transform/stream")
+@router.post(
+    "/transform/stream",
+    dependencies=[Depends(cupo_de_generacion)],
+)
 async def transform_stream_endpoint(
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
@@ -284,7 +344,10 @@ def _parse_history(raw: str) -> list[ChatTurn]:
     return turns[-MAX_CHAT_HISTORY:]
 
 
-@router.post("/chat/stream")
+@router.post(
+    "/chat/stream",
+    dependencies=[Depends(cupo_de_conversacion)],
+)
 async def chat_stream_endpoint(
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
@@ -330,7 +393,11 @@ async def chat_stream_endpoint(
     return StreamingResponse(event_source(), media_type="text/event-stream")
 
 
-@router.post("/chat/suggestions", response_model=SuggestionsResponse)
+@router.post(
+    "/chat/suggestions",
+    response_model=SuggestionsResponse,
+    dependencies=[Depends(cupo_de_conversacion)],
+)
 async def chat_suggestions_endpoint(
     section: str = Form(),
     text: str | None = Form(default=None),
@@ -361,7 +428,11 @@ async def chat_suggestions_endpoint(
     return SuggestionsResponse(questions=questions)
 
 
-@router.post("/summary", response_model=SummaryResponse)
+@router.post(
+    "/summary",
+    response_model=SummaryResponse,
+    dependencies=[Depends(cupo_de_conversacion)],
+)
 async def summary_endpoint(
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
@@ -398,6 +469,7 @@ async def summary_endpoint(
     "/narration",
     responses={200: {"content": {"audio/mpeg": {}}}},
     response_class=Response,
+    dependencies=[Depends(cupo_de_generacion)],
 )
 async def narration_endpoint(
     req: NarrationRequest,
@@ -465,7 +537,11 @@ async def pdf_page_endpoint(
     )
 
 
-@router.post("/explain-image", response_model=ImageExplanationResponse)
+@router.post(
+    "/explain-image",
+    response_model=ImageExplanationResponse,
+    dependencies=[Depends(cupo_de_conversacion)],
+)
 async def explain_image_endpoint(
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
@@ -498,7 +574,11 @@ async def explain_image_endpoint(
     return ImageExplanationResponse(explanation=explanation)
 
 
-@router.post("/transcribe", response_model=TranscriptionResponse)
+@router.post(
+    "/transcribe",
+    response_model=TranscriptionResponse,
+    dependencies=[Depends(cupo_de_conversacion)],
+)
 async def transcribe_endpoint(
     file: UploadFile = File(),
     settings: Settings = Depends(get_settings),
@@ -522,7 +602,11 @@ async def transcribe_endpoint(
     return TranscriptionResponse(text=text)
 
 
-@router.post("/deck", response_model=GeneratedDeck)
+@router.post(
+    "/deck",
+    response_model=GeneratedDeck,
+    dependencies=[Depends(cupo_de_generacion)],
+)
 async def deck_endpoint(
     text: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
@@ -552,7 +636,11 @@ async def deck_endpoint(
     return await generate_deck(model, settings, extraction)
 
 
-@router.post("/illustrations", response_model=IllustrationsResponse)
+@router.post(
+    "/illustrations",
+    response_model=IllustrationsResponse,
+    dependencies=[Depends(cupo_de_generacion)],
+)
 async def illustrations_endpoint(
     req: IllustrationsRequest,
     model: Model = Depends(get_summary_model),
@@ -607,3 +695,62 @@ async def telemetry_endpoint(
     for event in eventos:
         record_ux_event(event, jsonl_dir=jsonl_dir)
     return Response(status_code=204)
+
+
+@router.get("/telemetry/volcado")
+async def telemetry_volcado_endpoint(
+    x_telemetria_token: str | None = Header(default=None),
+    settings: Settings = Depends(get_settings),
+) -> StreamingResponse:
+    """Devuelve los JSONL de telemetría, concatenados, para bajarlos desde el despliegue.
+
+    **Por qué existe.** Los eventos se escriben en un volumen al que no se llega sin la CLI de la
+    plataforma, y durante las sesiones hay que mirarlos el mismo día: una sesión que salió rara se
+    diagnostica con los datos delante, no la semana siguiente. Esto es el camino corto.
+
+    **Por qué devuelve el crudo y no los CSV.** El exportador que produce los agregados ya existe,
+    está probado y es el que se usó con los datos de desarrollo. Reimplementarlo aquí sería tener
+    dos verdades sobre qué significa cada columna; se baja el crudo y se corre el de siempre
+    (`scripts/bajar_telemetria.py` hace las dos cosas de un tirón).
+
+    **Qué sale por aquí.** Metadatos anónimos: el schema de entrada ya rechaza cualquier cadena de
+    más de 40 caracteres, así que no hay contenido de documentos ni texto de preguntas. El
+    participante es `Pxx`, que es el seudónimo que promete el consentimiento. Aun así va detrás de
+    un token, porque son los datos de un experimento con personas.
+
+    Sin `TELEMETRIA_TOKEN` configurado esto **no existe**: 404, como cualquier ruta inventada. Una
+    puerta que anuncia que está cerrada es una invitación a probar la llave.
+    """
+    esperado = settings.telemetria_token
+    if not esperado:
+        raise HTTPException(status_code=404, detail="No encontrado.")
+
+    # En tiempo constante y sobre bytes: comparar cadenas con `==` filtra por cuánto tardan en
+    # diferir, y `compare_digest` sobre str exige ASCII y lanza si llega otra cosa.
+    recibido = (x_telemetria_token or "").encode("utf-8")
+    if not secrets.compare_digest(recibido, esperado.encode("utf-8")):
+        # 401 y no 404 porque para llegar hasta aquí ya hubo que pasar el portón: a estas alturas
+        # esconder el endpoint no gana nada y sí cuesta media hora de depuración el día que el
+        # token esté mal escrito.
+        raise HTTPException(status_code=401, detail="Token de telemetría incorrecto.")
+
+    carpeta = resolve_telemetry_dir(settings)
+    if carpeta is None or not carpeta.exists():
+        raise HTTPException(status_code=404, detail="No hay telemetría escrita todavía.")
+
+    archivos = sorted(carpeta.glob("ux-*.jsonl"))
+
+    def lineas():
+        """Se emite por trozos y no de una: son archivos de un volumen que crecen con cada sesión,
+        y leerlos enteros en memoria para mandarlos es gasto sin motivo."""
+        for archivo in archivos:
+            with archivo.open("rb") as handle:
+                while trozo := handle.read(64 * 1024):
+                    yield trozo
+
+    logfire.info("telemetría: volcado servido ({n} archivos)", n=len(archivos))
+    return StreamingResponse(
+        lineas(),
+        media_type="application/x-ndjson",
+        headers={"Content-Disposition": 'attachment; filename="telemetria.jsonl"'},
+    )

@@ -726,3 +726,37 @@ def test_un_payload_desmesurado_se_rechaza(client: TestClient) -> None:
     _registra(client, "a@x.com")
     r = _post_guardar(client, "enorme", _payload_ilustrado(megas=26))
     assert r.status_code == 413
+
+
+def test_el_documento_se_sirve_sin_dejar_que_el_navegador_adivine(client: TestClient) -> None:
+    """Son bytes de otra persona servidos desde NUESTRO origen: el tipo lo decidimos nosotros.
+
+    El `media_type` sale de los magic bytes contra una allowlist, así que no puede ser `text/html`;
+    `nosniff` cierra el resto, que es que el navegador lo adivine por su cuenta de todas formas.
+    """
+    _registra(client, "a@x.com")
+    doc_id = client.get(f"/biblioteca/presentaciones/{_guarda(client)['id']}").json()["document_id"]
+
+    res = client.get(f"/biblioteca/documentos/{doc_id}")
+    assert res.status_code == 200
+    assert res.headers["x-content-type-options"] == "nosniff"
+    # Una fuente de texto no tiene nombre de archivo, así que no hay nombre que anunciar.
+    assert res.headers["content-disposition"] == "inline"
+
+
+def test_el_nombre_del_archivo_no_puede_partir_la_cabecera() -> None:
+    """El nombre lo eligió quien subió el archivo. Interpolado tal cual, un salto de línea dentro
+    partiría la cabecera en dos y dejaría añadir las que quisiera."""
+    from multimodal_presenter.api.library import _disposicion
+
+    assert _disposicion(None) == "inline"
+
+    # El salto de línea no se borra: se CODIFICA. Que el texto siga ahí es inofensivo; lo que
+    # importaba era que dejara de ser un salto de línea de verdad y no pudiera partir la cabecera.
+    veneno = _disposicion("x\r\nSet-Cookie: sesion=robada\r\n")
+    assert "\r" not in veneno and "\n" not in veneno
+    assert "%0D%0A" in veneno
+
+    # Los acentos sobreviven, codificados: es la única forma de la RFC 6266 que los admite.
+    assert _disposicion("informe anual año.pdf").startswith("inline; filename*=UTF-8''")
+    assert " " not in _disposicion("informe anual año.pdf").split("''")[1]

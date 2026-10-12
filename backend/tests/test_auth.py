@@ -194,3 +194,143 @@ def test_la_telemetria_no_admite_identidad_de_cuenta(client: TestClient) -> None
                 ln for ln in jsonl.read_text(encoding="utf-8").splitlines() if "usr-123" in ln
             ]
     assert escritos == [], "…pero el evento con identidad de cuenta NO se escribe"
+
+
+# ─────────────────────────────────────────────────────────────
+# Límite de intentos y registro cerrado
+# ─────────────────────────────────────────────────────────────
+MAL = {"email": CREDENCIALES["email"], "contrasena": "claveequivocada"}
+
+
+def _falla(client: TestClient, veces: int, datos: dict | None = None, **kwargs) -> None:
+    for _ in range(veces):
+        client.post("/auth/entrar", json=datos or MAL, **kwargs)
+
+
+def test_cinco_fallos_cierran_la_puerta_un_rato(client: TestClient) -> None:
+    """Contra una contraseña que alguien se tuvo que aprender, contar intentos sí sirve."""
+    client.post("/auth/registro", json=CREDENCIALES)
+    client.post("/auth/salir")
+
+    _falla(client, 5)
+    r = client.post("/auth/entrar", json=MAL)
+    assert r.status_code == 429
+    assert int(r.headers["Retry-After"]) > 0
+    # El mensaje dice cuánto falta: sin eso, quien se equivocó de verdad no sabe si esperar un
+    # minuto o volver mañana.
+    assert "min" in r.json()["detail"]
+
+    # Y la puerta está cerrada también para la contraseña BUENA: si no, bastaría acertar al
+    # sexto intento y el límite no limitaría nada.
+    assert client.post("/auth/entrar", json=CREDENCIALES).status_code == 429
+
+
+def test_acertar_antes_del_quinto_borra_el_historial(client: TestClient) -> None:
+    """Quien se equivoca dos veces y entra no puede quedarse a un intento del bloqueo."""
+    client.post("/auth/registro", json=CREDENCIALES)
+    client.post("/auth/salir")
+
+    _falla(client, 4)
+    assert client.post("/auth/entrar", json=CREDENCIALES).status_code == 200
+    client.post("/auth/salir")
+    _falla(client, 4)
+    assert client.post("/auth/entrar", json=CREDENCIALES).status_code == 200
+
+
+def test_el_429_no_delata_si_la_cuenta_existe(client: TestClient) -> None:
+    """Es la contrapartida del mensaje de error que no distingue los dos casos.
+
+    Si solo se contaran las contraseñas falladas de cuentas existentes, el 429 aparecería SOLO con
+    correos registrados y sería justo el oráculo que ese mensaje evita con tanto cuidado.
+    """
+    desconocido = {"email": "nadie@ejemplo.com", "contrasena": "loquesea1234"}
+    _falla(client, 5, desconocido)
+    r = client.post("/auth/entrar", json=desconocido)
+    assert r.status_code == 429
+
+
+def test_el_contador_del_correo_no_se_esquiva_cambiando_de_red(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Las dos llaves cubren ataques distintos, y la del correo es la que no se puede esquivar."""
+    from multimodal_presenter.config import get_settings
+
+    monkeypatch.setenv("PROXIES_CONFIABLES", "1")
+    get_settings.cache_clear()
+
+    client.post("/auth/registro", json=CREDENCIALES)
+    client.post("/auth/salir")
+
+    _falla(client, 5, headers={"x-forwarded-for": "1.1.1.1"})
+    # Otra dirección, mismo correo: la llave del correo sigue bloqueada.
+    assert (
+        client.post("/auth/entrar", json=MAL, headers={"x-forwarded-for": "2.2.2.2"}).status_code
+        == 429
+    )
+    # Otra dirección y otro correo: ninguna de las dos llaves está gastada, así que pasa.
+    otro = {"email": "otra@ejemplo.com", "contrasena": "loquesea1234"}
+    assert (
+        client.post("/auth/entrar", json=otro, headers={"x-forwarded-for": "2.2.2.2"}).status_code
+        == 401
+    )
+
+
+def test_cambiar_una_mayuscula_no_estrena_contador(client: TestClient) -> None:
+    """El correo se normaliza igual que al guardarlo, o el límite se esquiva con un Shift."""
+    _falla(client, 5)
+    gritando = {"email": CREDENCIALES["email"].upper(), "contrasena": "claveequivocada"}
+    assert client.post("/auth/entrar", json=gritando).status_code == 429
+
+
+def test_con_el_registro_cerrado_no_se_crean_cuentas_pero_si_se_entra(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Son tres cosas distintas —registro, login y modo invitado— y se deciden por separado."""
+    from multimodal_presenter.config import get_settings
+
+    client.post("/auth/registro", json=CREDENCIALES)  # con el registro aún abierto
+    client.post("/auth/salir")
+
+    monkeypatch.setenv("REGISTRO_ABIERTO", "false")
+    get_settings.cache_clear()
+
+    r = client.post("/auth/registro", json={"email": "nuevo@ejemplo.com", "contrasena": "12345678"})
+    assert r.status_code == 403
+    assert "cerrado" in r.json()["detail"]
+
+    # Entrar sigue funcionando, y el modo invitado tampoco se toca.
+    assert client.post("/auth/entrar", json=CREDENCIALES).status_code == 200
+    client.post("/auth/salir")
+    assert client.get("/auth/yo").json() is None
+
+
+def test_preguntar_por_correos_ajenos_tambien_se_corta(client: TestClient) -> None:
+    """«Ese correo ya está registrado» es un oráculo de quién tiene cuenta. Con límite, se puede
+    preguntar por cinco correos cada cuarto de hora en vez de por una lista entera."""
+    client.post("/auth/registro", json=CREDENCIALES)
+    for _ in range(5):
+        r = client.post("/auth/registro", json=CREDENCIALES)
+        assert r.status_code == 400
+    assert client.post("/auth/registro", json=CREDENCIALES).status_code == 429
+
+
+def test_el_formulario_puede_preguntar_si_hay_registro(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Para no ofrecer una puerta cerrada. La verdad sigue viviendo en un solo sitio: el ajuste
+    del backend, en vez de una variable pública duplicada en el frontend."""
+    from multimodal_presenter.config import get_settings
+
+    r = client.get("/auth/estado")
+    assert r.status_code == 200
+    assert r.json() == {"registro_abierto": True}
+
+    monkeypatch.setenv("REGISTRO_ABIERTO", "false")
+    get_settings.cache_clear()
+    assert client.get("/auth/estado").json() == {"registro_abierto": False}
+
+
+def test_preguntar_por_el_estado_no_exige_sesion_ni_cuenta_nada(client: TestClient) -> None:
+    """Dice si una puerta está abierta: es información del servicio, no de ninguna persona."""
+    for _ in range(10):
+        assert client.get("/auth/estado").status_code == 200
