@@ -13,7 +13,12 @@
 # Nada de esto hace falta para servir.
 tests/
 experiments/
+
+# Las herramientas de desarrollo tampoco... salvo una. El respaldo de la base hay que poder
+# lanzarlo DONDE ESTÁ LA BASE, y la base está aquí dentro. Dejarlo fuera obligaba a pegar un
+# trozo de Python por la consola el día que haga falta, que es el peor día para improvisar.
 scripts/
+!scripts/respaldar_base.py
 .pytest_cache/
 .ruff_cache/
 __pycache__/

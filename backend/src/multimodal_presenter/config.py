@@ -100,6 +100,14 @@ class Settings(BaseSettings):
     # Apágala con TELEMETRY_ENABLED=false (sigue registrando en Logfire si hay token).
     telemetry_enabled: bool = True
     telemetry_dir: str | None = None
+    # Token para bajarse los JSONL desde el despliegue. **Sin él, ese endpoint no existe**: no
+    # responde 403 ni pide nada, devuelve 404 como cualquier ruta inventada. Una puerta que anuncia
+    # que está cerrada es una invitación a probar la llave.
+    #
+    # Lo que sale por ahí son metadatos anónimos —el schema corta cualquier string de más de 40
+    # caracteres—, así que no es la base: es lo que hace falta a diario durante las sesiones, y por
+    # eso vale la pena exponerlo. La base se respalda por otro camino (scripts/respaldar_base.py).
+    telemetria_token: str | None = None
 
     # Cuentas. El registro viene CERRADO: en una URL pública, dejar crear cuentas a cualquiera no
     # aporta nada a este proyecto —las sesiones de evaluación corren sin cuenta— y sí añade una

@@ -29,6 +29,9 @@ services:
       ENVIRONMENT: production
       DATA_DIR: /datos/base
       TELEMETRY_DIR: /datos/telemetria
+      # Para bajarse los JSONL desde fuera. Vacío = ese endpoint no existe.
+      #   TELEMETRIA_TOKEN=loquesea docker compose up -d
+      TELEMETRIA_TOKEN: ${TELEMETRIA_TOKEN:-}
       # Un proxy delante: `web`. Es lo que hace que los topes de uso distingan a quién limitan.
       # Aquí vale 1; en la plataforma hay que MEDIR la cadena antes de ponerlo.
       PROXIES_CONFIABLES: "1"

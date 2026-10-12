@@ -8,9 +8,20 @@
 """
 
 import json
+import secrets
 
 import logfire
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+)
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 from pydantic_ai.models import Model
@@ -684,3 +695,62 @@ async def telemetry_endpoint(
     for event in eventos:
         record_ux_event(event, jsonl_dir=jsonl_dir)
     return Response(status_code=204)
+
+
+@router.get("/telemetry/volcado")
+async def telemetry_volcado_endpoint(
+    x_telemetria_token: str | None = Header(default=None),
+    settings: Settings = Depends(get_settings),
+) -> StreamingResponse:
+    """Devuelve los JSONL de telemetría, concatenados, para bajarlos desde el despliegue.
+
+    **Por qué existe.** Los eventos se escriben en un volumen al que no se llega sin la CLI de la
+    plataforma, y durante las sesiones hay que mirarlos el mismo día: una sesión que salió rara se
+    diagnostica con los datos delante, no la semana siguiente. Esto es el camino corto.
+
+    **Por qué devuelve el crudo y no los CSV.** El exportador que produce los agregados ya existe,
+    está probado y es el que se usó con los datos de desarrollo. Reimplementarlo aquí sería tener
+    dos verdades sobre qué significa cada columna; se baja el crudo y se corre el de siempre
+    (`scripts/bajar_telemetria.py` hace las dos cosas de un tirón).
+
+    **Qué sale por aquí.** Metadatos anónimos: el schema de entrada ya rechaza cualquier cadena de
+    más de 40 caracteres, así que no hay contenido de documentos ni texto de preguntas. El
+    participante es `Pxx`, que es el seudónimo que promete el consentimiento. Aun así va detrás de
+    un token, porque son los datos de un experimento con personas.
+
+    Sin `TELEMETRIA_TOKEN` configurado esto **no existe**: 404, como cualquier ruta inventada. Una
+    puerta que anuncia que está cerrada es una invitación a probar la llave.
+    """
+    esperado = settings.telemetria_token
+    if not esperado:
+        raise HTTPException(status_code=404, detail="No encontrado.")
+
+    # En tiempo constante y sobre bytes: comparar cadenas con `==` filtra por cuánto tardan en
+    # diferir, y `compare_digest` sobre str exige ASCII y lanza si llega otra cosa.
+    recibido = (x_telemetria_token or "").encode("utf-8")
+    if not secrets.compare_digest(recibido, esperado.encode("utf-8")):
+        # 401 y no 404 porque para llegar hasta aquí ya hubo que pasar el portón: a estas alturas
+        # esconder el endpoint no gana nada y sí cuesta media hora de depuración el día que el
+        # token esté mal escrito.
+        raise HTTPException(status_code=401, detail="Token de telemetría incorrecto.")
+
+    carpeta = resolve_telemetry_dir(settings)
+    if carpeta is None or not carpeta.exists():
+        raise HTTPException(status_code=404, detail="No hay telemetría escrita todavía.")
+
+    archivos = sorted(carpeta.glob("ux-*.jsonl"))
+
+    def lineas():
+        """Se emite por trozos y no de una: son archivos de un volumen que crecen con cada sesión,
+        y leerlos enteros en memoria para mandarlos es gasto sin motivo."""
+        for archivo in archivos:
+            with archivo.open("rb") as handle:
+                while trozo := handle.read(64 * 1024):
+                    yield trozo
+
+    logfire.info("telemetría: volcado servido ({n} archivos)", n=len(archivos))
+    return StreamingResponse(
+        lineas(),
+        media_type="application/x-ndjson",
+        headers={"Content-Disposition": 'attachment; filename="telemetria.jsonl"'},
+    )

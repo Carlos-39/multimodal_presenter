@@ -60,6 +60,9 @@ ENV PATH="/app/.venv/bin:$PATH" \
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
+# Lo único de `scripts/` que viaja: respaldar la base hay que poder hacerlo donde está la base.
+COPY scripts/respaldar_base.py /app/scripts/respaldar_base.py
+
 EXPOSE 8000
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 

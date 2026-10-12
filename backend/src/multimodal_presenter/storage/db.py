@@ -90,11 +90,37 @@ async def conectar(settings: Settings) -> AsyncIterator[aiosqlite.Connection]:
     conn = await aiosqlite.connect(db_path(settings))
     try:
         conn.row_factory = aiosqlite.Row  # filas por nombre de columna, no por posición
-        await conn.execute("PRAGMA foreign_keys = ON")
-        await conn.execute("PRAGMA journal_mode = WAL")
+        # Los cursores se CIERRAN. `journal_mode` devuelve una fila, así que su cursor se queda
+        # abierto si nadie lo recoge, y para SQLite eso es «hay sentencias en marcha»: `VACUUM
+        # INTO` —el respaldo consistente— se niega a correr con una abierta. Lo demás funcionaba
+        # igual, así que la fuga no se notaba hasta que algo la pisó.
+        for pragma in ("PRAGMA foreign_keys = ON", "PRAGMA journal_mode = WAL"):
+            cursor = await conn.execute(pragma)
+            await cursor.close()
         yield conn
     finally:
         await conn.close()
+
+
+async def respaldar(settings: Settings, destino: Path) -> Path:
+    """Copia consistente de la base, con la aplicación corriendo. Devuelve la ruta escrita.
+
+    **No es `cp`, y la diferencia importa.** Copiar el archivo en caliente puede pillar la base a
+    mitad de una transacción, y con WAL hay además un segundo archivo —el `-wal`— con cambios que
+    todavía no están en el principal: la copia resultante puede abrir perfectamente y haber perdido
+    lo último, o no abrir. `VACUUM INTO` lo hace desde dentro de SQLite, que sabe esperar a un
+    punto coherente, y de paso compacta.
+
+    Se ejecuta por la conexión de siempre, así que no hace falta el ejecutable `sqlite3` en la
+    imagen ni una dependencia nueva.
+
+    SQLite se niega a escribir sobre un archivo que ya existe, y aquí eso es una virtud: un
+    respaldo no puede pisar a otro por un nombre repetido.
+    """
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    async with conectar(settings) as conn:
+        await conn.execute("VACUUM INTO ?", (str(destino),))
+    return destino
 
 
 async def migrar(settings: Settings) -> list[int]:

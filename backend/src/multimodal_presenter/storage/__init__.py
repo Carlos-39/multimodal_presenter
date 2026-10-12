@@ -6,6 +6,6 @@ también impide, por construcción, que un identificador de usuario acabe dentro
 `Presentation` viaja a los modelos, y lo que no está dentro del contrato no puede viajar con él.
 """
 
-from .db import conectar, db_path, migrar, resolve_data_dir
+from .db import conectar, db_path, migrar, resolve_data_dir, respaldar
 
-__all__ = ["conectar", "db_path", "migrar", "resolve_data_dir"]
+__all__ = ["conectar", "db_path", "migrar", "resolve_data_dir", "respaldar"]
