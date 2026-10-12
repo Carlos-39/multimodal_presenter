@@ -12,6 +12,8 @@
  * handler intercepta SOLO /api/transform/stream; el resto de /api/* sigue por el rewrite.
  */
 
+import { cabecerasHaciaElBackend } from "@/lib/proxyToBackend";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -21,14 +23,15 @@ export async function POST(request: Request): Promise<Response> {
   // El cuerpo multipart es pequeño y ya está disponible; lo reenviamos crudo (con su
   // content-type + boundary) para no re-encodificar. Lo que importa transmitir en vivo es la
   // RESPUESTA, no la petición.
-  const contentType = request.headers.get("content-type") ?? "";
   const body = await request.arrayBuffer();
 
   let upstream: Response;
   try {
     upstream = await fetch(`${BACKEND_URL}/transform/stream`, {
       method: "POST",
-      headers: { "content-type": contentType },
+      // Con la cookie de sesión: re-transformar un documento ya guardado llega por `document_id`,
+      // y eso exige propiedad. Ver `cabecerasHaciaElBackend`.
+      headers: cabecerasHaciaElBackend(request),
       body,
     });
   } catch {
