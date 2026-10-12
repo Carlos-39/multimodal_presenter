@@ -37,6 +37,10 @@ const nextConfig: NextConfig = {
   // Sin `X-Powered-By`: decir con qué está hecho el servidor no ayuda a nadie que no sea quien
   // busca una versión con un fallo conocido.
   poweredByHeader: false,
+  // Salida autocontenida para la imagen: Next copia su propio servidor y SOLO los módulos que de
+  // verdad usa, en vez de arrastrar los 155 paquetes de `node_modules`. No cambia nada en
+  // desarrollo; solo decide qué deja `next build` en disco.
+  output: "standalone",
   async headers() {
     return [{ source: "/:path*", headers: CABECERAS_DE_SEGURIDAD }];
   },

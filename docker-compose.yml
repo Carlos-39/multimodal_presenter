@@ -1,0 +1,87 @@
+# La aplicación entera, igual que va a correr desplegada.
+#
+# Sirve para dos cosas, y la segunda no es menor: probar aquí lo que va a correr allí, y ser el
+# plan B. Si la plataforma no convence, esto mismo levanta el sistema en una máquina de cinco
+# euros con un proxy delante, sin cambiar una línea.
+#
+# Dos piezas, como en el despliegue:
+#   - `api`  — FastAPI, con el volumen. **Sin puerto publicado**, igual que allí: no tiene dominio
+#              propio y solo se llega a él desde `web`. Para mirarlo de cerca: `docker compose
+#              exec api sh`.
+#   - `web`  — Next, que es quien da la cara y reenvía `/api/*` por la red interna.
+#
+#   docker compose up --build        levantar
+#   docker compose down              parar (el volumen SOBREVIVE)
+#   docker compose down -v           parar y borrar los datos
+
+name: multimodal-presenter
+
+services:
+  api:
+    build: ./backend
+    env_file:
+      # Las claves salen de mi `.env` de siempre, que nunca entra en la imagen (ver
+      # `backend/.dockerignore`). Opcional: sin él la aplicación arranca igual y falla con un
+      # mensaje claro al generar, que es el comportamiento de siempre.
+      - path: ./backend/.env
+        required: false
+    environment:
+      ENVIRONMENT: production
+      DATA_DIR: /datos/base
+      TELEMETRY_DIR: /datos/telemetria
+      # Un proxy delante: `web`. Es lo que hace que los topes de uso distingan a quién limitan.
+      # Aquí vale 1; en la plataforma hay que MEDIR la cadena antes de ponerlo.
+      PROXIES_CONFIABLES: "1"
+    volumes:
+      - datos:/datos
+    networks: [interna]
+    healthcheck:
+      # Con el Python del propio entorno: la imagen no trae curl ni wget, y meterlos solo para
+      # esto sería agrandarla por una comprobación.
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status == 200 else 1)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        # Va como argumento de CONSTRUCCIÓN y no como variable de ejecución: Next congela el
+        # destino de los `rewrites` al compilar. Puesto solo en `environment` el contenedor
+        # arranca bien y responde 500 a todo `/api/*`, que es de los fallos que no señalan su
+        # causa. En la plataforma hay que ponerlo también como variable de construcción.
+        BACKEND_URL: http://api:8000
+    environment:
+      # El portón, en cambio, SÍ se lee en ejecución: lo mira el proxy en cada petición, así que
+      # cambiarlo no obliga a reconstruir. Vacío = sin portón.
+      #   ACCESO_CODIGO=loquesea docker compose up -d web
+      ACCESO_CODIGO: ${ACCESO_CODIGO:-}
+    ports:
+      - "3000:3000"
+    networks: [interna]
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  # **Con IPv6, y no por capricho.** Uvicorn escuchando en `::` crea un socket SOLO de IPv6 —lo
+  # comprobé: desde el propio contenedor, `localhost` responde y `127.0.0.1` rechaza—, y `::` es lo
+  # que hay que usar porque la red privada de la plataforma puede ser IPv6.
+  #
+  # Así que lo que se arregla es la red local, no el servidor: una red de compose sin IPv6 no se
+  # parece a donde esto va a vivir, y «funciona en mi máquina» dejaría de significar nada.
+  interna:
+    enable_ipv6: true
+
+volumes:
+  datos:

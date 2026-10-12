@@ -1,0 +1,20 @@
+# Lo que NO entra en la imagen. Importa por dos motivos: cada archivo que se copia es una capa
+# más que invalidar, y lo que no está dentro no se puede filtrar al publicar la imagen.
+
+# Secretos. Nunca, aunque el .gitignore ya los tape: son dos listas distintas y la de aquí es la
+# que decide qué viaja dentro del contenedor.
+.env
+.env.*
+!.env.example
+
+# Entorno local: trae ejecutables de Windows y pesa casi 300 MB.
+.venv/
+
+# Nada de esto hace falta para servir.
+tests/
+experiments/
+scripts/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
