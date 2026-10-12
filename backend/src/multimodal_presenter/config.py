@@ -101,6 +101,17 @@ class Settings(BaseSettings):
     telemetry_enabled: bool = True
     telemetry_dir: str | None = None
 
+    # Cuentas. El registro viene CERRADO: en una URL pública, dejar crear cuentas a cualquiera no
+    # aporta nada a este proyecto —las sesiones de evaluación corren sin cuenta— y sí añade una
+    # puerta que vigilar. Se abre con REGISTRO_ABIERTO=true, que es lo que hace falta en local.
+    # Entrar NO depende de esto: cerrar el registro no cierra el login.
+    registro_abierto: bool = False
+    # Cuántos proxies de confianza hay DELANTE de la aplicación. Decide de dónde se saca la
+    # dirección de quien llama para el límite de intentos (ver `api/limites.ip_del_cliente`).
+    # 0 = ignorar `x-forwarded-for` y usar el par de la conexión, que es lo correcto en local y lo
+    # prudente mientras no se haya medido la cadena real del despliegue.
+    proxies_confiables: int = 0
+
     # Persistencia (login + multi-sesión). `data_dir` vacío → carpeta por defecto FUERA de
     # OneDrive, igual que la telemetría y por el mismo motivo medido: OneDrive sincronizando un
     # archivo que se escribe en caliente corrompe bases SQLite.
