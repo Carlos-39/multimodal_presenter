@@ -107,10 +107,24 @@ class Settings(BaseSettings):
     # Entrar NO depende de esto: cerrar el registro no cierra el login.
     registro_abierto: bool = False
     # Cuántos proxies de confianza hay DELANTE de la aplicación. Decide de dónde se saca la
-    # dirección de quien llama para el límite de intentos (ver `api/limites.ip_del_cliente`).
+    # dirección de quien llama para los topes de uso (ver `api/limites.ip_del_cliente`).
     # 0 = ignorar `x-forwarded-for` y usar el par de la conexión, que es lo correcto en local y lo
     # prudente mientras no se haya medido la cadena real del despliegue.
     proxies_confiables: int = 0
+
+    # Topes de uso por hora y por DIRECCIÓN, para lo que cuesta dinero. 0 = sin tope.
+    #
+    # Conviene decir qué son y qué no son. **Mientras `proxies_confiables` sea 0, no son por
+    # dirección: son globales**, porque el backend ve siempre la misma —la del frontend, que es
+    # quien le reenvía todo—. Por eso los números son holgados: tienen que dejar pasar una sesión
+    # entera sin estorbar aunque se estén repartiendo entre varios.
+    #
+    # Y no son el control principal del gasto. El que de verdad acota la pérdida máxima es el tope
+    # mensual en la consola del proveedor; esto es la capa que evita que un barrido tonto queme la
+    # tarde. Veinte transformaciones son muchas más de las que hace nadie en una hora, y ciento
+    # veinte preguntas también.
+    limite_generacion_por_hora: int = 20
+    limite_conversacion_por_hora: int = 120
 
     # Persistencia (login + multi-sesión). `data_dir` vacío → carpeta por defecto FUERA de
     # OneDrive, igual que la telemetría y por el mismo motivo medido: OneDrive sincronizando un

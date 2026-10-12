@@ -38,18 +38,22 @@ _CLAVES_DE_API = (
 
 
 @pytest.fixture(autouse=True)
-def sin_intentos_acumulados():
-    """Vacía el contador de intentos fallidos antes y después de cada test.
+def sin_cuentas_acumuladas():
+    """Vacía TODOS los contadores antes y después de cada test.
 
-    El contador vive en memoria del módulo, así que sobrevive de un test al siguiente y de un
-    ARCHIVO al siguiente: cinco fallos a propósito en los tests de login dejarían a los de la
-    biblioteca sin poder registrar a nadie, y el fallo aparecería lejos de su causa.
+    Viven en memoria de su módulo, así que sobreviven de un test al siguiente y de un ARCHIVO al
+    siguiente: cinco fallos a propósito en los tests de login dejarían a los de la biblioteca sin
+    poder registrar a nadie, y el fallo aparecería lejos de su causa.
+
+    Se vacían por el registro de `limites` y no uno a uno: así un contador nuevo queda cubierto
+    sin que haya que acordarse de añadirlo aquí, que es exactamente lo que no se recuerda.
     """
-    from multimodal_presenter.api.auth import _intentos
+    from multimodal_presenter.api import routes  # noqa: F401  (registra su contador al importar)
+    from multimodal_presenter.api.limites import vacia_las_ventanas
 
-    _intentos.olvida_todo()
+    vacia_las_ventanas()
     yield
-    _intentos.olvida_todo()
+    vacia_las_ventanas()
 
 
 @pytest.fixture(autouse=True)

@@ -1,19 +1,16 @@
-"""Límite de intentos para los endpoints de cuenta.
+"""Contadores deslizantes: cuántas veces ha hecho algo una llave en los últimos N segundos.
 
-**Solo aquí, y a propósito.** Es el único sitio del sistema donde el secreto lo elige una persona,
-así que es el único donde contar intentos sirve de algo: contra un código generado al azar, un
-contador no añade nada medible, y contra una contraseña que alguien se tuvo que aprender, sí.
+Hay dos usos y no son el mismo problema, aunque compartan la mecánica:
 
-**Dos llaves, y no valen lo mismo.** La del correo protege una cuenta concreta y no se puede
-esquivar: quien quiera entrar en esa cuenta tiene que nombrarla. La de la dirección protege contra
-el barrido de muchas cuentas a la vez y es *best-effort*, porque detrás de dos proxies la dirección
-de quien llama es un dato que hay que deducir (ver `ip_del_cliente`). Que una sea más débil no es
-motivo para quitarla: cubren ataques distintos.
+- **Intentos de entrar.** El secreto lo elige una persona, así que contar sirve. Se cuentan los
+  FALLOS y un acierto borra el historial.
+- **Lo que cuesta dinero.** Cada presentación son décimas de dólar reales. Aquí se cuentan TODAS
+  las llamadas, salgan bien o mal, porque lo que se está limitando es el gasto y no el acierto.
 
-**En memoria del proceso, no en la base.** Un intento fallido no merece una escritura en SQLite, y
-el registro de fallos no es un dato que haya que conservar. La limitación hay que decirla: se
-reinicia con cada despliegue, y con dos instancias cada una contaría por su cuenta. Con una
-instancia única —que es como está desplegado esto— es lo correcto.
+**En memoria del proceso, no en la base.** Un intento fallido no merece una escritura en SQLite y
+el registro no es un dato que haya que conservar. La limitación hay que decirla: se reinicia con
+cada despliegue y con dos instancias cada una contaría por su cuenta. Con una instancia —que es
+como está desplegado esto— es lo correcto.
 """
 
 from __future__ import annotations
@@ -23,74 +20,90 @@ from collections import deque
 
 from fastapi import HTTPException, Request
 
-#: Fallos que se toleran dentro de la ventana antes de cerrar la puerta. Cinco deja margen de
-#: sobra a quien se equivoca dos veces y sigue siendo un techo bajísimo para adivinar una clave.
+#: Fallos que se toleran al entrar antes de cerrar la puerta, y durante cuánto se recuerdan.
+#: Cinco deja margen de sobra a quien se equivoca dos veces y sigue siendo un techo bajísimo para
+#: adivinar una clave.
 MAX_INTENTOS = 5
-#: Cuánto se recuerda un fallo, en segundos.
-VENTANA_S = 15 * 60
+VENTANA_INTENTOS_S = 15 * 60
+
+#: La ventana de lo que cuesta dinero. El TOPE no está aquí: viene de los ajustes, porque es lo
+#: único de esto que hay que poder subir o bajar sin tocar código.
+VENTANA_GASTO_S = 60 * 60
+
 #: Tope de llaves vivas. Sin él, pedir con un correo distinto cada vez hace crecer el diccionario
-#: sin final: el límite de intentos no puede convertirse en la forma de tumbar el proceso.
+#: sin final: un límite no puede convertirse en la forma de tumbar el proceso.
 MAX_LLAVES = 10_000
 
+#: Todas las ventanas que existen, para poder vaciarlas de golpe entre tests. Un contador que
+#: sobrevive de un test al siguiente deja fallos que aparecen lejos de su causa.
+_VENTANAS: list[Ventana] = []
 
-class Intentos:
-    """Ventana deslizante de fallos por llave."""
 
-    def __init__(self, maximo: int = MAX_INTENTOS, ventana: int = VENTANA_S) -> None:
-        self._maximo = maximo
-        self._ventana = ventana
-        self._fallos: dict[str, deque[float]] = {}
+class Ventana:
+    """Marcas por llave dentro de una ventana de tiempo que se desplaza."""
+
+    def __init__(self, ventana_s: int) -> None:
+        self._ventana = ventana_s
+        self._marcas: dict[str, deque[float]] = {}
+        _VENTANAS.append(self)
 
     def _vigentes(self, llave: str, ahora: float) -> deque[float]:
-        """Los fallos de esa llave que todavía cuentan, descartando los que ya caducaron."""
-        cola = self._fallos.get(llave)
+        """Las marcas que todavía cuentan, descartando las que ya caducaron."""
+        cola = self._marcas.get(llave)
         if cola is None:
             return deque()
         while cola and ahora - cola[0] > self._ventana:
             cola.popleft()
         if not cola:
-            del self._fallos[llave]
+            del self._marcas[llave]
         return cola
 
-    def espera(self, llave: str) -> int:
-        """Segundos que faltan para poder volver a intentar. `0` si se puede ahora."""
+    def espera(self, llave: str, maximo: int) -> int:
+        """Segundos que faltan para poder volver a pasar. `0` si se puede ahora."""
+        if maximo <= 0:
+            return 0
         ahora = time.monotonic()
         cola = self._vigentes(llave, ahora)
-        if len(cola) < self._maximo:
+        if len(cola) < maximo:
             return 0
-        # Se abre cuando caduque el fallo más viejo, que es el que sostiene el bloqueo.
+        # Se abre cuando caduque la marca más vieja, que es la que sostiene el bloqueo.
         return max(1, int(self._ventana - (ahora - cola[0])) + 1)
 
-    def falla(self, llave: str) -> None:
+    def marca(self, llave: str) -> None:
         ahora = time.monotonic()
-        if len(self._fallos) >= MAX_LLAVES:
+        if len(self._marcas) >= MAX_LLAVES:
             self._recorta(ahora)
         cola = self._vigentes(llave, ahora)
         cola.append(ahora)
-        self._fallos[llave] = cola
+        self._marcas[llave] = cola
 
-    def acierta(self, llave: str) -> None:
-        """Un acierto borra el historial: quien se equivocó y luego entró no arrastra nada."""
-        self._fallos.pop(llave, None)
+    def olvida(self, llave: str) -> None:
+        """Borra el historial de una llave. Es lo que hace un acierto al entrar."""
+        self._marcas.pop(llave, None)
 
     def _recorta(self, ahora: float) -> None:
         """Tira lo caducado y, si aun así sobran llaves, empieza de cero.
 
-        Vaciar del todo es preferible a quedarse sin memoria, y lo que se pierde son fallos
-        recientes de muchas llaves distintas, que es justo la situación en la que ya no se está
-        defendiendo una cuenta concreta sino aguantando un barrido.
+        Vaciar del todo es preferible a quedarse sin memoria, y lo que se pierde son marcas de
+        muchas llaves distintas, que es justo la situación en la que ya no se está defendiendo
+        nada concreto sino aguantando un barrido.
         """
-        self._fallos = {
+        self._marcas = {
             llave: cola
-            for llave, cola in self._fallos.items()
+            for llave, cola in self._marcas.items()
             if cola and ahora - cola[-1] <= self._ventana
         }
-        if len(self._fallos) >= MAX_LLAVES:
-            self._fallos.clear()
+        if len(self._marcas) >= MAX_LLAVES:
+            self._marcas.clear()
 
     def olvida_todo(self) -> None:
-        """Solo para los tests: un contador global no puede filtrarse de un test al siguiente."""
-        self._fallos.clear()
+        self._marcas.clear()
+
+
+def vacia_las_ventanas() -> None:
+    """Solo para los tests: deja todos los contadores como recién arrancados."""
+    for v in _VENTANAS:
+        v.olvida_todo()
 
 
 def ip_del_cliente(request: Request, proxies_confiables: int) -> str:
@@ -105,9 +118,8 @@ def ip_del_cliente(request: Request, proxies_confiables: int) -> str:
 
     Por defecto `n` es 0 y la cabecera se ignora entera, que es lo correcto en local y lo prudente
     en cualquier sitio donde no se haya medido la cadena. Cogerla a ciegas tiene los dos fallos
-    posibles: con una entrada de más, todas las peticiones comparten llave y cinco fallos de
-    cualquiera dejan fuera a todo el mundo; con una de menos, cada quien se inventa su dirección y
-    el límite no existe.
+    posibles: con una entrada de más, todas las peticiones comparten llave y el límite de uno deja
+    fuera a todo el mundo; con una de menos, cada quien se inventa su dirección y no hay límite.
     """
     if proxies_confiables > 0:
         entradas = [p.strip() for p in request.headers.get("x-forwarded-for", "").split(",")]
@@ -117,19 +129,18 @@ def ip_del_cliente(request: Request, proxies_confiables: int) -> str:
     return request.client.host if request.client else "desconocida"
 
 
-def exige_cupo(contador: Intentos, llaves: tuple[str, ...]) -> None:
-    """Lanza 429 si alguna de las llaves agotó sus intentos.
+def exige_cupo(espera: int, mensaje: str) -> None:
+    """Lanza 429 si no queda cupo. `espera` es lo que devuelve `Ventana.espera`.
 
-    El mensaje dice los minutos que faltan en vez de «demasiados intentos» a secas: sin eso, quien
-    se equivocó de verdad no sabe si esperar un minuto o volver mañana. Y `Retry-After` va aparte
-    para que sea legible también por un cliente que no sea un navegador.
+    El mensaje dice cuánto falta en vez de «demasiadas peticiones» a secas: sin ese dato, quien se
+    topa con el límite no sabe si esperar un minuto o volver mañana. Y `Retry-After` va aparte para
+    que sea legible también por un cliente que no sea un navegador.
     """
-    espera = max((contador.espera(llave) for llave in llaves), default=0)
     if not espera:
         return
     minutos = max(1, round(espera / 60))
     raise HTTPException(
         status_code=429,
-        detail=f"Demasiados intentos. Vuelve a probar en {minutos} min.",
+        detail=f"{mensaje} Vuelve a probar en {minutos} min.",
         headers={"Retry-After": str(espera)},
     )

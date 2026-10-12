@@ -28,7 +28,13 @@ from ..storage.users import (
     usuario_de_sesion,
     verificar_credenciales,
 )
-from .limites import Intentos, exige_cupo, ip_del_cliente
+from .limites import (
+    MAX_INTENTOS,
+    VENTANA_INTENTOS_S,
+    Ventana,
+    exige_cupo,
+    ip_del_cliente,
+)
 
 router = APIRouter(prefix="/auth", tags=["cuenta"])
 
@@ -36,7 +42,13 @@ COOKIE = "mmp_sesion"
 
 #: Contador de fallos compartido por los dos endpoints que piden credenciales. Es de módulo
 #: porque tiene que sobrevivir a la petición: un contador por petición no cuenta nada.
-_intentos = Intentos()
+_intentos = Ventana(VENTANA_INTENTOS_S)
+
+
+def _exige_intentos(llaves: tuple[str, ...]) -> None:
+    """Corta si alguna de las llaves agotó sus intentos."""
+    espera = max((_intentos.espera(llave, MAX_INTENTOS) for llave in llaves), default=0)
+    exige_cupo(espera, "Demasiados intentos.")
 
 
 def _llaves(request: Request, email: str, settings: Settings) -> tuple[str, ...]:
@@ -109,17 +121,17 @@ async def registro_endpoint(
         )
 
     llaves = _llaves(request, datos.email, settings)
-    exige_cupo(_intentos, llaves)
+    _exige_intentos(llaves)
     async with conectar(settings) as conn:
         try:
             usuario_id = await crear_usuario(conn, datos.email, datos.contrasena)
         except ErrorDeCuenta as exc:
             for llave in llaves:
-                _intentos.falla(llave)
+                _intentos.marca(llave)
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         token = await abrir_sesion(conn, usuario_id)
     for llave in llaves:
-        _intentos.acierta(llave)
+        _intentos.olvida(llave)
     _pon_cookie(respuesta, token, settings)
     return UsuarioResponse(id=usuario_id, email=datos.email.strip().lower())
 
@@ -141,16 +153,16 @@ async def entrar_endpoint(
     registrados y sería el oráculo que el mensaje de error evita con tanto cuidado.
     """
     llaves = _llaves(request, datos.email, settings)
-    exige_cupo(_intentos, llaves)
+    _exige_intentos(llaves)
     async with conectar(settings) as conn:
         usuario_id = await verificar_credenciales(conn, datos.email, datos.contrasena)
         if usuario_id is None:
             for llave in llaves:
-                _intentos.falla(llave)
+                _intentos.marca(llave)
             raise HTTPException(status_code=401, detail="Correo o contraseña incorrectos.")
         token = await abrir_sesion(conn, usuario_id)
     for llave in llaves:
-        _intentos.acierta(llave)
+        _intentos.olvida(llave)
     _pon_cookie(respuesta, token, settings)
     return UsuarioResponse(id=usuario_id, email=datos.email.strip().lower())
 
