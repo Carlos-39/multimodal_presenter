@@ -19,6 +19,12 @@ dependencies = [
     # Chromium, con licencia permisiva (BSD-3/Apache-2.0): se eligió frente a PyMuPDF, que es
     # AGPL-3.0, por el mismo criterio que ya se había aplicado en `experiments/common.py`.
     "pypdfium2>=5.13.0",
+    # Pillow es dependencia de pypdfium2 en la PRÁCTICA, aunque él no la declare: el bitmap que
+    # devuelve `render()` se convierte a PNG con `to_pil()`, y sin Pillow eso lanza. Aquí estaba
+    # llegando de rebote por matplotlib, que es de desarrollo, así que en mi máquina y en el CI
+    # funcionaba y en la imagen de producción —instalada con `--no-dev`— el visor de página
+    # respondía 502. Se declara donde se usa.
+    "pillow>=11",
     "rapidfuzz>=3.14",
     "aiosqlite>=0.22.1",
     "argon2-cffi>=25.1.0",
