@@ -302,8 +302,14 @@ def test_exportador_descarta_reenviados_pero_respeta_el_seq_repetido(tmp_path) -
 
     def linea(nombre: str, seq: int, ts: str, sesion: str = "s1") -> str:
         return json.dumps(
-            {"session_id": sesion, "participant": "P01", "name": nombre, "seq": seq, "ts": ts,
-             "data": {}}
+            {
+                "session_id": sesion,
+                "participant": "P01",
+                "name": nombre,
+                "seq": seq,
+                "ts": ts,
+                "data": {},
+            }
         )
 
     (tmp_path / "ux-1.jsonl").write_text(
