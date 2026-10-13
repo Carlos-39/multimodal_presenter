@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { CircleNotch, Question } from "@phosphor-icons/react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { CaretDown, CircleNotch, Question } from "@phosphor-icons/react";
 import { ContentRenderer } from "@/components/content/ContentRenderer";
 import { SkeletonText } from "@/components/content/Skeleton";
 import { SourceCitation, UnanchoredNotice } from "@/components/content/SourceCitation";
 import type { ChatMessage } from "@/hooks/useChat";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { PastillaVoz } from "./PastillaVoz";
+import { guardarPreferencia, leerPreferencia, suscribirPreferencias } from "@/lib/preferencias";
 import { track } from "@/lib/telemetry";
 import type { CitedRegion, GroundingStatus, SourceReference } from "@/lib/types";
 
@@ -48,6 +49,19 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+
+  // El servidor no puede saber qué eligió este navegador, así que para él siempre están
+  // desplegadas; el cliente lee su preferencia. `useSyncExternalStore` admite precisamente esos
+  // dos valores, y por eso no hace falta un efecto que corrija el estado después de pintar.
+  const plegadas = useSyncExternalStore(
+    suscribirPreferencias,
+    () => leerPreferencia("sugeridas_plegadas", false),
+    () => false,
+  );
+
+  const alternarSugeridas = useCallback(() => {
+    guardarPreferencia("sugeridas_plegadas", !plegadas);
+  }, [plegadas]);
 
   // Entrada por voz: la transcripción LLENA la caja (editable), nunca se envía sola.
   const handleTranscribed = useCallback((text: string) => {
@@ -113,20 +127,46 @@ export function ChatPanel({
 
       {suggestions.length > 0 ? (
         <div className="border-t border-border px-4 py-3">
-          <p className="mb-2 text-xs text-muted">Preguntas sugeridas</p>
-          <div className="flex flex-wrap gap-1.5">
-            {suggestions.map((question, index) => (
-              <button
-                key={question}
-                type="button"
-                onClick={() => submit(question, "suggested", index)}
-                disabled={disabled || streaming}
-                className="rounded-full border border-border px-2.5 py-1 text-left text-xs text-foreground-secondary transition-[colors,transform] hover:border-accent hover:bg-accent-subtle hover:text-accent active:scale-[0.97] disabled:opacity-40"
-              >
-                {question}
-              </button>
-            ))}
-          </div>
+          {/* Se pliegan, y empiezan desplegadas.
+              Lo primero, porque en un teléfono tres preguntas largas se comen media conversación
+              y estorban justo a quien ya sabe lo que quiere preguntar. Lo segundo, porque son una
+              invitación: si nacieran plegadas no las vería quien más las necesita, y además
+              `suggested_question_click` es una de las señales que mide el Hito 8 — arrancar
+              escondidas cambiaría lo que esa medición significa.
+              La elección se recuerda en este navegador, que es donde se tomó. */}
+          <button
+            type="button"
+            onClick={alternarSugeridas}
+            aria-expanded={!plegadas}
+            // De ancho completo y con el margen negativo que lo compensa: así el objetivo del
+            // pulgar es toda la franja en vez de las dos palabras, y no cuesta ni un píxel de
+            // alto — que es justo lo que se estaba intentando ahorrar.
+            className="-m-1.5 flex w-[calc(100%+0.75rem)] items-center gap-1.5 p-1.5 text-xs text-muted transition-colors hover:text-foreground"
+          >
+            <CaretDown
+              size={11}
+              weight="bold"
+              aria-hidden
+              className={`transition-transform motion-reduce:transition-none ${plegadas ? "-rotate-90" : ""}`}
+            />
+            Preguntas sugeridas
+            {plegadas ? <span>({suggestions.length})</span> : null}
+          </button>
+          {!plegadas ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {suggestions.map((question, index) => (
+                <button
+                  key={question}
+                  type="button"
+                  onClick={() => submit(question, "suggested", index)}
+                  disabled={disabled || streaming}
+                  className="rounded-full border border-border px-2.5 py-1 text-left text-xs text-foreground-secondary transition-[colors,transform] hover:border-accent hover:bg-accent-subtle hover:text-accent active:scale-[0.97] disabled:opacity-40"
+                >
+                  {question}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
