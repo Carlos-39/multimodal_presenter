@@ -26,6 +26,7 @@ from ..schemas.chat import (
     SuggestionsResponse,
 )
 from ..schemas.presentation import Section
+from .estilo import SIN_MARKDOWN
 from .models import ExtractionResult
 from .pdf_locator import abrir_localizador
 from .validation import ground_quote
@@ -42,6 +43,7 @@ con honestidad en el texto (no finjas seguridad ni inventes una fuente).
 - Elige el `content_type` que mejor represente la respuesta: normalmente `text`; usa `table`, \
 `chart` o `timeline` SOLO si la respuesta es información que se entiende mejor así.
 - Responde en el idioma del documento y la pregunta.
+- {SIN_MARKDOWN}
 
 Aclaración ante ambigüedad (úsala con MUCHA moderación; por defecto RESPONDE):
 - Antes de responder, evalúa si la pregunta es GENUINAMENTE ambigua de un modo que CAMBIARÍA la \
@@ -55,7 +57,7 @@ aclaración, esta vez RESPONDE con la mejor interpretación, no vuelvas a pregun
 - Para pedir aclaración: llena `clarification` con una `question` breve y de cortesía (1 frase) y \
 1-2 `options` concretas (las interpretaciones posibles). Cuando la llenes, deja `source_quote` en \
 null y pon en `content.text` la MISMA pregunta de aclaración (sin inventar una respuesta).\
-"""
+""".replace("{SIN_MARKDOWN}", SIN_MARKDOWN)
 
 _SUGGESTIONS_PROMPT = """\
 Genera entre 2 y 3 preguntas breves y ESPECÍFICAS que un lector se haría para profundizar en la \

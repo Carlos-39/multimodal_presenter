@@ -279,3 +279,60 @@ def test_exportador_separa_el_tiempo_de_la_presentacion_generada() -> None:
     # Y el clic en la fuente desde una diapositiva generada ya no se cuenta como si fuera del chat.
     assert row["src_from_deck"] == 1
     assert row["src_from_chat"] == 0
+
+
+def test_exportador_descarta_reenviados_pero_respeta_el_seq_repetido(tmp_path) -> None:
+    """El reintento del cliente duplica eventos; una recarga vieja repite `seq` sin duplicar nada.
+
+    Son dos cosas distintas y la clave de deduplicación tiene que distinguirlas. El cliente
+    reintenta un lote que no se confirmó, y ese lote puede haber llegado igualmente (se perdió la
+    respuesta, no la petición): ahí el evento viene REPETIDO ENTERO, instante incluido.
+
+    Pero en los JSONL ya recogidos hay sesiones con varios eventos legítimos en seq 0, 1, 2…
+    porque el cliente antiguo reiniciaba el contador al recargar la pestaña. Deduplicar por
+    (sesión, seq) a secas —lo obvio— borraría esos. Por eso la clave lleva también nombre e
+    instante.
+    """
+    import json
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    from export_telemetry import _load_events  # noqa: PLC0415 (script fuera del paquete)
+
+    def linea(nombre: str, seq: int, ts: str, sesion: str = "s1") -> str:
+        return json.dumps(
+            {
+                "session_id": sesion,
+                "participant": "P01",
+                "name": nombre,
+                "seq": seq,
+                "ts": ts,
+                "data": {},
+            }
+        )
+
+    (tmp_path / "ux-1.jsonl").write_text(
+        "\n".join(
+            [
+                linea("session_start", 0, "2026-10-12T10:00:00.000Z"),
+                # El reenvío: el mismo evento otra vez, idéntico.
+                linea("session_start", 0, "2026-10-12T10:00:00.000Z"),
+                # La recarga del cliente antiguo: mismo seq, otro evento de verdad.
+                linea("view_change", 0, "2026-10-12T10:05:00.000Z"),
+                # Y otra sesión con el mismo seq, que tampoco es un duplicado.
+                linea("session_start", 0, "2026-10-12T10:00:00.000Z", sesion="s2"),
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    eventos, repetidos = _load_events(tmp_path)
+
+    assert repetidos == 1, "solo el reenviado exacto sobra"
+    assert len(eventos) == 3
+    assert [(e["session_id"], e["name"]) for e in eventos] == [
+        ("s1", "session_start"),
+        ("s1", "view_change"),
+        ("s2", "session_start"),
+    ]

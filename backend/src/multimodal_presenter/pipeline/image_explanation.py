@@ -13,13 +13,15 @@ from __future__ import annotations
 from pydantic_ai import Agent, BinaryContent
 from pydantic_ai.models import Model
 
+from .estilo import SIN_MARKDOWN
 from .models import ExtractionResult
 
 _SYSTEM = (
     "Explica en lenguaje accesible qué muestra la imagen o figura del documento que recibes: qué "
     "representa, cuáles son sus partes y cómo leerla, para que alguien que no la entiende de un "
     "vistazo pueda comprenderla. Si es un diagrama, una estructura o una gráfica, descríbela "
-    "paso a paso. Español claro y directo. No inventes nada que no se vea en la imagen."
+    "paso a paso. Español claro y directo. No inventes nada que no se vea en la imagen. "
+    + SIN_MARKDOWN
 )
 
 explain_agent = Agent(system_prompt=_SYSTEM)
