@@ -7,6 +7,45 @@ on:
     branches: [main, develop]
 
 jobs:
+  # El frontend no lo miraba nadie hasta ahora, y ahí vive la mitad de la aplicación: el armazón
+  # responsive, la narración, el cliente de telemetría. Pasaban los tipos y los tests porque yo los
+  # corría a mano antes de cada commit, que es exactamente la clase de garantía que se cae el día
+  # que hay prisa. Y el día que hay prisa es el de las sesiones.
+  #
+  # Mismo orden que el backend —lint, tipos, tests— y sin construir la aplicación: `next build`
+  # tarda varios minutos y lo que caza, en este proyecto, ya lo cazan los tipos.
+  frontend:
+    name: Frontend — lint, tipos & tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # `ci` y no `install`: instala lo que dice el lockfile y falla si no cuadran, en vez de
+      # resolver versiones nuevas por su cuenta. Un lockfile hecho en Windows al que le faltaban
+      # paquetes de Linux ya costó un despliegue en este proyecto.
+      - name: Install dependencies (lockfile)
+        run: npm ci
+
+      - name: Lint (eslint)
+        run: npx eslint .
+
+      - name: Types (tsc)
+        run: npx tsc --noEmit
+
+      - name: Tests (vitest)
+        run: npm test
+
   backend:
     name: Backend — lint & tests
     runs-on: ubuntu-latest
