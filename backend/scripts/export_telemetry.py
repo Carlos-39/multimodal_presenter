@@ -28,9 +28,25 @@ from multimodal_presenter.config import get_settings
 from multimodal_presenter.telemetry import resolve_telemetry_dir
 
 
-def _load_events(jsonl_dir: Path) -> list[dict[str, Any]]:
-    """Lee todos los `ux-*.jsonl` de la carpeta, tolerando líneas corruptas."""
+def _load_events(jsonl_dir: Path) -> tuple[list[dict[str, Any]], int]:
+    """Lee todos los `ux-*.jsonl` de la carpeta y descarta los repetidos.
+
+    Devuelve (eventos, cuántos se descartaron).
+
+    Hay repetidos porque el cliente reintenta: un lote que no se confirma vuelve a la cola y se
+    manda otra vez, y puede haber llegado igualmente la primera vez (la respuesta se perdió, no la
+    petición). Ese reenvío es deliberado — perder eventos es peor que contarlos dos veces— pero
+    quien analiza no debería pagarlo.
+
+    La clave es (sesión, seq, nombre, instante) y NO (sesión, seq) a secas, que sería lo obvio y
+    estaría mal: el cliente antiguo reiniciaba `seq` en 0 al recargar la pestaña, así que en los
+    JSONL ya recogidos una misma sesión tiene varios eventos legítimos en seq 0, 1, 2… Con la
+    clave corta, este exportador los borraría. Un reenvío repite el evento entero, instante
+    incluido; una recarga no.
+    """
     events: list[dict[str, Any]] = []
+    vistos: set[tuple[Any, ...]] = set()
+    repetidos = 0
     for path in sorted(jsonl_dir.glob("ux-*.jsonl")):
         with path.open(encoding="utf-8") as handle:
             for line in handle:
@@ -38,10 +54,21 @@ def _load_events(jsonl_dir: Path) -> list[dict[str, Any]]:
                 if not line:
                     continue
                 try:
-                    events.append(json.loads(line))
+                    event = json.loads(line)
                 except json.JSONDecodeError:
                     continue  # una línea a medio escribir no invalida el resto
-    return events
+                clave = (
+                    event.get("session_id"),
+                    event.get("seq"),
+                    event.get("name"),
+                    event.get("ts"),
+                )
+                if clave in vistos:
+                    repetidos += 1
+                    continue
+                vistos.add(clave)
+                events.append(event)
+    return events, repetidos
 
 
 def _parse_ts(ts: str | None) -> datetime | None:
@@ -229,7 +256,7 @@ def main() -> None:
     out_dir = args.out or jsonl_dir
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    events = _load_events(jsonl_dir)
+    events, repetidos = _load_events(jsonl_dir)
     if not events:
         raise SystemExit(f"No hay eventos en {jsonl_dir}")
 
@@ -239,6 +266,8 @@ def main() -> None:
     rows = _summarize(events, summary_path)
 
     print(f"Leídos {len(events)} eventos de {jsonl_dir}")
+    if repetidos:
+        print(f"  (se descartaron {repetidos} reenviados, ya contados)")
     print(f"  crudo   → {raw_path}")
     print(f"  resumen → {summary_path} ({len(rows)} sesiones)")
 
