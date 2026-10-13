@@ -662,12 +662,28 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
     [entries],
   );
 
-  // Prefetch de preguntas sugeridas al profundizar (modo detallado) en la sección activa: se
-  // piden en segundo plano y se cachean → cuando el usuario mira el chat, ya están (instantáneas).
+  // Prefetch de preguntas sugeridas de la sección activa: se piden en segundo plano y se cachean
+  // → cuando el usuario mira el chat, ya están (instantáneas).
+  //
+  // Antes solo ocurría en modo detallado, y la idea era razonable —preguntar es profundizar— pero
+  // no resiste la prueba: quien lee en resumen es justamente quien más necesita que le ofrezcan
+  // por dónde seguir, y en el móvil el chat está a un toque desde cualquier modo. Dejarlas fuera
+  // del resumen las escondía de quien iba a usarlas.
+  //
+  // La condición que sustituye al modo es el CHAT ABIERTO, y no es un apaño para abaratar: las
+  // preguntas sugeridas solo se ven dentro del chat, así que pedirlas para quien no lo ha abierto
+  // era gastar en algo que nadie iba a mirar — y eso ya pasaba antes, en detallado. Medido: con
+  // el chat cerrado, desplazarse por el documento disparaba una llamada al modelo por cada
+  // sección por la que se pasaba.
+  //
+  // Así que esto da lo que faltaba (sugerencias también en resumen) y además gasta menos que
+  // antes. Siguen siendo instantáneas donde importa: `requestedRef` las cachea por sección, de
+  // modo que solo la primera sección tras abrir el chat espera.
   const prefetchSuggestions = chat.prefetchSuggestions;
+  const chatAbierto = openOrder.includes("chat");
   useEffect(() => {
-    if (detailLevel === "detailed" && activeSection) prefetchSuggestions(activeSection);
-  }, [detailLevel, activeSection, prefetchSuggestions]);
+    if (chatAbierto && activeSection) prefetchSuggestions(activeSection);
+  }, [chatAbierto, activeSection, prefetchSuggestions]);
 
   // Telemetría (Hito 8): arranca la sesión al montar y la cierra al ocultarse la pestaña,
   // reportando el último tramo de modo abierto (que ningún cambio llegó a cerrar).
