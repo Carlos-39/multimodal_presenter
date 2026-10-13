@@ -114,7 +114,12 @@ export function AudioControls({
                   ? "Reproduciendo"
                   : status === "paused"
                     ? "En pausa"
-                    : "Pulsa para escuchar"}
+                    : // La narración EXISTE: el navegador solo se negó a arrancarla sin un toque
+                      // más. Decirlo así y no «no se pudo generar» no es un matiz — es la
+                      // diferencia entre pulsar otra vez y darlo por roto.
+                      status === "ready"
+                      ? "Lista. Pulsa para escucharla."
+                      : "Pulsa para escuchar"}
         </span>
       </div>
 
@@ -131,7 +136,7 @@ export function AudioControls({
             value={Math.min(currentTime, duration)}
             onChange={(e) => onSeek(Number(e.target.value))}
             aria-label="Posición de la narración"
-            className="h-1 min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-surface-sunken accent-accent"
+            className="barra-audio min-w-0 flex-1"
           />
           <span className="tabular shrink-0 text-[0.6875rem] text-muted">
             {formatTimestamp(duration)}
