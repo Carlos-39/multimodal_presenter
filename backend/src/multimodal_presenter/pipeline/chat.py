@@ -160,7 +160,7 @@ async def chat_stream(
                         last = text
                         yield ChatStreamText(text=text)
                 answer = await result.get_output()
-        except UnexpectedModelBehavior:
+        except UnexpectedModelBehavior as exc:
             # «Output validation failed during streaming, and retries are not supported in
             # `run_stream()`». Es un límite de la biblioteca, no un fallo del modelo ni de la red:
             # cuando la salida no encaja con `ChatAnswer`, el camino normal es devolvérsela al
@@ -170,7 +170,16 @@ async def chat_stream(
             # Así que se rehace el turno sin streaming, que sí reintenta. Se pierde el efecto de
             # escritura de ESE turno y se paga una llamada más; a cambio hay respuesta en vez de
             # un error. Lo que se emitió antes del fallo lo reemplaza el evento final.
-            logfire.warn("chat: la validación falló en streaming; se rehace sin streaming")
+            #
+            # El registro lleva la CAUSA encadenada, no solo el titular. La primera vez que esto
+            # apareció en producción, el mensaje de pydantic-ai decía qué había pasado pero no en
+            # qué campo, y sin eso no se puede saber si el modelo se inventó una clave de más, se
+            # pasó de opciones en la aclaración o devolvió un `content` que no encaja con ninguna
+            # rama de la unión. Si vuelve a ocurrir, que esté escrito.
+            logfire.warn(
+                "chat: la validación falló en streaming; se rehace sin streaming",
+                causa=repr(exc.__cause__ or exc),
+            )
             answer = (await chat_agent.run(entrada, model=model)).output
 
         # Opción D: si el LLM pide aclaración, este turno NO es una respuesta anclada.
