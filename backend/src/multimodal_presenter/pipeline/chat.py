@@ -15,6 +15,7 @@ from collections.abc import AsyncIterator
 
 import logfire
 from pydantic_ai import Agent, BinaryContent, CachePoint, PromptedOutput
+from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.models import Model
 
 from ..schemas.chat import (
@@ -148,16 +149,38 @@ async def chat_stream(
 ) -> AsyncIterator[ChatEvent]:
     """Streamea la respuesta (texto en vivo) y emite al final el `ChatResponse` ya anclado."""
     with logfire.span("chat.stream"):
+        entrada = build_chat_input(extraction, history, question)
         last = ""
-        async with chat_agent.run_stream(
-            build_chat_input(extraction, history, question), model=model
-        ) as result:
-            async for partial in result.stream_output():
-                text = _partial_text(getattr(partial, "content", None))
-                if text and text != last:
-                    last = text
-                    yield ChatStreamText(text=text)
-            answer: ChatAnswer = await result.get_output()
+        answer: ChatAnswer
+        try:
+            async with chat_agent.run_stream(entrada, model=model) as result:
+                async for partial in result.stream_output():
+                    text = _partial_text(getattr(partial, "content", None))
+                    if text and text != last:
+                        last = text
+                        yield ChatStreamText(text=text)
+                answer = await result.get_output()
+        except UnexpectedModelBehavior as exc:
+            # «Output validation failed during streaming, and retries are not supported in
+            # `run_stream()`». Es un límite de la biblioteca, no un fallo del modelo ni de la red:
+            # cuando la salida no encaja con `ChatAnswer`, el camino normal es devolvérsela al
+            # modelo para que la corrija, y ese reintento NO existe mientras se streamea. El turno
+            # moría ahí y el participante veía «la generación se interrumpió».
+            #
+            # Así que se rehace el turno sin streaming, que sí reintenta. Se pierde el efecto de
+            # escritura de ESE turno y se paga una llamada más; a cambio hay respuesta en vez de
+            # un error. Lo que se emitió antes del fallo lo reemplaza el evento final.
+            #
+            # El registro lleva la CAUSA encadenada, no solo el titular. La primera vez que esto
+            # apareció en producción, el mensaje de pydantic-ai decía qué había pasado pero no en
+            # qué campo, y sin eso no se puede saber si el modelo se inventó una clave de más, se
+            # pasó de opciones en la aclaración o devolvió un `content` que no encaja con ninguna
+            # rama de la unión. Si vuelve a ocurrir, que esté escrito.
+            logfire.warn(
+                "chat: la validación falló en streaming; se rehace sin streaming",
+                causa=repr(exc.__cause__ or exc),
+            )
+            answer = (await chat_agent.run(entrada, model=model)).output
 
         # Opción D: si el LLM pide aclaración, este turno NO es una respuesta anclada.
         if answer.clarification is not None:
