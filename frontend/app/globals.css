@@ -247,12 +247,27 @@ body {
   aspect-ratio: 16 / 9;
 }
 
-/* En un marco angosto (móvil, columnas abiertas) un 16:9 sería demasiado bajo para leer:
-   el lienzo ocupa todo el alto disponible. */
+/* Centrado cuando cabe, desplazable cuando no. `margin: auto` y no `align-items: center` del
+   marco: con un hijo más alto que su contenedor flexible, centrar recorta el borde de arriba y lo
+   deja inalcanzable, mientras que el margen automático simplemente deja de aplicarse. */
+.slide-stage {
+  margin-block: auto;
+}
+
+/* En un marco angosto (móvil, columnas abiertas) un 16:9 sería demasiado bajo para leer, así que
+   el lienzo ocupa al menos todo el alto disponible — y CRECE si hace falta.
+   Crecer es lo que cambia. Antes el lienzo se quedaba clavado en el alto del marco y lo que no
+   cabía se desplazaba por dentro: en un teléfono, una diapositiva con título, viñetas e imagen no
+   entra, así que la imagen quedaba bajo el borde y había que descubrir que ese rectángulo se
+   desplazaba por su cuenta. Un área que se desplaza dentro de una página que también se desplaza
+   es de las pocas cosas que casi nadie acierta a la primera.
+   El 16:9 se conserva donde significa algo —proyectando, o con sitio de sobra—; en un teléfono no
+   se proyecta nada y la forma del lienzo no vale lo que cuesta esconder media diapositiva. */
 @container slide-frame (max-width: 640px) {
   .slide-stage {
     width: 100cqw;
-    height: 100cqh;
+    height: auto;
+    min-height: 100cqh;
     aspect-ratio: auto;
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { CornersIn, CornersOut, Sparkle } from "@phosphor-icons/react";
 import { useSlideKeys } from "@/hooks/useSlideKeys";
 import { slideLayout } from "@/lib/deckLayout";
@@ -43,6 +43,13 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
   const shown = total > 0 ? Math.min(index, total - 1) : 0;
 
   const rootId = useId();
+  // El marco es ahora quien se desplaza cuando una diapositiva no cabe, y el desplazamiento no se
+  // reinicia solo: sin esto, pasar de una diapositiva larga a la siguiente la dejaría empezada por
+  // la mitad. `instant` y no suave a propósito — cambiar de diapositiva no es recorrerla.
+  const marco = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    marco.current?.scrollTo({ top: 0, behavior: "instant" });
+  }, [index]);
   // Pantalla completa (API del navegador). SSR-safe; donde no existe, el botón no aparece.
   const canFullscreen = useSyncExternalStore(
     subscribeFullscreen,
@@ -120,7 +127,12 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
         ) : null}
       </div>
 
-      <div className="slide-frame flex min-h-0 flex-1 items-center justify-center">
+      {/* El marco se desplaza, no el interior de la diapositiva. Cuando el lienzo crece más que
+          el espacio disponible —un teléfono con una diapositiva larga— lo que se mueve es la
+          diapositiva entera, que es lo que cualquiera espera. El centrado lo pone el propio
+          lienzo con `margin: auto`: hacerlo aquí con `items-center` recortaría su borde superior
+          en cuanto no cupiera. */}
+      <div ref={marco} className="slide-frame flex min-h-0 flex-1 justify-center overflow-y-auto">
         {/* `key` por slide → entra con la animación al cambiar de diapositiva. */}
         <article
           key={shown}
