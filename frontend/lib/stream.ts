@@ -25,6 +25,44 @@ export function parseSSE<T = StreamEvent>(buffer: string): { events: T[]; rest: 
 }
 
 /**
+ * Entrega los eventos de una respuesta SSE, llegue por partes o de una sola pieza.
+ *
+ * **Lo de "una sola pieza" no es un caso teórico: es el navegador de dentro de WhatsApp.** Los
+ * webviews embebidos no siempre exponen `response.body`, así que no hay `getReader()` y la
+ * respuesta solo se puede leer entera, al final. Antes eso se trataba como un fallo —`!res.body`
+ * lanzaba aunque el HTTP fuera 200— y costaba caro de dos maneras: el chat moría con «La
+ * generación se interrumpió», y la transformación caía al endpoint no-streaming, que **vuelve a
+ * generar desde cero**. O sea, pagar dos veces la misma presentación por abrir el enlace desde un
+ * chat, que es exactamente como van a llegar los participantes.
+ *
+ * Leída entera se pierde el efecto de escritura en vivo, y nada más: llegan los mismos eventos,
+ * en el mismo orden y con el mismo contenido.
+ */
+export async function entregaSSE<T>(res: Response, onEvent: (event: T) => void): Promise<void> {
+  if (!res.body) {
+    const texto = await res.text();
+    const completo = texto.endsWith("\n\n") ? texto : texto + "\n\n";
+    for (const event of parseSSE<T>(completo).events) onEvent(event);
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parsed = parseSSE<T>(buffer);
+    buffer = parsed.rest;
+    for (const event of parsed.events) onEvent(event);
+  }
+  // Vaciar cualquier evento final que quede en el buffer.
+  const tail = parseSSE<T>(buffer.endsWith("\n\n") ? buffer : buffer + "\n\n");
+  for (const event of tail.events) onEvent(event);
+}
+
+/**
  * Llama a POST /api/transform/stream y entrega cada evento SSE a `onEvent`.
  * Lanza si la conexión falla o el estado HTTP no es OK (para que el llamador pueda caer al
  * endpoint no-streaming). Un fallo a mitad del stream llega como evento `error`.
@@ -37,7 +75,8 @@ export async function streamTransform(
   anexaDocumento(form, original);
 
   const res = await fetch("/api/transform/stream", { method: "POST", body: form });
-  if (!res.ok || !res.body) {
+  // Solo el estado HTTP decide si esto es un fallo. Que no venga `body` NO lo es: ver `entregaSSE`.
+  if (!res.ok) {
     let detail = `Error ${res.status}`;
     try {
       const body = await res.json();
@@ -50,18 +89,5 @@ export async function streamTransform(
     throw new Error(detail);
   }
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parsed = parseSSE(buffer);
-    buffer = parsed.rest;
-    for (const event of parsed.events) onEvent(event);
-  }
-  // Vaciar cualquier evento final que quede en el buffer.
-  const tail = parseSSE(buffer.endsWith("\n\n") ? buffer : buffer + "\n\n");
-  for (const event of tail.events) onEvent(event);
+  await entregaSSE<StreamEvent>(res, onEvent);
 }

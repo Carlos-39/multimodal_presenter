@@ -351,9 +351,29 @@ body {
   animation: backdrop-enter 0.28s ease-out both;
 }
 
+/*
+ * La misma idea girada noventa grados: en pantallas estrechas lo que en escritorio entra por el
+ * lado entra por abajo, porque es de donde viene el pulgar. Mismo tiempo y misma curva que el
+ * cajón, a propósito: dos velocidades distintas para el mismo gesto se notan aunque nadie sepa
+ * decir por qué.
+ */
+@keyframes hoja-sube {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.hoja-sube {
+  animation: hoja-sube 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .drawer-enter,
-  .backdrop-enter {
+  .backdrop-enter,
+  .hoja-sube {
     animation: none;
   }
 }

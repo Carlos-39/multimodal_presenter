@@ -164,7 +164,14 @@ export function useChat(
         // es correcto. Quien escuche decide si hay dónde guardarlo; sin cuenta, nadie escucha.
         alTerminarTurno?.(guardableRef.current);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "La generación se interrumpió.";
+        // El comodín NO puede tragarse la causa. Antes, cualquier cosa que no fuera un `Error`
+        // —una `DOMException` de un navegador que corta el streaming, por ejemplo— salía como
+        // «La generación se interrumpió» a secas, y entonces el fallo no se puede diagnosticar ni
+        // con los registros del servidor delante: no se sabe siquiera si llegó a haber petición.
+        const detalle = error instanceof Error ? error.message : String(error ?? "");
+        const message = detalle.trim()
+          ? detalle
+          : "La generación se interrumpió y el navegador no dijo por qué.";
         setMessages((prev) =>
           prev.map((m) => (m.id === assistantId ? { ...m, text: message, status: "error" } : m)),
         );

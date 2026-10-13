@@ -177,8 +177,13 @@ export function Workspace({ children, source, chat, openOrder, onClosePanel }: W
             onClick={() => onClosePanel(overlay.id)}
             className="absolute inset-0 z-10 bg-black/40"
           />
+          {/* El tope es «todo menos 44 px» y no «todo»: en un teléfono el panel se comía la
+              pantalla entera menos una rendija de 35 px, demasiado estrecha para acertarle con el
+              dedo y demasiado ancha para parecer a propósito. 44 px es el mínimo que se puede
+              tocar, así que cerrar tocando fuera vuelve a ser una salida de verdad. En una
+              pantalla ancha no cambia nada: el panel ya mide mucho menos que eso. */}
           <div
-            className="absolute inset-y-0 right-0 z-20 max-w-full bg-surface shadow-float"
+            className="absolute inset-y-0 right-0 z-20 max-w-[calc(100%-2.75rem)] bg-surface shadow-float"
             style={{ width: PANEL_DEFAULT_WIDTH[overlay.id] }}
           >
             {overlay.node}
