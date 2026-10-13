@@ -168,3 +168,39 @@ def test_chat_suggestions_caps_at_three(input_text: str, mock_presentation: dict
         assert len(response.json()["questions"]) == 3  # generate_suggestions recorta a 3
     finally:
         app.dependency_overrides.clear()
+
+
+def test_chat_stream_rehace_el_turno_sin_streaming_si_la_validacion_falla(
+    input_text: str, monkeypatch
+) -> None:
+    """Un fallo de validación EN streaming no puede costar el turno.
+
+    pydantic-ai lo dice literal: «Output validation failed during streaming, and retries are not
+    supported in `run_stream()`». Cuando la salida del modelo no encaja con `ChatAnswer`, el
+    camino normal es devolvérsela para que la corrija, y ese reintento no existe mientras se
+    streamea. En producción eso salía como «La generación se interrumpió», con el turno perdido.
+
+    Aquí se fuerza ese fallo y se comprueba lo que importa: que el turno termina igual, con su
+    respuesta anclada, por el camino sin streaming — que sí reintenta.
+    """
+    from pydantic_ai.exceptions import UnexpectedModelBehavior
+
+    from multimodal_presenter.pipeline import chat as modulo
+
+    def revienta_al_streamear(*_args, **_kwargs):
+        raise UnexpectedModelBehavior(
+            "Output validation failed during streaming, and retries are not supported"
+        )
+
+    monkeypatch.setattr(modulo.chat_agent, "run_stream", revienta_al_streamear)
+
+    model = TestModel(custom_output_text=_answer("La empresa vendió 150 en 2024.", quote=QUOTE_OK))
+    ext = prepare_input(text=input_text)
+    events = asyncio.run(_collect(chat_stream(model, extraction=ext, history=[], question="¿?")))
+
+    assert events[-1].type == "done", "el turno tiene que terminar, no morirse"
+    response = events[-1].response
+    assert response.grounding == "verified"
+    assert response.content.content_type == "text"
+    # Sin streaming no hay efecto de escritura: el turno llega entero en el evento final.
+    assert [e for e in events if e.type == "text"] == []
