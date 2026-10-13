@@ -967,6 +967,53 @@ body {
 }
 
 /*
+ * La barra de la narración.
+ *
+ * El elemento mide 24 px de alto aunque la línea se vea de 4. No es decoración: el área sensible
+ * de un `input[type=range]` es su caja, no lo que se pinta dentro, y con los 4 px de antes la
+ * barra solo se podía usar con un ratón. En un teléfono —que es por donde entran los
+ * participantes— era imposible agarrarla, así que volver atrás diez segundos no existía.
+ *
+ * Los selectores de pista y pulgar van por separado para WebKit y Gecko a propósito: no se pueden
+ * agrupar en una sola regla, porque un navegador que no reconoce uno de los dos descarta la regla
+ * entera y se queda sin estilo.
+ */
+.barra-audio {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 1.5rem;
+  background: transparent;
+  cursor: pointer;
+}
+.barra-audio::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--surface-sunken);
+}
+.barra-audio::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--surface-sunken);
+}
+.barra-audio::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 14px;
+  width: 14px;
+  /* Centra el pulgar sobre una pista de 4 px: (4 - 14) / 2. */
+  margin-top: -5px;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+.barra-audio::-moz-range-thumb {
+  height: 14px;
+  width: 14px;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+
+/*
  * Al imprimir, todo terminado.
  *
  * Lo que se dibuja al entrar en pantalla depende de un `IntersectionObserver`, y al imprimir no

@@ -328,6 +328,11 @@ async def transform_stream_endpoint(
             ):
                 yield f"data: {event.model_dump_json()}\n\n"
         except Exception:
+            # El participante ve una frase corta; el registro se queda con la causa. Sin esta
+            # línea el fallo era indiagnosticable: la respuesta ya iba por el stream, así que
+            # uvicorn registraba «200 OK», el navegador enseñaba «se interrumpió» y en los
+            # registros del servidor no quedaba absolutamente nada que mirar. Pasó en producción.
+            logfire.exception("transformación: el stream murió a mitad")
             err = StreamError(message="La generación se interrumpió.")
             yield f"data: {err.model_dump_json()}\n\n"
 
@@ -387,6 +392,13 @@ async def chat_stream_endpoint(
             ):
                 yield f"data: {event.model_dump_json()}\n\n"
         except Exception:
+            # Igual que en la transformación: la causa va al registro, no al participante.
+            # La longitud de la pregunta sí, el texto no — la telemetría del Hito 8 no manda
+            # contenido y este registro no va a ser la puerta de atrás por la que se cuele.
+            logfire.exception(
+                "chat: el stream murió a mitad (pregunta de {n} caracteres)",
+                n=len(question_value),
+            )
             err = ChatStreamError(message="La generación se interrumpió.")
             yield f"data: {err.model_dump_json()}\n\n"
 
@@ -487,6 +499,10 @@ async def narration_endpoint(
     try:
         audio = await narrate(model, req.presentation, settings)
     except Exception as exc:  # fallo del proveedor TTS / red → error visible, no silencio
+        # `from exc` encadena la causa en el traceback, pero FastAPI atiende la HTTPException y
+        # ese traceback no llega a ninguna parte. Sin esta línea, «no se pudo generar la
+        # narración» es todo lo que existe, aquí y en los registros.
+        logfire.exception("narración: el proveedor de voz falló")
         raise HTTPException(status_code=502, detail="No se pudo generar la narración.") from exc
     return Response(content=audio, media_type="audio/mpeg")
 
