@@ -38,8 +38,12 @@ export function AccountButton({
           <Avatar email={usuario.email} />
           {/* El correo se recorta en vez de empujar: la cabecera ya reparte su ancho entre
               varios grupos, y un correo largo no puede ser quien decida cuánto queda para los
-              demás. Completo está en el `title` y en el panel. */}
-          <span className="truncate">{usuario.email}</span>
+              demás. Completo está en el `title` y en el panel.
+              Y por debajo de `xl` desaparece del todo: queda la inicial. Un correo entero se come
+              media cabecera, y lo que hace falta saber de un vistazo —que hay alguien dentro, y
+              quién— ya lo dicen el círculo y su letra. El correo completo está a un toque, en el
+              panel de cuenta. */}
+          <span className="hidden truncate xl:inline">{usuario.email}</span>
         </>
       ) : (
         <>

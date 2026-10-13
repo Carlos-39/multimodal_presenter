@@ -10,6 +10,11 @@ interface SectionNavProps {
   sections: Section[];
   activeSectionId: string | null;
   onSelectSection: (id: string) => void;
+  /**
+   * Si la lista pone su propio título. En el carril sí; dentro de la hoja del móvil no, porque
+   * la hoja ya se llama «Secciones» justo encima.
+   */
+  titulado?: boolean;
 }
 
 const ROLE_LABEL: Record<Section["role"], string> = {
@@ -21,12 +26,15 @@ export function SectionNav({
   sections,
   activeSectionId,
   onSelectSection,
+  titulado = true,
 }: SectionNavProps) {
   return (
     <nav className="flex-1 overflow-y-auto p-3" aria-label="Secciones">
-      <h2 className="px-2 pb-2 text-[0.8125rem] font-medium text-foreground">
-        Secciones
-      </h2>
+      {titulado ? (
+        <h2 className="px-2 pb-2 text-[0.8125rem] font-medium text-foreground">
+          Secciones
+        </h2>
+      ) : null}
 
       {sections.length === 0 ? (
         <p className="px-2 text-xs leading-5 text-muted">
