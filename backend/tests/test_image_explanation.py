@@ -38,3 +38,21 @@ def test_explica_imagen_png(client, png_bytes: bytes) -> None:
 def test_fuente_texto_es_400(client, input_text: str) -> None:
     # Una fuente de texto no tiene imagen real que explicar.
     assert client.post("/explain-image", data={"text": input_text}).status_code == 400
+
+
+def test_los_prompts_que_se_pintan_tal_cual_prohiben_markdown():
+    """El texto libre que la interfaz pinta sin tocar no puede venir en Markdown.
+
+    No hay renderizador de Markdown en el frontend —a propósito—, así que un `**así**` se ve
+    escrito. Pasó con «explicar esta imagen» en producción. Este test no comprueba el estilo del
+    prompt: comprueba que la regla sigue puesta en los dos sitios que la necesitan, para que
+    reescribir uno de ellos no se la lleve por delante en silencio.
+    """
+    from multimodal_presenter.pipeline.chat import _CHAT_PROMPT
+    from multimodal_presenter.pipeline.estilo import SIN_MARKDOWN
+    from multimodal_presenter.pipeline.image_explanation import _SYSTEM
+
+    assert SIN_MARKDOWN in _SYSTEM
+    assert SIN_MARKDOWN in _CHAT_PROMPT
+    # El marcador tiene que haberse sustituido: si quedara literal, el modelo lo leería como texto.
+    assert "{SIN_MARKDOWN}" not in _CHAT_PROMPT
