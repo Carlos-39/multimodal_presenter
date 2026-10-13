@@ -171,14 +171,18 @@ async def chat_stream(
             # escritura de ESE turno y se paga una llamada más; a cambio hay respuesta en vez de
             # un error. Lo que se emitió antes del fallo lo reemplaza el evento final.
             #
-            # El registro lleva la CAUSA encadenada, no solo el titular. La primera vez que esto
-            # apareció en producción, el mensaje de pydantic-ai decía qué había pasado pero no en
-            # qué campo, y sin eso no se puede saber si el modelo se inventó una clave de más, se
-            # pasó de opciones en la aclaración o devolvió un `content` que no encaja con ninguna
-            # rama de la unión. Si vuelve a ocurrir, que esté escrito.
+            # La causa va DENTRO del mensaje, entre llaves, y no como atributo suelto: sin token
+            # de Logfire los registros salen por la consola, y ahí solo se imprime el mensaje ya
+            # formateado. Un atributo que nadie va a leer es como no haberlo escrito — pasó: la
+            # primera versión de esta línea puso la causa al lado y en Railway no apareció.
+            #
+            # Hace falta porque el mensaje de pydantic-ai dice QUÉ pasó pero no en qué campo, y
+            # sin eso no se distingue entre que el modelo se inventara una clave de más, que se
+            # pasara de opciones en la aclaración o que devolviera un `content` que no encaja con
+            # ninguna rama de la unión.
             logfire.warn(
-                "chat: la validación falló en streaming; se rehace sin streaming",
-                causa=repr(exc.__cause__ or exc),
+                "chat: la validación falló en streaming; se rehace sin streaming. Causa: {causa}",
+                causa=repr(exc.__cause__ or exc)[:500],
             )
             answer = (await chat_agent.run(entrada, model=model)).output
 
