@@ -30,6 +30,15 @@ interface GeneratePanelProps {
   narrationDuration: number;
   onNarrationSeek: (segundos: number) => void;
   onNarrationSkip: (delta: number) => void;
+  /**
+   * Si el panel pone su propio título. En el carril sí: nadie más lo nombra. Dentro de la hoja
+   * del móvil no, porque la hoja ya se llama «Generar» en su cabecera — y dos veces la misma
+   * palabra, una encima de otra, no es énfasis: es una costura a la vista.
+   *
+   * También evita que `generate-heading` exista dos veces en la página: el carril sigue montado
+   * aunque esté oculto, y dos elementos con el mismo `id` rompen el `aria-labelledby` de los dos.
+   */
+  titulado?: boolean;
 }
 
 export function GeneratePanel({
@@ -48,14 +57,18 @@ export function GeneratePanel({
   narrationDuration,
   onNarrationSeek,
   onNarrationSkip,
+  titulado = true,
 }: GeneratePanelProps) {
   const hasDocument = deckAvailable || narrationAvailable;
 
   return (
-    <section className="p-3" aria-labelledby="generate-heading">
-      <h2 id="generate-heading" className="px-1 text-[0.8125rem] font-medium text-foreground">
-        Generar
-      </h2>
+    <section className="p-3" aria-labelledby={titulado ? "generate-heading" : undefined}>
+      {titulado ? (
+        <h2 id="generate-heading" className="px-1 text-[0.8125rem] font-medium text-foreground">
+          Generar
+        </h2>
+      ) : null}
+      {/* La frase se queda aunque el título se vaya: no repite el nombre, dice qué sale de aquí. */}
       <p className="px-1 pb-2 text-xs leading-4 text-muted">
         {hasDocument ? "Piezas nuevas a partir de tu documento." : "Transforma un documento para empezar."}
       </p>

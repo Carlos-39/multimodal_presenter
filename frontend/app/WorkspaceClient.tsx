@@ -760,14 +760,19 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
             <span className="relative">
               <Link
                 href="/biblioteca"
-                className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors ${
+                aria-label="Biblioteca"
+                title="Biblioteca"
+                className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors xl:px-2.5 ${
                   avisoBiblioteca
                     ? "border-accent bg-accent-subtle text-accent"
                     : "border-border text-foreground-secondary hover:border-border-strong hover:text-foreground"
                 }`}
               >
-                <Books size={13} aria-hidden />
-                Biblioteca
+                <Books size={14} aria-hidden />
+                {/* Mientras la cabecera va apretada queda solo el libro. El icono y el nombre
+                    dicen lo mismo, y de los dos el que se puede quitar sin que nadie se pierda es
+                    la palabra — el nombre sigue ahí para quien lo necesite, en el `aria-label`. */}
+                <span className="hidden xl:inline">Biblioteca</span>
               </Link>
               {avisoBiblioteca ? (
                 <AvisoBiblioteca
@@ -784,7 +789,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
               type="button"
               onClick={() => void guardar()}
               disabled={guardando === "guardando"}
-              className="rounded-md border border-border px-2.5 py-1 text-xs text-foreground-secondary transition-colors hover:border-border-strong hover:text-foreground disabled:opacity-50"
+              className="whitespace-nowrap rounded-md border border-border px-2.5 py-1 text-xs text-foreground-secondary transition-colors hover:border-border-strong hover:text-foreground disabled:opacity-50"
             >
               {guardando === "guardando"
                 ? "Guardando…"
@@ -912,7 +917,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
         controles de la cabecera, donde el `flex` le reserva sitio. Cuando flotaba también él, en
         ventanas estrechas se montaba encima de «Chat». */}
     {cuentaAbierta ? (
-      <div className="fixed inset-0 z-40 flex justify-end">
+      <div className="fixed inset-0 z-[60] flex justify-end">
         {/* El fondo oscurecido cierra al tocar fuera, pero se oculta a los lectores de pantalla:
             anunciaba "Cerrar el panel de cuenta" igual que la X del cajón, y oír dos veces la
             misma acción obliga a probar cuál es cuál. La X ya la ofrece. */}
