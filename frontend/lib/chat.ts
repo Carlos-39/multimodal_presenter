@@ -1,5 +1,5 @@
 import { anexaDocumento } from "./documentForm";
-import { parseSSE } from "./stream";
+import { entregaSSE } from "./stream";
 import type { ChatStreamEvent, ChatTurn, OriginalSource, Section } from "./types";
 
 /**
@@ -20,7 +20,8 @@ export async function streamChat(
   form.append("history", JSON.stringify(history));
 
   const res = await fetch("/api/chat/stream", { method: "POST", body: form });
-  if (!res.ok || !res.body) {
+  // Igual que en la transformación: que no venga `body` no es un fallo, es un webview embebido.
+  if (!res.ok) {
     let detail = `Error ${res.status}`;
     try {
       const body = await res.json();
@@ -31,19 +32,7 @@ export async function streamChat(
     throw new Error(detail);
   }
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parsed = parseSSE<ChatStreamEvent>(buffer);
-    buffer = parsed.rest;
-    for (const event of parsed.events) onEvent(event);
-  }
-  const tail = parseSSE<ChatStreamEvent>(buffer.endsWith("\n\n") ? buffer : buffer + "\n\n");
-  for (const event of tail.events) onEvent(event);
+  await entregaSSE<ChatStreamEvent>(res, onEvent);
 }
 
 /**
