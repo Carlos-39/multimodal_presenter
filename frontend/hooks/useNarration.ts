@@ -152,7 +152,13 @@ export function useNarration(
     const audio = new Audio();
     audio.preload = "auto";
 
-    audio.addEventListener("ended", () => setStatus("paused"));
+    // El mismo guardia que los demás, y hace falta: el silencio del desbloqueo dura un
+    // milisegundo, así que TERMINA en cuanto empieza. Sin esto, su `ended` llegaba justo después
+    // de poner «generando la narración…» y lo pisaba con «en pausa» — mientras el TTS seguía
+    // trabajando, la pantalla decía que ya estaba. Lo que no es la narración no termina nada.
+    audio.addEventListener("ended", () => {
+      if (urlMontadaRef.current) setStatus("paused");
+    });
     audio.addEventListener("error", () => {
       // Solo cuenta como fallo si lo que está cargado es la narración. El silencio del
       // desbloqueo y el vaciado al cambiar de documento pasan por aquí, y no son errores.
