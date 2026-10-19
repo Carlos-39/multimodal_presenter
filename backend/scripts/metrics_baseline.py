@@ -1,4 +1,4 @@
-"""A4 (Hito 5f) — Línea base de métricas con el modelo REAL. Arnés mínimo y reutilizable.
+"""A4 (Hito 5f): Línea base de métricas con el modelo REAL. Arnés mínimo y reutilizable.
 
 NO es la evaluación del Hito 8 (Pydantic Evals, Sonnet vs. Gemini): es la base sobre la que
 esa se construirá. Corre pocos documentos por el pipeline real y reporta una tabla con:

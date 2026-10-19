@@ -8,7 +8,7 @@ import type { Usuario } from "@/lib/account";
  *
  * Vive DENTRO de la fila de controles, no flotando encima. Antes era un botón `fixed` sobre toda
  * la pantalla y en ventanas estrechas se montaba sobre «Chat»: al estar fuera del `flex` de la
- * cabecera, nada le reservaba sitio. El cajón sí es una capa superpuesta —eso es un cajón—, pero
+ * cabecera, nada le reservaba sitio. El cajón sí es una capa superpuesta (eso es un cajón), pero
  * el botón que lo abre es un control más.
  */
 export function AccountButton({
@@ -40,8 +40,8 @@ export function AccountButton({
               varios grupos, y un correo largo no puede ser quien decida cuánto queda para los
               demás. Completo está en el `title` y en el panel.
               Y por debajo de `xl` desaparece del todo: queda la inicial. Un correo entero se come
-              media cabecera, y lo que hace falta saber de un vistazo —que hay alguien dentro, y
-              quién— ya lo dicen el círculo y su letra. El correo completo está a un toque, en el
+              media cabecera, y lo que hace falta saber de un vistazo (que hay alguien dentro, y
+              quién) ya lo dicen el círculo y su letra. El correo completo está a un toque, en el
               panel de cuenta. */}
           <span className="hidden truncate xl:inline">{usuario.email}</span>
         </>
@@ -57,7 +57,7 @@ export function AccountButton({
 
 /**
  * Círculo con la inicial. Sin fotos: no hay dónde subirlas ni razón para pedirlas, y una inicial
- * basta para lo único que tiene que hacer — decir de un vistazo que hay alguien dentro.
+ * basta para lo único que tiene que hacer, decir de un vistazo que hay alguien dentro.
  */
 export function Avatar({ email, grande = false }: { email: string; grande?: boolean }) {
   const inicial = (email.trim()[0] ?? "?").toUpperCase();

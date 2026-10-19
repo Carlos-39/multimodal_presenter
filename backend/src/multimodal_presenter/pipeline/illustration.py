@@ -3,7 +3,7 @@
 Reapertura acotada de una decisión de Fase 2: se genera una ilustración SOLO cuando (1) la sección
 no tiene imagen real del documento (a nivel de documento: solo fuentes de texto, que no traen
 imágenes), (2) el contenido se beneficia genuinamente de apoyo visual (proceso físico, mecanismo
-espacial o secuencia visual — rúbrica fija, no juicio libre), y (3) es ayuda didáctica, nunca
+espacial o secuencia visual: rúbrica fija, no juicio libre), y (3) es ayuda didáctica, nunca
 prueba (estructuralmente: `GeneratedIllustration` no tiene `source`). Etiqueta obligatoria siempre.
 
 Flujo: un clasificador barato (Haiku) decide qué núcleos califican y da un prompt de imagen; luego
@@ -44,7 +44,7 @@ truststore.inject_into_ssl()  # SSL del sistema (Windows)
 
 _SAFETY_CAP = 4  # techo por documento: la rúbrica suele dar 1-2; esto acota el peor caso de costo
 # La imagen tiene que ENTENDERSE SOLA. No basta con que no lleve texto: tampoco puede llevar
-# marcas que remitan a información que no está dentro de la imagen — numeración de pasos, letras
+# marcas que remitan a información que no está dentro de la imagen, numeración de pasos, letras
 # clave, leyendas, líneas guía que apuntan a un hueco. Una referencia huérfana es PEOR que nada,
 # porque el lector busca una explicación que no existe. (Lo señaló el autor al revisar la batería
 # de diagnóstico: una foto con símbolos y sin clave deja peor a quien no conoce el tema.)
@@ -60,7 +60,7 @@ _IMAGE_STYLE_PREFIX = (
     "empty space; no watermark or signature.\n"
     "Show meaning only with: recognizable objects drawn clearly, their arrangement in space, "
     "arrows for direction or flow, and colour. If there is a sequence, lay the stages out in "
-    "reading order with arrows between them — never number them.\n"
+    "reading order with arrows between them, never number them.\n"
     "Clean light background, detailed and clear artwork, not a vague abstract icon.\n"
     "Subject to depict: "
 )
@@ -88,7 +88,7 @@ _CLASSIFY_SYSTEM = (
     "marcada, da un `image_prompt` en español DETALLADO que describa una ilustración que EXPLIQUE "
     "el concepto SOLO con elementos visuales: nombra los objetos a dibujar y cómo se relacionan o "
     "fluyen (flechas, posición, color). La imagen debe entenderse SOLA, sin leyenda: NO pidas "
-    "texto ni etiquetas dentro de ella, y NO pidas pasos numerados — una secuencia se muestra "
+    "texto ni etiquetas dentro de ella, y NO pidas pasos numerados, una secuencia se muestra "
     "colocando las etapas en orden con flechas. Devuelve SOLO las secciones que califican (puede "
     "ser ninguna)."
 )
@@ -158,7 +158,7 @@ async def _gemini_image(settings: Settings, prompt: str) -> str:
     audio y el fallback de estructuración.
 
     No tiene `negative_prompt`: toda la restricción va en el prompt, que ya la lleva delante.
-    La proporción y el tamaño se fijan — sin ellos la imagen sale apaisada con bandas, y el
+    La proporción y el tamaño se fijan: sin ellos la imagen sale apaisada con bandas, y el
     tamaño es lo que clava el precio por imagen.
     """
     from google import genai
@@ -200,7 +200,7 @@ def _url_descargable(url: str) -> str:
     """Comprueba la URL que el proveedor dice que hay que descargar. Lanza si no es admisible.
 
     **Es la única petición saliente del backend cuyo destino no está escrito en el código.** No la
-    pone el usuario —la devuelve Ideogram en su respuesta, autenticada con nuestra clave—, pero el
+    pone el usuario (la devuelve Ideogram en su respuesta, autenticada con nuestra clave), pero el
     servidor la busca y se trae lo que haya ahí, y eso es exactamente la forma de un SSRF.
 
     Tres comprobaciones cierran la clase de ataque que importa (hacer que el servidor pida una
@@ -209,7 +209,7 @@ def _url_descargable(url: str) -> str:
     acabar en uno de los sufijos RESERVADOS, que es donde vive lo interno.
 
     Ese tercer punto no estaba y hacía falta: `backend.railway.internal` tiene puntos y no es una
-    IP, así que pedir «un nombre de dominio con puntos» lo dejaba pasar — y es exactamente el
+    IP, así que pedir «un nombre de dominio con puntos» lo dejaba pasar, y es exactamente el
     vecino que tendrá este servicio cuando esté desplegado.
 
     Un allowlist de dominios sería más estricto, pero se rompería en silencio el día que cambien
@@ -288,7 +288,7 @@ async def _generate_image(settings: Settings, image_prompt: str) -> str:
     if settings.google_api_key:
         try:
             return await _gemini_image(settings, prompt)
-        except Exception as exc:  # noqa: BLE001 — para esto existen los respaldos
+        except Exception as exc:  # noqa: BLE001 (para esto existen los respaldos)
             logfire.warning("Gemini falló, probando Ideogram: {error}", error=str(exc))
     if settings.ideogram_api_key:
         try:
@@ -318,8 +318,8 @@ _LECTURA_SYSTEM = (
     "Recibes una ilustración que acompaña a un texto, y el texto al que acompaña. La imagen la "
     "acaba de dibujar un modelo y NUNCA lleva palabras dentro, a propósito.\n"
     "Primero decide si vale la pena: pregúntate QUÉ SABE alguien después de mirarla que no "
-    "supiera leyendo el texto. Si no puedes nombrar algo concreto —el aspecto de una cosa, un "
-    "tamaño relativo, una disposición en el espacio, un orden—, entonces es decorativa: pon "
+    "supiera leyendo el texto. Si no puedes nombrar algo concreto (el aspecto de una cosa, un "
+    "tamaño relativo, una disposición en el espacio, un orden), entonces es decorativa: pon "
     "`util` en false y no escribas nada más. Ser bonita no cuenta. Estar relacionada con el tema "
     "tampoco.\n"
     "Si sí vale, escribe la `clave`: UNA frase que diga qué mirar, nombrando lo que se ve con el "
@@ -349,7 +349,7 @@ async def leer_ilustracion(
     Hay dos razones para pasar por aquí en vez de escribir la clave cuando se pide la imagen.
 
     La primera es que una clave escrita antes describiría lo que se ENCARGÓ, no lo que salió, y si
-    el dibujante entiende otra cosa la clave miente. Una clave equivocada es peor que ninguna —es
+    el dibujante entiende otra cosa la clave miente. Una clave equivocada es peor que ninguna, es
     el mismo argumento con el que se prohibieron las marcas sin leyenda dentro de la imagen.
 
     La segunda es que mirarla permite tirarla. Hasta ahora, una ilustración genérica se publicaba
@@ -370,7 +370,7 @@ async def leer_ilustracion(
             ],
             model=model,
         )
-    except Exception:  # noqa: BLE001 — la lectura es una mejora, no un requisito
+    except Exception:  # noqa: BLE001 (la lectura es una mejora, no un requisito)
         logfire.exception("ilustración: no se pudo leer la imagen generada")
         return GeneratedIllustration(image_url=data_uri, alt=f"Ilustración sobre: {contexto[:80]}")
 

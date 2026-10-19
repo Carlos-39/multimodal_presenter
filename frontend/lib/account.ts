@@ -210,8 +210,8 @@ export async function abrirPresentacion(id: string): Promise<PresentacionComplet
  * Deja guardada la conversación de una presentación tal como está ahora.
  *
  * Manda el historial COMPLETO y reemplaza al anterior. Mandar solo el turno nuevo sería más
- * barato, pero lo guardado podría derivar de la conversación real —un reintento duplica un turno,
- * una petición perdida deja un hueco— y un historial con huecos es peor que ninguno, porque
+ * barato, pero lo guardado podría derivar de la conversación real (un reintento duplica un turno,
+ * una petición perdida deja un hueco) y un historial con huecos es peor que ninguno, porque
  * parece completo.
  *
  * No lanza. Perder un turno del historial no puede romper el chat que se está usando: la
@@ -238,7 +238,7 @@ export async function guardarChat(
  *
  * Las fuentes binarias se resuelven por URL (el panel apunta al endpoint y el navegador descarga),
  * pero el texto plano no: el panel lo resalta carácter a carácter, así que necesita la cadena.
- * Sin esto, una presentación de texto restaurada abría un panel de fuente VACÍO — se podía leer
+ * Sin esto, una presentación de texto restaurada abría un panel de fuente VACÍO, se podía leer
  * pero no verificar, que es justo lo que no puede pasar.
  */
 export async function textoDelDocumento(documentId: string): Promise<string | null> {

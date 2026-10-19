@@ -45,7 +45,7 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
   const rootId = useId();
   // El marco es ahora quien se desplaza cuando una diapositiva no cabe, y el desplazamiento no se
   // reinicia solo: sin esto, pasar de una diapositiva larga a la siguiente la dejaría empezada por
-  // la mitad. `instant` y no suave a propósito — cambiar de diapositiva no es recorrerla.
+  // la mitad. `instant` y no suave a propósito, cambiar de diapositiva no es recorrerla.
   const marco = useRef<HTMLDivElement>(null);
   useEffect(() => {
     marco.current?.scrollTo({ top: 0, behavior: "instant" });
@@ -128,7 +128,7 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
       </div>
 
       {/* El marco se desplaza, no el interior de la diapositiva. Cuando el lienzo crece más que
-          el espacio disponible —un teléfono con una diapositiva larga— lo que se mueve es la
+          el espacio disponible (un teléfono con una diapositiva larga) lo que se mueve es la
           diapositiva entera, que es lo que cualquiera espera. El centrado lo pone el propio
           lienzo con `margin: auto`: hacerlo aquí con `items-center` recortaría su borde superior
           en cuanto no cupiera. */}

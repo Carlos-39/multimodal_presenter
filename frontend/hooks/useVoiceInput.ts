@@ -6,7 +6,7 @@ import { fetchTranscription } from "@/lib/transcribe";
 /**
  * Entrada por voz para la caja del chat (solo preguntas, nunca comandos). Pulsar para grabar /
  * pulsar para detener (no mantener presionado). Al detener, transcribe y entrega el texto por
- * `onText` para que LLENE la caja editable — nunca se envía solo. Falla de forma visible: permiso
+ * `onText` para que LLENE la caja editable, nunca se envía solo. Falla de forma visible: permiso
  * de micrófono negado, audio vacío o error de transcripción dejan un mensaje claro (nunca en
  * silencio ni insertando texto erróneo).
  */

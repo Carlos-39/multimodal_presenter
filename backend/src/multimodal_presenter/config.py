@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     # no al importar la app, para que el CI (que mockea el LLM) no requiera claves reales.
     # Nunca se hardcodean.
     #
-    # Primario — Anthropic (OBLIGATORIO para ejecutar el pipeline):
+    # Primario: Anthropic (OBLIGATORIO para ejecutar el pipeline):
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-sonnet-5"
     # Modelo liviano para el adelanto/resumen inicial (Hito 5g): rápido y barato, corre en
@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     # Una sola clave de Google (AI Studio) cubre los DOS roles de Gemini en el sistema:
     #
     # 1. Fallback de la ESTRUCTURACIÓN (opcional; si falta, solo se usa el primario). Antes se
-    #    llegaba al mismo Gemini a través de OpenRouter; ahora va directo — un intermediario
+    #    llegaba al mismo Gemini a través de OpenRouter; ahora va directo, un intermediario
     #    menos y una clave menos que mantener.
     # 2. Percepción de AUDIO (Fase 0), que es obligatoria para aceptar audio: Sonnet no admite
     #    audio como modalidad de entrada en su API, así que la percepción se delega a un modelo
@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     #
     # La percepción NO tiene fallback a propósito. Es el mismo criterio por el que se descartó
     # estructurar el audio con Gemini: si la anotación cayera en silencio a otra familia de
-    # modelos, su calidad cambiaría sin que nadie lo note — y esa anotación es justo el
+    # modelos, su calidad cambiaría sin que nadie lo note, y esa anotación es justo el
     # instrumento que mide la mini-evaluación. Un error claro es más honesto que una
     # degradación invisible.
     google_api_key: str | None = None
@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     # el desarrollo para NO gastar esa llamada extra en documentos con gráficos.
     semantic_verification_enabled: bool = True
 
-    # Narración TTS (Hito 5g Parte 3) — OpenAI tts-1. Sin ella, /narration responde 503 y el
+    # Narración TTS (Hito 5g Parte 3): OpenAI tts-1. Sin ella, /narration responde 503 y el
     # frontend lo muestra (nunca en silencio).
     openai_api_key: str | None = None
     openai_tts_model: str = "tts-1"
@@ -104,13 +104,13 @@ class Settings(BaseSettings):
     # responde 403 ni pide nada, devuelve 404 como cualquier ruta inventada. Una puerta que anuncia
     # que está cerrada es una invitación a probar la llave.
     #
-    # Lo que sale por ahí son metadatos anónimos —el schema corta cualquier string de más de 40
-    # caracteres—, así que no es la base: es lo que hace falta a diario durante las sesiones, y por
+    # Lo que sale por ahí son metadatos anónimos (el schema corta cualquier string de más de 40
+    # caracteres), así que no es la base: es lo que hace falta a diario durante las sesiones, y por
     # eso vale la pena exponerlo. La base se respalda por otro camino (scripts/respaldar_base.py).
     telemetria_token: str | None = None
 
     # Cuentas. El registro viene CERRADO: en una URL pública, dejar crear cuentas a cualquiera no
-    # aporta nada a este proyecto —las sesiones de evaluación corren sin cuenta— y sí añade una
+    # aporta nada a este proyecto (las sesiones de evaluación corren sin cuenta) y sí añade una
     # puerta que vigilar. Se abre con REGISTRO_ABIERTO=true, que es lo que hace falta en local.
     # Entrar NO depende de esto: cerrar el registro no cierra el login.
     registro_abierto: bool = False
@@ -123,8 +123,8 @@ class Settings(BaseSettings):
     # Topes de uso por hora y por DIRECCIÓN, para lo que cuesta dinero. 0 = sin tope.
     #
     # Conviene decir qué son y qué no son. **Mientras `proxies_confiables` sea 0, no son por
-    # dirección: son globales**, porque el backend ve siempre la misma —la del frontend, que es
-    # quien le reenvía todo—. Por eso los números son holgados: tienen que dejar pasar una sesión
+    # dirección: son globales**, porque el backend ve siempre la misma (la del frontend, que es
+    # quien le reenvía todo). Por eso los números son holgados: tienen que dejar pasar una sesión
     # entera sin estorbar aunque se estén repartiendo entre varios.
     #
     # Y no son el control principal del gasto. El que de verdad acota la pérdida máxima es el tope

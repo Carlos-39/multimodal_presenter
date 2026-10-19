@@ -14,7 +14,7 @@ import type { CitedRegion } from "@/lib/types";
  *
  * La página la dibuja el backend, con el mismo motor que midió los recuadros. Con un motor que
  * dibuja y otro que mide, cualquier desacuerdo sobre el recorte o la rotación saldría como un
- * recuadro descuadrado — y el recuadro es lo único que esta pieza promete.
+ * recuadro descuadrado: y el recuadro es lo único que esta pieza promete.
  *
  * Si la imagen no se puede traer, se cae al `fallback` (el visor de siempre, fidelidad de
  * página). Nunca se queda en un error: lo que ya funcionaba sigue funcionando.

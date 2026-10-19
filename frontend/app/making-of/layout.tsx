@@ -9,7 +9,7 @@ import { ThemeToggle } from "@/components/shell/ThemeToggle";
  * operar, solo que leer. Una barra fina para volver, y nada más compitiendo con el texto.
  *
  * El fondo ya no es plano: cada acto tiene su tono, y el índice vive fijo al lado del capítulo.
- * Las dos cosas salen del mismo dato —el acto que cada capítulo ya declara— y las monta `Armazon`,
+ * Las dos cosas salen del mismo dato (el acto que cada capítulo ya declara) y las monta `Armazon`,
  * que necesita saber en qué ruta estamos.
  */
 export default function MakingOfLayout({ children }: { children: ReactNode }) {

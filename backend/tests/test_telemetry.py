@@ -240,7 +240,7 @@ def test_exportador_separa_el_tiempo_de_la_presentacion_generada() -> None:
     """El tiempo en la presentación generada no se le suma a un modo de lectura.
 
     En esa vista el nivel de detalle no filtra nada (tiene sus propias diapositivas), así que
-    contarlo como "resumen" o "detallado" sería atribuirlo a un modo que no estaba actuando — y
+    contarlo como "resumen" o "detallado" sería atribuirlo a un modo que no estaba actuando, y
     ese reparto es una medida central de la RQ3. El reloj del cliente lo trata como un tramo
     propio, reusando el mismo evento para que la suma siga cubriendo la sesión completa.
     """
@@ -290,7 +290,7 @@ def test_exportador_descarta_reenviados_pero_respeta_el_seq_repetido(tmp_path) -
 
     Pero en los JSONL ya recogidos hay sesiones con varios eventos legítimos en seq 0, 1, 2…
     porque el cliente antiguo reiniciaba el contador al recargar la pestaña. Deduplicar por
-    (sesión, seq) a secas —lo obvio— borraría esos. Por eso la clave lleva también nombre e
+    (sesión, seq) a secas (lo obvio) borraría esos. Por eso la clave lleva también nombre e
     instante.
     """
     import json

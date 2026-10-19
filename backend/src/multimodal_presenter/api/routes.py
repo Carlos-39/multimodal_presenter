@@ -1,10 +1,10 @@
 """Endpoints de transformación y chat.
 
-- `POST /transform` — multipart (texto y/o archivo), respuesta única con el envelope.
-- `POST /transform/stream` — igual entrada, pero emite las secciones por SSE (Hito 5d).
-- `POST /chat/stream` — chat anclado a fuentes por SSE (Hito 6): relee el documento (cacheado)
+- `POST /transform` ( multipart (texto y/o archivo), respuesta única con el envelope.
+- `POST /transform/stream` ) igual entrada, pero emite las secciones por SSE (Hito 5d).
+- `POST /chat/stream` ( chat anclado a fuentes por SSE (Hito 6): relee el documento (cacheado)
   y responde con texto en vivo + un ancla verificada al final.
-- `POST /chat/suggestions` — preguntas sugeridas específicas a una sección (Hito 6).
+- `POST /chat/suggestions` ) preguntas sugeridas específicas a una sección (Hito 6).
 """
 
 import json
@@ -66,7 +66,7 @@ router = APIRouter(tags=["pipeline"])
 MAX_CHAT_HISTORY = 12  # se acotan los turnos que viajan al modelo (prompt bounded)
 
 
-#: Contador de lo que cuesta dinero. Las dos categorías comparten ventana —una hora— y se
+#: Contador de lo que cuesta dinero. Las dos categorías comparten ventana (una hora) y se
 #: diferencian en el prefijo de la llave y en el tope, que viene de los ajustes.
 _gasto = Ventana(VENTANA_GASTO_S)
 
@@ -122,7 +122,7 @@ def get_perception_model(settings: Settings = Depends(get_settings)) -> Model | 
 
     Devuelve None si no hay proveedor configurado, en vez de lanzar: así subir texto, PDF o
     imagen sigue funcionando sin ninguna clave de Gemini (la Fase 0 no se ejecuta para esas
-    fuentes). El 503 se emite solo cuando alguien sube AUDIO sin proveedor — ver `_need_audio`.
+    fuentes). El 503 se emite solo cuando alguien sube AUDIO sin proveedor, ver `_need_audio`.
     """
     try:
         return build_perception_model(settings)
@@ -149,9 +149,9 @@ def _parse_audio_evidence(
     """Evidencia acústica reenviada por el frontend, para las funciones que RELEEN la fuente.
 
     El chat, las preguntas sugeridas y el deck vuelven a pasar el documento al motor de
-    estructuración, que no admite audio. En vez de re-percibir el audio en cada petición —que
+    estructuración, que no admite audio. En vez de re-percibir el audio en cada petición (que
     costaría de más y, peor, haría que el "documento" cambiara entre turnos porque la percepción
-    es probabilística— el frontend **reenvía la MISMA evidencia** que produjo la Fase 0 durante
+    es probabilística) el frontend **reenvía la MISMA evidencia** que produjo la Fase 0 durante
     la transformación. Así el documento es idéntico en todos los turnos y no se paga dos veces.
 
     Devuelve None para texto, PDF e imagen: esas rutas no cambian en absoluto.
@@ -186,14 +186,14 @@ async def parse_document_inputs(
 
     Pública porque es el ÚNICO sitio por el que entra un documento al sistema: los ocho endpoints
     que reciben uno pasan por aquí. Eso es lo que permite que una presentación guardada siga
-    sirviendo —chat, deck, panel de fuente— tocando una función en lugar de ocho.
+    sirviendo (chat, deck, panel de fuente) tocando una función en lugar de ocho.
 
     Tres formas de traer el documento, por orden: el archivo subido, el texto pegado, o un
     `document_id` del almacén. La tercera es la que hace falta cuando alguien abre una
     presentación guardada desde otro navegador, donde ya no existe el `File` original.
 
     **El `document_id` exige cuenta Y propiedad.** Sin esa comprobación bastaría conocer un id
-    —que es un hash del contenido, pero aun así— para leer el documento de otra persona.
+    (que es un hash del contenido, pero aun así) para leer el documento de otra persona.
     """
     text_value = text.strip() if text else None
     has_file = file is not None and file.filename
@@ -393,7 +393,7 @@ async def chat_stream_endpoint(
                 yield f"data: {event.model_dump_json()}\n\n"
         except Exception:
             # Igual que en la transformación: la causa va al registro, no al participante.
-            # La longitud de la pregunta sí, el texto no — la telemetría del Hito 8 no manda
+            # La longitud de la pregunta sí, el texto no, la telemetría del Hito 8 no manda
             # contenido y este registro no va a ser la puerta de atrás por la que se cuele.
             logfire.exception(
                 "chat: el stream murió a mitad (pregunta de {n} caracteres)",
@@ -492,7 +492,7 @@ async def narration_endpoint(
 
     On-demand y cacheada por documento: pedir la misma narración otra vez usa la caché (no
     regenera guion ni audio). Si el TTS no está configurado o falla, responde con error visible
-    (503/502) para que el frontend lo muestre — nunca un reproductor mudo sin explicación.
+    (503/502) para que el frontend lo muestre, nunca un reproductor mudo sin explicación.
     """
     if not settings.openai_api_key:
         raise HTTPException(status_code=503, detail="La narración por voz no está configurada.")
@@ -523,7 +523,7 @@ async def pdf_page_endpoint(
 
     La dibuja el MISMO motor que calculó las regiones. Esa es la razón de renderizar aquí en vez
     de en el navegador: con un motor que dibuja y otro que mide, cualquier desacuerdo sobre el
-    recorte o la rotación de la página saldría como un recuadro descuadrado — y el recuadro es lo
+    recorte o la rotación de la página saldría como un recuadro descuadrado, y el recuadro es lo
     único que esta pieza promete.
 
     El archivo viaja en la petición, como en el chat, el deck y la narración: el backend no
@@ -543,7 +543,7 @@ async def pdf_page_endpoint(
         raise HTTPException(
             status_code=404, detail="Esa página no existe en el documento."
         ) from exc
-    except Exception as exc:  # noqa: BLE001 — un PDF que no se puede dibujar es error visible
+    except Exception as exc:  # noqa: BLE001 (un PDF que no se puede dibujar es error visible)
         raise HTTPException(status_code=502, detail="No se pudo dibujar la página.") from exc
     # Inmutable: la misma página del mismo PDF siempre da la misma imagen.
     return Response(
@@ -602,7 +602,7 @@ async def transcribe_endpoint(
     """Transcribe una pregunta hablada a texto (entrada por voz del chat).
 
     Solo audio→texto; el usuario revisa y envía manualmente (nunca se envía ni se interpreta como
-    comando). `503` si falta la clave de OpenAI, `502` si falla el proveedor — falla visible.
+    comando). `503` si falta la clave de OpenAI, `502` si falla el proveedor, falla visible.
     """
     if not settings.openai_api_key:
         raise HTTPException(status_code=503, detail="La transcripción de voz no está configurada.")

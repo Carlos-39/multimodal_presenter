@@ -2,8 +2,8 @@
  * Por qué hay un cruce: una curva sube con el documento y la otra es plana.
  *
  * **El dibujo existe porque la frase «depende del tamaño del documento» no se entiende sin verlo.**
- * El coste por pregunta de la línea base sube con las páginas —manda el documento entero, aunque
- * esté cacheado—; el del RAG vectorial no se entera del tamaño, porque siempre recupera k páginas.
+ * El coste por pregunta de la línea base sube con las páginas (manda el documento entero, aunque
+ * esté cacheado); el del RAG vectorial no se entera del tamaño, porque siempre recupera k páginas.
  * Dos rectas de pendiente distinta se cruzan, y ahí está toda la historia.
  *
  * Los puntos son las tres mediciones reales, y las posiciones se CALCULAN desde ellas: no hay una

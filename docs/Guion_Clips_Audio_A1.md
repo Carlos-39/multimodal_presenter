@@ -16,7 +16,7 @@
 ## Cómo grabar
 
 - **Formato:** MP3, WAV o **M4A** (el `.m4a`/`.mp4` que graba la Grabadora de Windows y el
-  celular por defecto — no hace falta cambiar nada ni convertir). Mono está bien.
+  celular por defecto: no hace falta cambiar nada ni convertir). Mono está bien.
 - **Duración:** 20–45 s por clip. Cortos a propósito: el sistema acota el audio a 15 min y lo
   que se mide aquí son rasgos puntuales, no resistencia a audio largo.
 - **Idioma:** español.
@@ -37,7 +37,7 @@
 
 ## Los 8 clips
 
-### c1 — Énfasis sobre una cifra
+### c1: Énfasis sobre una cifra
 **Archivo:** `c1_enfasis_cifra.wav` · 1 hablante · sin ruido
 
 > El informe trimestral trae tres datos. Las ventas llegaron a mil doscientos millones, los
@@ -49,7 +49,7 @@ entre las otras dos cifras. La transcripción plana ve tres cifras igual de impo
 
 ---
 
-### c2 — Énfasis sobre un juicio, no sobre un número
+### c2: Énfasis sobre un juicio, no sobre un número
 **Archivo:** `c2_enfasis_juicio.wav` · 1 hablante · sin ruido
 
 > Mucha gente mira el crecimiento de usuarios, que fue del dieciocho por ciento. Pero lo
@@ -61,7 +61,7 @@ crecimiento. Es el caso donde la prosodia contradice lo que el léxico sugerirí
 
 ---
 
-### c3 — Duda explícita sobre una cifra
+### c3: Duda explícita sobre una cifra
 **Archivo:** `c3_duda_cifra.wav` · 1 hablante · sin ruido
 
 > La inversión en infraestructura este año fue de… eh… no sé, unos ochocientos mil, creo. …
@@ -74,7 +74,7 @@ transcripción plana deja las dos cifras con la misma autoridad.
 
 ---
 
-### c4 — Dos hablantes con cifras distintas
+### c4: Dos hablantes con cifras distintas
 **Archivo:** `c4_dos_hablantes.wav` · 2 hablantes · sin ruido
 
 > **Voz A:** Según el cierre de agosto, la rotación de personal fue del doce por ciento.
@@ -83,7 +83,7 @@ transcripción plana deja las dos cifras con la misma autoridad.
 > **Voz A:** Ah, entonces no estamos midiendo lo mismo.
 
 [Necesitas una segunda voz. Si no hay nadie a mano, grábalo en dos tomas con voces claramente
-distintas —una más grave, otra más aguda, o distinto ritmo— y pégalas. Anótalo en el manifiesto.]
+distintas (una más grave, otra más aguda, o distinto ritmo) y pégalas. Anótalo en el manifiesto.]
 
 **Qué se mide:** que la presentación **atribuya** cada cifra a quien la dijo y no promedie,
 elija una o las funda en una sola afirmación. Es el fallo más grave posible de una
@@ -91,7 +91,7 @@ transcripción plana sin diarización.
 
 ---
 
-### c5 — Dos hablantes, uno enfatiza
+### c5: Dos hablantes, uno enfatiza
 **Archivo:** `c5_dos_hablantes_enfasis.wav` · 2 hablantes · sin ruido
 
 > **Voz A:** El piloto salió bien. Tiempos de respuesta por debajo de dos segundos y cero
@@ -104,14 +104,14 @@ quede visible y atribuida, no fundida en un resumen optimista del piloto.
 
 ---
 
-### c6 — Ruido de fondo sobre una cifra
+### c6: Ruido de fondo sobre una cifra
 **Archivo:** `c6_ruido.wav` · 1 hablante · **con ruido**
 
 > El estudio cubrió… [aquí la cifra queda tapada: di "cuatrocientos" mientras el ruido está
 > fuerte] …municipios, en siete departamentos. El trabajo de campo tomó cuatro meses.
 
 [Pon ruido real de fondo: tráfico por la ventana, un ventilador, una cafetería, música. Que
-tape de verdad la primera cifra —que tú mismo dudes al re-escucharla—, pero que el resto se
+tape de verdad la primera cifra (que tú mismo dudes al re-escucharla), pero que el resto se
 entienda.]
 
 **Qué se mide:** que el sistema **declare** que esa cifra no se oyó bien, en vez de escribir un
@@ -119,7 +119,7 @@ número con plena autoridad. La transcripción plana devolverá algún número (
 
 ---
 
-### c7 — Control: informativo y plano
+### c7: Control: informativo y plano
 **Archivo:** `c7_control_plano.wav` · 1 hablante · sin ruido
 
 > El proyecto tiene tres fases. La primera es el diagnóstico, de enero a marzo. La segunda es
@@ -135,7 +135,7 @@ es el resultado correcto.
 
 ---
 
-### c8 — Evento no verbal que cambia la lectura
+### c8: Evento no verbal que cambia la lectura
 **Archivo:** `c8_no_verbal.wav` · 1 hablante · sin ruido
 
 > Y el cronograma original decía que esto estaría listo en dos semanas. … [ríete de verdad,
@@ -144,7 +144,7 @@ es el resultado correcto.
 **Qué se mide:** si la risa se registra como evento no verbal y si cambia algo en la
 presentación. **Expectativa honesta: probablemente no cambie nada.** La literatura
 (AudioBench, LISTEN) dice que los modelos de audio captan la paralingüística de forma parcial
-y muy dependiente del contenido léxico — y aquí el léxico ya delata el retraso. Se incluye
+y muy dependiente del contenido léxico, y aquí el léxico ya delata el retraso. Se incluye
 porque un caso donde esperamos que falle hace la evaluación informativa en ambas direcciones.
 
 ---
@@ -154,7 +154,7 @@ porque un caso donde esperamos que falle hace la evaluación informativa en amba
 1. Deja los 8 archivos en `backend/tests/fixtures/local/audio/`.
 2. Revisa `backend/scripts/audio_clips_manifest.json`: cada clip ya trae anotado qué se diseñó
    (qué frase enfatizaste, qué cifra quedó dudosa, cuántos hablantes). **Si al grabar cambiaste
-   algo** —otra cifra, otra frase enfatizada, no conseguiste segunda voz— corrígelo ahí, porque
+   algo** (otra cifra, otra frase enfatizada, no conseguiste segunda voz) corrígelo ahí, porque
    el arnés mide contra eso. El manifiesto es la verdad de referencia de esta evaluación, igual
    que el `dataset.json` lo era en el Hito 7; y la auditoría de ese dataset dejó claro lo que
    cuesta no revisarlo a tiempo.

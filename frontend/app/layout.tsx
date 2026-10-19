@@ -13,12 +13,12 @@ import "./globals.css";
  * Claude. El sistema era coherente y defendible, y aterrizó en el sitio donde está todo el mundo.
  *
  * Y la asignación mal puesta: «Entiende un documento difícil» **no lo dice el documento, lo dice
- * la aplicación** — iba en serifa, o sea en la voz equivocada. Los titulares de la portada pasan a
+ * la aplicación**: iba en serifa, o sea en la voz equivocada. Los titulares de la portada pasan a
  * la sans. Lo que viene del documento (secciones, citas, diapositivas, panel de fuente) y el
  * relato del «cómo se construyó», que es material de lectura, conservan la serifa.
  */
 
-// Voz de la HERRAMIENTA: navegación, controles, etiquetas — y ahora también los titulares.
+// Voz de la HERRAMIENTA: navegación, controles, etiquetas, y ahora también los titulares.
 const archivo = Archivo({
   variable: "--font-app-sans",
   subsets: ["latin"],
@@ -40,7 +40,7 @@ const newsreader = Newsreader({
 export const metadata: Metadata = {
   title: "Multimodal Presenter",
   description:
-    "Transformador de información multimodal — trabajo de grado (Univalle).",
+    "Transformador de información multimodal, trabajo de grado (Univalle).",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

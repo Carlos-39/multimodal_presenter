@@ -11,7 +11,7 @@ import type { Acto } from "@/lib/makingOf";
  * color por página no diría nada; uno por acto dice en qué mitad del relato estás sin que haya
  * que leer nada.
  *
- * **La historia se va aclarando**: empieza en el tono hundido —los cimientos— y acaba en el de las
+ * **La historia se va aclarando**: empieza en el tono hundido (los cimientos) y acaba en el de las
  * tarjetas. No es un degradado bonito: es que al final del relato las cosas están resueltas.
  *
  * Dos momentos distintos, y a propósito no se solapan:

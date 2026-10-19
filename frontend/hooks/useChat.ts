@@ -165,7 +165,7 @@ export function useChat(
         alTerminarTurno?.(guardableRef.current);
       } catch (error) {
         // El comodín NO puede tragarse la causa. Antes, cualquier cosa que no fuera un `Error`
-        // —una `DOMException` de un navegador que corta el streaming, por ejemplo— salía como
+        // (una `DOMException` de un navegador que corta el streaming, por ejemplo) salía como
         // «La generación se interrumpió» a secas, y entonces el fallo no se puede diagnosticar ni
         // con los registros del servidor delante: no se sabe siquiera si llegó a haber petición.
         const detalle = error instanceof Error ? error.message : String(error ?? "");

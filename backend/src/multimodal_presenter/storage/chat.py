@@ -12,7 +12,7 @@ dejaría el historial apuntando a secciones que ya no existen: citas colgando de
 
 **Se reemplaza entero, no se añade turno a turno.** Lo guardado es siempre una foto de lo que se
 está viendo, así que no puede derivar. Añadiendo, un reintento duplicaría un turno y una petición
-perdida dejaría un hueco — y un historial con huecos es peor que no tenerlo, porque parece
+perdida dejaría un hueco: y un historial con huecos es peor que no tenerlo, porque parece
 completo.
 
 Como en el resto de la biblioteca, **toda consulta filtra por usuario**. No hay una función que

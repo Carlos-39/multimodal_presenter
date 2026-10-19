@@ -43,7 +43,7 @@ export function Interruptor({ checked, onChange, label, disabled = false }: Inte
    * Lo que decide si hay recorrido es que el valor haya CAMBIADO, no que sea la primera vez. Con
    * una bandera de «ya se estrenó» el modo estricto rompía el interruptor: React monta, limpia y
    * vuelve a montar, así que la segunda pasada se creía un cambio, estiraba la perilla de extremo
-   * a extremo y la dejaba así — en reposo, antes de que nadie tocara nada.
+   * a extremo y la dejaba así: en reposo, antes de que nadie tocara nada.
    */
   const anterior = useRef<boolean | null>(null);
 

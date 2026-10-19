@@ -61,12 +61,12 @@ export function GeneratedFigure({
 
       {/* La clave de lectura: qué mirar.
           Va FUERA de la imagen y no dentro, y esa es toda la idea. Las ilustraciones se generan
-          sin una sola palabra porque los modelos de imagen escriben con faltas —y una figura con
-          marcas y sin leyenda deja peor a quien no conoce el tema—. Pero esa prohibición era
+          sin una sola palabra porque los modelos de imagen escriben con faltas (y una figura con
+          marcas y sin leyenda deja peor a quien no conoce el tema). Pero esa prohibición era
           sobre el interior del dibujo: aquí el texto lo pone la aplicación, así que está bien
           escrito, se puede leer en voz alta y se busca con Ctrl+F.
           Sobre el papel y no sobre el fondo de la aplicación, para que se lea como el pie de una
-          figura y no como contenido del documento — que es lo que no es. */}
+          figura y no como contenido del documento, que es lo que no es. */}
       {illustration.clave ? (
         <p className="border-t border-dashed border-border-strong bg-[var(--paper)] px-3 pb-2.5 pt-2 text-xs leading-5 text-[#46423b]">
           {illustration.clave}

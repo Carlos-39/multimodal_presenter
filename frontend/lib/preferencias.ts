@@ -38,7 +38,7 @@ export function leerPreferencia(preferencia: Preferencia, pordefecto: boolean): 
  * Existe para que los componentes lean esto con `useSyncExternalStore` en vez de con un efecto
  * que llama a `setState`. La diferencia no es de estilo: en el render del servidor no hay
  * `localStorage`, así que leerlo sin más haría que servidor y navegador pinten cosas distintas
- * —un error de hidratación—, y corregirlo después desde un efecto es justo el patrón que React
+ * (un error de hidratación), y corregirlo después desde un efecto es justo el patrón que React
  * desaconseja. `useSyncExternalStore` admite un valor para el servidor y otro para el cliente,
  * que es exactamente la forma de este problema.
  *

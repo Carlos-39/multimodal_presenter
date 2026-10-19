@@ -20,7 +20,7 @@ def test_transcribe_devuelve_texto(monkeypatch) -> None:
         openai_api_key="sk-test", logfire_token=""
     )
 
-    async def fake(settings, audio, filename):  # noqa: ANN001, ARG001
+    async def fake(settings, audio, filename):  # noqa: ANN001 (ARG001)
         return "¿cuál fue la utilidad en 2024?"
 
     monkeypatch.setattr(routes, "transcribe_audio", fake)

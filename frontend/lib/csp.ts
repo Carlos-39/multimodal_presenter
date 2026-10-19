@@ -7,11 +7,11 @@ import { THEME_INIT_SCRIPT } from "./theme";
  * La política fuerte usa un *nonce*, y Next solo puede inyectar un nonce al renderizar en el
  * servidor: una página prerenderizada se generó cuando no existía ninguna petición, así que sus
  * scripts saldrían sin nonce y el navegador los bloquearía. Su propia documentación lo dice sin
- * rodeos — usar nonce obliga a que TODAS las páginas sean dinámicas. Y aquí hay veintidós
+ * rodeos: usar nonce obliga a que TODAS las páginas sean dinámicas. Y aquí hay veintidós
  * estáticas, entre ellas la portada y los catorce capítulos de la bitácora.
  *
  * Renunciar a eso para proteger páginas que **no tocan datos de nadie** sería pagar con lo único
- * que esas páginas tienen —salir ya hechas— a cambio de nada. Así que la línea se traza por lo que
+ * que esas páginas tienen (salir ya hechas) a cambio de nada. Así que la línea se traza por lo que
  * cada página maneja:
  *
  * - **Las de la aplicación** (`/`, `/biblioteca`, `/galeria`) muestran documentos de personas, así
@@ -53,11 +53,11 @@ function esDeLaAplicacion(ruta: string): boolean {
  * Cuatro de ellas no son genéricas: son exactamente lo que esta aplicación necesita para cumplir
  * lo que promete, y quitarlas rompe en silencio lo que más importa.
  *
- * - `frame-src blob:` — el PDF del panel de fuente se muestra en un `<iframe>` con URL `blob:`.
+ * - `frame-src blob:` ( el PDF del panel de fuente se muestra en un `<iframe>` con URL `blob:`.
  *   Sin esto, «abrir la fuente» deja de funcionar, que es lo único que este proyecto afirma.
- * - `media-src blob:` — la narración y el audio original se reproducen desde `blob:`.
- * - `img-src data:` — las ilustraciones generadas viajan DENTRO del contrato, como data URIs.
- * - `style-src 'unsafe-inline'` — hay estilos en atributo (`style={{…}}`) por toda la interfaz, y
+ * - `media-src blob:` ) la narración y el audio original se reproducen desde `blob:`.
+ * - `img-src data:` ( las ilustraciones generadas viajan DENTRO del contrato, como data URIs.
+ * - `style-src 'unsafe-inline'` ) hay estilos en atributo (`style={{…}}`) por toda la interfaz, y
  *   un nonce no cubre los atributos: eso es `style-src-attr`, que no admite nonce. Es la
  *   concesión consciente de esta política, y la barata: inyectar CSS no ejecuta código.
  */

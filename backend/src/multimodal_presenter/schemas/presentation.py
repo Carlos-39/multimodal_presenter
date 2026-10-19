@@ -3,7 +3,7 @@
 Este módulo es la **frontera entre backend y frontend**: todo lo demás se monta
 encima de este contrato.
 
-Principio de diseño crítico — cierre del hueco `content_type`↔`content`:
+Principio de diseño crítico: cierre del hueco `content_type`↔`content`:
     El PoC anterior tenía `content_type` y `content` como campos independientes sin
     validación cruzada, así que se podía declarar `content_type="chart"` con un simple
     string como contenido y pasaba la validación. Aquí eso es **estructuralmente
@@ -13,7 +13,7 @@ Principio de diseño crítico — cierre del hueco `content_type`↔`content`:
     desalinearse porque son el mismo objeto.
 
 Todos los modelos usan `extra="forbid"`: cualquier campo inesperado se rechaza (refuerza
-el cierre del hueco — no se pueden colar campos de otro tipo de contenido).
+el cierre del hueco: no se pueden colar campos de otro tipo de contenido).
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ class _Strict(BaseModel):
 
 
 # ─────────────────────────────────────────────────────────────
-# Enums — conjuntos cerrados (no texto libre)
+# Enums: conjuntos cerrados (no texto libre)
 # ─────────────────────────────────────────────────────────────
 class SectionRole(StrEnum):
     """Heurística núcleo/satélite (Punto 6 de las decisiones de diseño).
@@ -63,7 +63,7 @@ class ChartType(StrEnum):
 
 
 # ─────────────────────────────────────────────────────────────
-# Atribución de fuente — no decorativa (Punto 4)
+# Atribución de fuente: no decorativa (Punto 4)
 # ─────────────────────────────────────────────────────────────
 class SourceReference(_Strict):
     """Referencia al fragmento del documento original del que proviene la sección.
@@ -95,7 +95,7 @@ class SourceReference(_Strict):
 
 
 # ─────────────────────────────────────────────────────────────
-# Bloques de contenido — cada uno con su discriminador `content_type`
+# Bloques de contenido: cada uno con su discriminador `content_type`
 # ─────────────────────────────────────────────────────────────
 class TextContent(_Strict):
     content_type: Literal["text"] = "text"
@@ -177,8 +177,8 @@ class GeneratedIllustration(_Strict):
     )
     """La clave de lectura, debajo de la imagen.
 
-    Las imágenes se generan SIN una palabra dentro —los modelos de imagen escriben con faltas, y
-    una figura con marcas y sin clave deja peor a quien no conoce el tema—. Pero esa prohibición
+    Las imágenes se generan SIN una palabra dentro (los modelos de imagen escriben con faltas, y
+    una figura con marcas y sin clave deja peor a quien no conoce el tema). Pero esa prohibición
     era sobre el INTERIOR de la imagen: nada impide que la clave viva fuera, en el HTML, donde el
     texto lo controlamos nosotros y siempre está bien escrito. Eso convierte una ilustración
     decorativa en una que se puede leer.
@@ -205,7 +205,7 @@ class Section(_Strict):
 
 
 class Presentation(_Strict):
-    """Presentación estructurada completa — la raíz del contrato."""
+    """Presentación estructurada completa, la raíz del contrato."""
 
     title: str = Field(min_length=1)
     sections: list[Section] = Field(min_length=1)

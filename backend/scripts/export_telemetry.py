@@ -1,8 +1,8 @@
 """Exporta la telemetría de comportamiento (Hito 8) a CSV para análisis.
 
 Lee los JSONL que deja el backend (`telemetry.record_ux_event`) y produce dos archivos:
-- `telemetry_raw.csv`   — un evento por fila (auditoría, orden por sesión y TIEMPO).
-- `telemetry_summary.csv` — una fila por sesión: los agregados que se cruzan con NASA-TLX y la
+- `telemetry_raw.csv`   ( un evento por fila (auditoría, orden por sesión y TIEMPO).
+- `telemetry_summary.csv` ) una fila por sesión: los agregados que se cruzan con NASA-TLX y la
   prueba de comprensión (tiempo en resumen vs. detallado, sugeridas vs. propias, verificaciones
   de fuente por estado de grounding, etc.).
 
@@ -35,7 +35,7 @@ def _load_events(jsonl_dir: Path) -> tuple[list[dict[str, Any]], int]:
 
     Hay repetidos porque el cliente reintenta: un lote que no se confirma vuelve a la cola y se
     manda otra vez, y puede haber llegado igualmente la primera vez (la respuesta se perdió, no la
-    petición). Ese reenvío es deliberado — perder eventos es peor que contarlos dos veces— pero
+    petición). Ese reenvío es deliberado ( perder eventos es peor que contarlos dos veces) pero
     quien analiza no debería pagarlo.
 
     La clave es (sesión, seq, nombre, instante) y NO (sesión, seq) a secas, que sería lo obvio y
@@ -179,7 +179,7 @@ def _summarize(events: list[dict[str, Any]], out: Path) -> list[dict[str, Any]]:
         # Por tiempo, no por posición: una recarga en medio de la sesión mete un segundo
         # `session_start` y reinicia `seq`, y entonces "el primero de la lista" podía ser un
         # evento POSTERIOR en el reloj. El arranque es el más temprano; la primera pregunta,
-        # también — si no, `ms_to_first_question` mide hasta una pregunta que no es la primera.
+        # también: si no, `ms_to_first_question` mide hasta una pregunta que no es la primera.
         arranques = [e for e in evs if e["name"] == "session_start"]
         start = _primero_por_tiempo(arranques)
         start_ts = _parse_ts(start.get("ts")) if start else None

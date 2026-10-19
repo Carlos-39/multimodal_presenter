@@ -44,7 +44,7 @@ export default async function Page({
   // Y NO se mira la cookie de sesión, aunque tentara: una sesión revocada deja un token que sigue
   // ahí, no vacío y sin valer nada, así que "tiene cookie de sesión" no es "está dentro".
   // Comprobarlo de verdad exigiría ir a la base en cada carga de la portada. El caso que cubría
-  // —estar dentro en un navegador que nunca vio la portada— se resuelve solo: se ve una vez y se
+  // (estar dentro en un navegador que nunca vio la portada) se resuelve solo: se ve una vez y se
   // entra con un clic.
   if (galletas.get(YA_ESTUVO)?.value) return <WorkspaceClient />;
 

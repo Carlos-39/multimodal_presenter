@@ -35,7 +35,7 @@ def test_genera_ilustracion_con_etiqueta(monkeypatch, mock_presentation: dict) -
     )
     app.dependency_overrides[get_summary_model] = lambda: _plan_model("s1")
 
-    async def fake_image(settings, prompt):  # noqa: ANN001, ARG001
+    async def fake_image(settings, prompt):  # noqa: ANN001 (ARG001)
         return _FAKE_IMG
 
     monkeypatch.setattr(illustration, "_generate_image", fake_image)
@@ -73,7 +73,7 @@ def test_ninguna_califica_lista_vacia(monkeypatch, mock_presentation: dict) -> N
         custom_output_text=json.dumps({"items": []})
     )
 
-    async def fake_image(settings, prompt):  # noqa: ANN001, ARG001
+    async def fake_image(settings, prompt):  # noqa: ANN001 (ARG001)
         raise AssertionError("no debería generar imagen si nada califica")
 
     monkeypatch.setattr(illustration, "_generate_image", fake_image)

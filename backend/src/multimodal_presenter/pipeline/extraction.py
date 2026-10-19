@@ -1,4 +1,4 @@
-"""Fase 1 — Extracción y preparación determinista (código, sin LLM).
+"""Fase 1: Extracción y preparación determinista (código, sin LLM).
 
 Maneja tres tipos de fuente:
 - Texto plano: se divide en párrafos con offsets (base para el grounding por substring).

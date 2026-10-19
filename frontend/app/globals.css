@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 /*
- * IDENTIDAD VISUAL — tokens de diseño en un solo lugar (rediseño sobre la base del Hito 5a).
+ * IDENTIDAD VISUAL: tokens de diseño en un solo lugar (rediseño sobre la base del Hito 5a).
  *
  * Dirección: herramienta rigurosa de trabajo con información, no "demo de IA".
  *
  * **Lo único cálido de toda la interfaz es la prueba.** El 5a y el 5k se apoyaron en neutros
  * CÁLIDOS contra un acento frío, y el diagnóstico de entonces era correcto: hacía falta contraste
- * de temperatura. Lo que no se vio es hacia dónde se resolvía — papel crema con serifa para el
+ * de temperatura. Lo que no se vio es hacia dónde se resolvía, papel crema con serifa para el
  * cuerpo es, literalmente, la casa de Claude, y la propia guía de diseño que se usó advierte del
  * crema cercano a #F4F1EA como el tic más repetido de interfaz generada.
  *
  * Aquí el calor no se quita: se MUEVE. Los neutros pasan a frío-neutros y el acento sigue siendo
- * tinta, así que el contraste de temperatura se conserva — pero ahora lo aporta el amarillo del
+ * tinta, así que el contraste de temperatura se conserva, pero ahora lo aporta el amarillo del
  * resaltador, que es la única nota cálida que queda. El color de la verificación deja de ser un
  * color más y pasa a ser la única temperatura de la pantalla.
  *
@@ -71,11 +71,11 @@
   --radius-container: 0.625rem;
   --elevation-float: 0 12px 32px -12px light-dark(rgb(16 20 26 / 0.26), rgb(0 0 0 / 0.72));
 
-  /* Gráficos — chrome */
+  /* Gráficos: chrome */
   --chart-ink: var(--foreground);
   --chart-muted: var(--muted);
   --chart-grid: light-dark(#eceae4, #2a2823);
-  /* Gráficos — paleta categórica validada */
+  /* Gráficos: paleta categórica validada */
   --chart-1: light-dark(#2a78d6, #3987e5);
   --chart-2: light-dark(#eb6834, #d95926);
   --chart-3: light-dark(#1baf7a, #199e70);
@@ -140,7 +140,7 @@ body {
   outline-offset: 2px;
 }
 
-/* Números en monoespaciada tabular — señal de "herramienta de datos". */
+/* Números en monoespaciada tabular: señal de "herramienta de datos". */
 .tabular {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
@@ -255,13 +255,13 @@ body {
 }
 
 /* En un marco angosto (móvil, columnas abiertas) un 16:9 sería demasiado bajo para leer, así que
-   el lienzo ocupa al menos todo el alto disponible — y CRECE si hace falta.
+   el lienzo ocupa al menos todo el alto disponible, y CRECE si hace falta.
    Crecer es lo que cambia. Antes el lienzo se quedaba clavado en el alto del marco y lo que no
    cabía se desplazaba por dentro: en un teléfono, una diapositiva con título, viñetas e imagen no
    entra, así que la imagen quedaba bajo el borde y había que descubrir que ese rectángulo se
    desplazaba por su cuenta. Un área que se desplaza dentro de una página que también se desplaza
    es de las pocas cosas que casi nadie acierta a la primera.
-   El 16:9 se conserva donde significa algo —proyectando, o con sitio de sobra—; en un teléfono no
+   El 16:9 se conserva donde significa algo (proyectando, o con sitio de sobra); en un teléfono no
    se proyecta nada y la forma del lienzo no vale lo que cuesta esconder media diapositiva. */
 @container slide-frame (max-width: 640px) {
   .slide-stage {
@@ -534,8 +534,8 @@ body {
  * La espera larga: ocho celdas dando una vuelta.
  *
  * Es indeterminada A PROPÓSITO. Generar una presentación no avisa de por dónde va, así que una
- * barra que se llena sería una promesa inventada —justo lo contrario del puntico del carrusel y de
- * la mecha, que recorren un tiempo que SÍ se conoce—. Lo único cierto aquí es que sigue viva y
+ * barra que se llena sería una promesa inventada (justo lo contrario del puntico del carrusel y de
+ * la mecha, que recorren un tiempo que SÍ se conoce). Lo único cierto aquí es que sigue viva y
  * cuánto llevas esperando, y eso es lo que se enseña.
  *
  * Cada celda se enciende con su retraso y se apaga antes de que acabe el ciclo, así que lo que
@@ -594,7 +594,7 @@ body {
  *
  * **La respuesta sube desde detrás del renglón** en vez de aparecer de golpe: el contenedor
  * recorta y el párrafo entra desde abajo. Es el gesto del menú escalonado que me gustaba, hecho
- * con dos reglas en lugar de con 70 kB de librería — y, sobre todo, sin tocar los `details`
+ * con dos reglas en lugar de con 70 kB de librería, y, sobre todo, sin tocar los `details`
  * nativos, que son los que hacen que esto funcione con teclado, con lector de pantalla y aunque
  * el JavaScript no llegue a cargar.
  *
@@ -636,7 +636,7 @@ body {
 
 /*
  * El papel de cada acto del «cómo se construyó». La historia se va aclarando: arranca en el tono
- * hundido —los cimientos— y acaba en el de las tarjetas. El tono entra en dos segundos, que es lo
+ * hundido (los cimientos) y acaba en el de las tarjetas. El tono entra en dos segundos, que es lo
  * que evita el fogonazo de un color cambiando de golpe donde alguien está leyendo.
  */
 .papel {
@@ -684,7 +684,7 @@ body {
  *
  * En la portada el árbol **se dibuja**: baja el tronco de cada acto y detrás van saliendo sus
  * ramas. Es el mismo gesto que el trazo de las figuras, y es lo único que se mueve solo en esa
- * página — una vez, al llegar, y se acabó.
+ * página: una vez, al llegar, y se acabó.
  */
 .rama {
   position: relative;
@@ -764,7 +764,7 @@ body {
 /*
  * El área de trabajo, iluminada desde arriba.
  *
- * **No es una trama, es luz.** Se probaron seis fondos con patrón —rejilla, puntos, pautado— y
+ * **No es una trama, es luz.** Se probaron seis fondos con patrón (rejilla, puntos, pautado) y
  * todos tenían el mismo problema: dan algo que seguir con la vista justo donde hay que leer. Esto
  * no dibuja nada. El papel se aclara hacia donde está el texto y se apaga hacia los bordes, así
  * que el vacío de los lados deja de pesar lo mismo que el centro sin que aparezca ni una línea.
@@ -780,7 +780,7 @@ body {
  * **El grano no es una segunda decoración: es cómo se apaga el papel.**
  *
  * La luz y los puntos son UNA sola capa pintada en dos tiempos. El grano va debajo y la luz
- * encima; donde la luz es opaca —el centro, que es donde se lee— tapa los puntos del todo, y según
+ * encima; donde la luz es opaca (el centro, que es donde se lee) tapa los puntos del todo, y según
  * se desvanece hacia los bordes los va destapando. O sea: la densidad de la trama sigue a la luz
  * sin que nadie la calcule, y detrás del texto no hay ni un punto.
  *
@@ -807,7 +807,7 @@ body {
  *
  * La primera versión reusaba `.luz`, el foco macizo del botón de la portada, y estaba mal por dos
  * motivos. Uno de bulto: en oscuro salía un manchón blanco en mitad de la tarjeta, y en claro no
- * se veía nada —el relleno de `.luz` es blanco, que sobre papel claro es invisible—. Y uno de
+ * se veía nada (el relleno de `.luz` es blanco, que sobre papel claro es invisible). Y uno de
  * orden: yo había puesto aquí un color de acento, pero `.tarjeta-luz` estaba ANTES que `.luz` en
  * la hoja y, a igual especificidad, gana la última. El acento no llegaba a aplicarse nunca.
  *
@@ -853,7 +853,7 @@ body {
 /*
  * El signo de más del estado vacío: se traza al entrar y gira al señalarlo.
  *
- * El trazo es el mismo gesto que las figuras del «cómo se construyó» — ahí dibuja una idea, aquí
+ * El trazo es el mismo gesto que las figuras del «cómo se construyó», ahí dibuja una idea, aquí
  * dibuja la única acción que queda por hacer en una pantalla vacía.
  */
 @keyframes mas-traza {
@@ -904,7 +904,7 @@ body {
  *
  * **Solo contesta, nunca empieza.** No hay brillo hasta que alguien señala el botón: es respuesta
  * a un gesto, no una animación corriendo sola para pedir atención. Por eso SUSTITUYE al oscurecido
- * del hover en vez de sumarse — dos respuestas distintas al mismo gesto se estorban.
+ * del hover en vez de sumarse: dos respuestas distintas al mismo gesto se estorban.
  *
  * El `z-index` negativo con `isolation` es lo que lo mete ENTRE el fondo del botón y su texto. Un
  * pseudoelemento posicionado sin eso se pinta por encima de la palabra y la deslava.
@@ -986,8 +986,8 @@ body {
  *
  * El elemento mide 24 px de alto aunque la línea se vea de 4. No es decoración: el área sensible
  * de un `input[type=range]` es su caja, no lo que se pinta dentro, y con los 4 px de antes la
- * barra solo se podía usar con un ratón. En un teléfono —que es por donde entran los
- * participantes— era imposible agarrarla, así que volver atrás diez segundos no existía.
+ * barra solo se podía usar con un ratón. En un teléfono (que es por donde entran los
+ * participantes) era imposible agarrarla, así que volver atrás diez segundos no existía.
  *
  * Los selectores de pista y pulgar van por separado para WebKit y Gecko a propósito: no se pueden
  * agrupar en una sola regla, porque un navegador que no reconoce uno de los dos descarta la regla

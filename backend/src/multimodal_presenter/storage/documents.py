@@ -1,7 +1,7 @@
 """Almacén de documentos: los bytes originales de lo que la gente sube.
 
 **Por qué guardarlos y no solo la presentación.** Hoy el frontend conserva el `File` y lo reenvía
-en cada petición. Quien vuelva mañana desde otro navegador no lo tiene — y el documento original
+en cada petición. Quien vuelva mañana desde otro navegador no lo tiene, y el documento original
 hace falta para el chat, las sugeridas, el deck, las ilustraciones, la narración, el visor de
 página y el **panel de fuente**. Una presentación guardada sin su documento se puede leer pero no
 interrogar ni verificar, y la verificabilidad es justo lo que este proyecto afirma.

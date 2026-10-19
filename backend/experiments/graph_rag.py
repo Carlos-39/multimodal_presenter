@@ -1,4 +1,4 @@
-"""Condiciones 3 y 4 — LightRAG naive (control) e hybrid (GraphRAG real) (Hito 7).
+"""Condiciones 3 y 4: LightRAG naive (control) e hybrid (GraphRAG real) (Hito 7).
 
 LightRAG en modo librería: LLM del grafo = Haiku (barato); embeddings de texto = Voyage. Se usa
 SOLO para recuperar contexto (`only_need_context=True`); la respuesta la genera Sonnet con las

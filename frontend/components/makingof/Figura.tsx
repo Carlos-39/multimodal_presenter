@@ -7,7 +7,7 @@ import { useEnPantalla } from "@/hooks/useEnPantalla";
  * El marco de una figura, y lo que la hace dibujarse al llegar a ella.
  *
  * **Las figuras de este relato se trazan solas cuando entran en pantalla.** No es adorno: casi
- * todas explican un RECORRIDO —qué entra, por dónde pasa, qué sale— y verlo trazarse en orden
+ * todas explican un RECORRIDO (qué entra, por dónde pasa, qué sale) y verlo trazarse en orden
  * dice lo que un dibujo quieto solo insinúa. Es el mismo mecanismo que la portada usa para el
  * diagrama de «cómo funciona»: un `IntersectionObserver`, nunca el scroll.
  *

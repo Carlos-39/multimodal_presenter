@@ -1,12 +1,12 @@
-# PROYECTO.md — Contexto maestro del sistema
+# PROYECTO.md: Contexto maestro del sistema
 
-> **Qué es este archivo.** Contexto permanente del proyecto para cualquier agente de IA o persona que trabaje en el repositorio. Se lee al inicio de cada sesión de desarrollo para tener el marco completo. NO es una orden de trabajo — las órdenes de trabajo concretas llegan por hito, con sus propios criterios de aceptación. Este archivo describe el "qué" y el "por qué"; cada prompt de hito describe el "qué hacer ahora".
+> **Qué es este archivo.** Contexto permanente del proyecto para cualquier agente de IA o persona que trabaje en el repositorio. Se lee al inicio de cada sesión de desarrollo para tener el marco completo. NO es una orden de trabajo, las órdenes de trabajo concretas llegan por hito, con sus propios criterios de aceptación. Este archivo describe el "qué" y el "por qué"; cada prompt de hito describe el "qué hacer ahora".
 
 ---
 
 ## 1. Qué es el sistema
 
-Aplicación inteligente de presentación de información multimodal — trabajo de grado de Ingeniería de Sistemas (Universidad del Valle).
+Aplicación inteligente de presentación de información multimodal, trabajo de grado de Ingeniería de Sistemas (Universidad del Valle).
 
 El sistema recibe información en múltiples formatos (texto, PDF, imagen, y a futuro audio) y la transforma en **presentaciones estructuradas e interactivas**, con el objetivo explícito de **reducir la carga cognitiva** del usuario y facilitar su comprensión. Un "transformador de información" (a) analiza la entrada multimodal, (b) genera contenido estructurado priorizado, (c) selecciona cómo presentarlo, y (d) permite al usuario preguntar sobre el contenido generado.
 
@@ -16,7 +16,7 @@ El sistema recibe información en múltiples formatos (texto, PDF, imagen, y a f
 
 ---
 
-## 2. Principio rector del diseño (el más importante — atraviesa casi todo)
+## 2. Principio rector del diseño (el más importante, atraviesa casi todo)
 
 **Determinismo donde la decisión es objetiva; criterio del LLM solo donde es genuinamente interpretativo.**
 
@@ -33,29 +33,29 @@ Cuando dudes si algo debe resolverlo el código o el LLM: si la respuesta es obj
 
 Cada capa existe porque una decisión de diseño la requiere. No es arquitectura genérica.
 
-0. **Percepción de audio (solo para audio).** El motor de estructuración no admite audio como modalidad de entrada, y transcribirlo con un STT lo aplanaría antes de que ningún modelo lo interprete — justo el error que la Capa 1 evita con los PDF. Así que un modelo con entrada acústica nativa produce una representación intermedia tipada (`AudioEvidence`) con hablantes, énfasis, pausas, eventos no verbales y condiciones acústicas. Para texto, PDF e imagen esta capa **no se ejecuta**.
-1. **Ingesta y extracción (determinista, sin LLM).** Recibe el documento y lo prepara para el modelo. Para texto: lo parte en párrafos con sus offsets (la base del anclaje de fuentes). Para PDF e imagen: conserva el binario **tal cual**; NO usa pypdf para aplanarlos a texto (ese fue el error del PoC anterior) — deben llegar al modelo como binario multimodal nativo. Aquí vive también la validación de archivo (tipo real por *magic bytes*, tamaño, duración del audio).
+0. **Percepción de audio (solo para audio).** El motor de estructuración no admite audio como modalidad de entrada, y transcribirlo con un STT lo aplanaría antes de que ningún modelo lo interprete, justo el error que la Capa 1 evita con los PDF. Así que un modelo con entrada acústica nativa produce una representación intermedia tipada (`AudioEvidence`) con hablantes, énfasis, pausas, eventos no verbales y condiciones acústicas. Para texto, PDF e imagen esta capa **no se ejecuta**.
+1. **Ingesta y extracción (determinista, sin LLM).** Recibe el documento y lo prepara para el modelo. Para texto: lo parte en párrafos con sus offsets (la base del anclaje de fuentes). Para PDF e imagen: conserva el binario **tal cual**; NO usa pypdf para aplanarlos a texto (ese fue el error del PoC anterior), deben llegar al modelo como binario multimodal nativo. Aquí vive también la validación de archivo (tipo real por *magic bytes*, tamaño, duración del audio).
    *Alcance real, declarado:* el diseño original decía que esta capa detectaría **notación matemática y términos de baja frecuencia**, y que decidiría los tipos de representación admisibles. Los dos primeros **no se construyeron** (quedan como deuda abierta); lo tercero **sí existe pero vive en la Capa 4**, como regla determinista de isomorfismo que corrige al LLM después, no antes (ver la nota de la Capa 3).
 2. **Contrato de datos tipado (Pydantic).** El schema que define la estructura de la presentación. Es la frontera entre backend y frontend. El hueco `content_type`↔`content` del PoC anterior (campos independientes sin validación cruzada) DEBE estar cerrado desde el diseño mediante discriminated unions o validadores. Todo lo demás se monta encima de este contrato.
 3. **Estructuración con LLM.** El modelo aplica la heurística núcleo/satélite, redacta el contenido y genera la organización semántica. Emite JSON validado contra el contrato de la Capa 2.
-   *Matiz real, declarado:* el diseño original decía que el LLM **no** elegiría el tipo de componente. En la práctica sí lo elige, porque genera los datos y su tipo en el mismo objeto; lo que garantiza el principio es que la **Capa 4 lo corrige después** de forma determinista (regla de isomorfismo: corrige el tipo o degrada a tabla). El efecto neto se cumple —el tipo final siempre queda dentro de lo admisible— pero por corrección posterior, no por restricción previa.
+   *Matiz real, declarado:* el diseño original decía que el LLM **no** elegiría el tipo de componente. En la práctica sí lo elige, porque genera los datos y su tipo en el mismo objeto; lo que garantiza el principio es que la **Capa 4 lo corrige después** de forma determinista (regla de isomorfismo: corrige el tipo o degrada a tabla). El efecto neto se cumple (el tipo final siempre queda dentro de lo admisible) pero por corrección posterior, no por restricción previa.
 4. **Validación posterior.** Verificación estructural en código (barata) + verificación de coherencia semántica con LLM. Ambas desde el inicio.
 5. **Transporte / streaming.** Puente backend↔frontend con eventos tipados en tiempo real. **Resuelto en el Hito 5d con SSE propio** (no se usó AG-UI/CopilotKit ni el Vercel AI SDK): el grano es la `Section` completa, y las rutas de streaming van por un Route Handler de Next porque el `rewrite` bufferiza el SSE.
 6. **Presentación (Generative UI).** Frontend Next.js que renderiza componentes según el contrato: núcleo estructural fijo vs. zona dinámica, reglas compositivas de layout, selector de nivel de detalle, atribución de fuentes interactiva.
 7. **Componente conversacional.** Chat anclado a fuentes, con preguntas sugeridas contextuales.
 8. **Telemetría (transversal).** Captura de eventos de uso para la evaluación.
-9. **Subsistema RAG/GraphRAG (posterior, separado).** El mecanismo de recuperación para el experimento comparativo. NO es parte del núcleo — se añade cuando el pipeline de transformación ya está estable.
+9. **Subsistema RAG/GraphRAG (posterior, separado).** El mecanismo de recuperación para el experimento comparativo. NO es parte del núcleo, se añade cuando el pipeline de transformación ya está estable.
 
 ---
 
 ## 4. Stack tecnológico
 
-- **Backend:** Python + FastAPI + PydanticAI (orquestación con tipado estricto — el LLM debe emitir JSON validado contra esquemas Pydantic, con reintentos automáticos si no valida).
+- **Backend:** Python + FastAPI + PydanticAI (orquestación con tipado estricto, el LLM debe emitir JSON validado contra esquemas Pydantic, con reintentos automáticos si no valida).
 - **Modelo:** Anthropic **claude-sonnet-5** como primario (multimodal nativo; salida estructurada por `PromptedOutput`, elegido en el Hito 5d para permitir el streaming incremental), con **Gemini directo** como fallback opcional (`FallbackModel` de PydanticAI). El pipeline es agnóstico al modelo (se inyecta). **Percepción de audio:** Gemini con entrada acústica nativa, en una fase previa y aislada, y sin fallback a propósito (ver Capa 0). Notas históricas: el diagnóstico inicial contempló Gemini 3.1 Pro y el PoC anterior usaba gemini-2.5-flash como atajo; el motor se migró a Anthropic en el Hito 5; y hasta el 2026-10-02 el fallback se alcanzaba vía OpenRouter, que salió del proyecto al haber clave propia de Google.
 - **Frontend:** Next.js + Tailwind, con Generative UI.
 - **Observabilidad:** Pydantic Logfire (del mismo equipo que PydanticAI, integración nativa, capa gratuita generosa). Conectar desde el Hito 0.
 - **Herramientas candidatas** (a confirmar en sus hitos, del inventario ya investigado): anydoc de Firecrawl y/o Docling para parseo; CopilotKit/AG-UI para transporte (AG-UI ya está adoptado oficialmente por PydanticAI); pgvector + Qdrant y LightRAG para el subsistema RAG posterior.
-- **Despliegue:** dos contenedores y un volumen. El navegador habla solo con el frontend, que reenvía `/api/*` al backend por una red privada; el backend **no tiene dominio propio**. Un solo origen, así que no hay CORS ni cookies de terceros, y el portón de acceso puede cubrir también la API. La persistencia sigue siendo SQLite sobre el volumen: con una sola instancia siempre encendida es justo el caso para el que SQLite está hecho, y migrar a Postgres costaría más que todo el despliegue junto. Lo que no puede perderse —base, documentos, narraciones y los JSONL de telemetría— vive ahí dentro. Ver el README para el detalle operativo.
+- **Despliegue:** dos contenedores y un volumen. El navegador habla solo con el frontend, que reenvía `/api/*` al backend por una red privada; el backend **no tiene dominio propio**. Un solo origen, así que no hay CORS ni cookies de terceros, y el portón de acceso puede cubrir también la API. La persistencia sigue siendo SQLite sobre el volumen: con una sola instancia siempre encendida es justo el caso para el que SQLite está hecho, y migrar a Postgres costaría más que todo el despliegue junto. Lo que no puede perderse (base, documentos, narraciones y los JSONL de telemetría) vive ahí dentro. Ver el README para el detalle operativo.
 
 ---
 
@@ -91,15 +91,15 @@ Referencia rápida. El detalle completo con justificación está en `/docs/Fase2
 
 ## 7. Orden de construcción (hitos)
 
-- **Hito 0** — Andamiaje del repo (estructura, secretos, CI mínimo, Logfire conectado).
-- **Hito 1** — Contrato de datos tipado (schema Pydantic, hueco content_type↔content cerrado).
-- **Hito 2** — Pipeline de transformación extremo a extremo, versión mínima (documento entra → JSON válido sale, con el LLM real).
-- **Hito 3** — Frontend base con Stable Core Pattern (renderiza el JSON, streaming conectado).
-- **Hito 4** — Multimodal real (subida de archivos, PDF binario nativo, imagen).
-- **Hito 5** — Decisiones cognitivas (núcleo/satélite, modos de detalle, layout compositivo, atribución de fuentes, telemetría).
-- **Hito 6** — Componente conversacional (chat anclado, preguntas sugeridas).
-- **Hito 7** — Subsistema RAG vectorial, luego GraphRAG, más el protocolo experimental de comparación.
-- **Hito 8** — Evaluación con usuarios (5-10 personas, batería del Punto 10).
+- **Hito 0** ( Andamiaje del repo (estructura, secretos, CI mínimo, Logfire conectado).
+- **Hito 1** ) Contrato de datos tipado (schema Pydantic, hueco content_type↔content cerrado).
+- **Hito 2** ( Pipeline de transformación extremo a extremo, versión mínima (documento entra → JSON válido sale, con el LLM real).
+- **Hito 3** ) Frontend base con Stable Core Pattern (renderiza el JSON, streaming conectado).
+- **Hito 4** ( Multimodal real (subida de archivos, PDF binario nativo, imagen).
+- **Hito 5** ) Decisiones cognitivas (núcleo/satélite, modos de detalle, layout compositivo, atribución de fuentes, telemetría).
+- **Hito 6** ( Componente conversacional (chat anclado, preguntas sugeridas).
+- **Hito 7** ) Subsistema RAG vectorial, luego GraphRAG, más el protocolo experimental de comparación.
+- **Hito 8**: Evaluación con usuarios (5-10 personas, batería del Punto 10).
 
 Cortes naturales de alcance: tras el Hito 6 hay una tesis base defendible; el Hito 7 (RAG/GraphRAG) es lo que la lleva a nivel de mención honorífica.
 
@@ -107,7 +107,7 @@ Cortes naturales de alcance: tras el Hito 6 hay una tesis base defendible; el Hi
 
 ## 8. Documentos de referencia en el repo
 
-- `/docs/Fase1_Diagnostico_Tecnologico.docx` — diagnóstico tecnológico (stack, modelos, vigencia verificada ago 2026).
-- `/docs/Fase2_Diseno_Conceptual.docx` — diseño conceptual redactado (borrador).
-- `/docs/Fase2_Decisiones_Diseno.md` — las 12 decisiones de diseño con su justificación completa y las opciones que se descartaron (consultar cuando un hito toque una decisión específica).
-- `/docs/Inventario_Herramientas.md` — herramientas candidatas investigadas y verificadas (consultar en los hitos que eligen herramientas: parseo, transporte, RAG).
+- `/docs/Fase1_Diagnostico_Tecnologico.docx` ( diagnóstico tecnológico (stack, modelos, vigencia verificada ago 2026).
+- `/docs/Fase2_Diseno_Conceptual.docx` ) diseño conceptual redactado (borrador).
+- `/docs/Fase2_Decisiones_Diseno.md` ( las 12 decisiones de diseño con su justificación completa y las opciones que se descartaron (consultar cuando un hito toque una decisión específica).
+- `/docs/Inventario_Herramientas.md` ) herramientas candidatas investigadas y verificadas (consultar en los hitos que eligen herramientas: parseo, transporte, RAG).

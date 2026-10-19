@@ -1,4 +1,4 @@
-"""A3 (Hito 5f) — Fallos reales de punta a punta: qué VE el usuario cuando algo falla.
+"""A3 (Hito 5f): Fallos reales de punta a punta: qué VE el usuario cuando algo falla.
 
 Criterio (mismo principio que `not_found` en 5c y el corte de stream en 5d): nunca una
 presentación silenciosamente incompleta que PAREZCA terminada. Ante cualquier fallo, el usuario
@@ -31,14 +31,14 @@ def _sse(input_text: str) -> str:
     return response.text
 
 
-# ── A3.1a — Clave AUSENTE: el pipeline no arranca en silencio (sin red) ──
+# ── A3.1a: Clave AUSENTE: el pipeline no arranca en silencio (sin red) ──
 def test_a3_absent_key_raises_clear_error() -> None:
     settings = get_settings().model_copy(update={"anthropic_api_key": ""})
     with pytest.raises(RuntimeError, match="ANTHROPIC_API_KEY"):
         build_model(settings)
 
 
-# ── A3.2 — Fallo A MITAD del stream: secciones parciales + error, nunca 'done' ──
+# ── A3.2: Fallo A MITAD del stream: secciones parciales + error, nunca 'done' ──
 def test_a3_midstream_failure_surfaces_error(monkeypatch, input_text: str) -> None:
     """Simula un corte tras emitir contenido: el usuario ve error, no una presentación 'lista'."""
     two_sections = {
@@ -84,7 +84,7 @@ def test_a3_midstream_failure_surfaces_error(monkeypatch, input_text: str) -> No
     assert '"type":"done"' not in body, "NUNCA un 'done' tras un fallo (parecería terminado)"
 
 
-# ── A3.3 — Salida que NO valida tras reintentos: error, no un 'done' vacío ──
+# ── A3.3: Salida que NO valida tras reintentos: error, no un 'done' vacío ──
 def test_a3_invalid_output_surfaces_error(input_text: str) -> None:
     app.dependency_overrides[get_model] = lambda: TestModel(
         custom_output_text="esto no es un JSON que valide contra el contrato"
@@ -98,7 +98,7 @@ def test_a3_invalid_output_surfaces_error(input_text: str) -> None:
     assert '"type":"done"' not in body
 
 
-# ── A3.1b — Clave INVÁLIDA: 401 real → el usuario ve error (0 tokens de generación) ──
+# ── A3.1b: Clave INVÁLIDA: 401 real → el usuario ve error (0 tokens de generación) ──
 @pytest.mark.integration
 def test_a3_invalid_key_surfaces_error(input_text: str) -> None:
     bad = AnthropicModel(

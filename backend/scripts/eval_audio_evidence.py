@@ -1,11 +1,11 @@
-"""Mini-evaluación de la entrada de audio (hallazgo A1) — dos condiciones, modelo REAL.
+"""Mini-evaluación de la entrada de audio (hallazgo A1), dos condiciones, modelo REAL.
 
 Compara, sobre los mismos clips y con el MISMO estructurador (Sonnet) y el mismo contrato:
 
-  (a) `transcripcion` — línea base: STT (`gpt-4o-mini-transcribe`) → texto plano → Sonnet.
+  (a) `transcripcion`: línea base: STT (`gpt-4o-mini-transcribe`) → texto plano → Sonnet.
       Es la vía que CONTRADICE el principio de no aplanar; está aquí para medirla, no para
       proponerla.
-  (b) `percepcion`   — la nueva: audio → Gemini → `AudioEvidence` → Sonnet.
+  (b) `percepcion`: la nueva: audio → Gemini → `AudioEvidence` → Sonnet.
 
 Lo único que cambia entre condiciones es la representación intermedia. Si no hay diferencia,
 el resultado es que no hay diferencia: la investigación previa ya advierte que para contenido
@@ -15,11 +15,11 @@ no para confirmarla.
 Las tres medidas son DETERMINISTAS (sin juez LLM, a diferencia del Hito 7) porque lo que se
 pregunta es verificable por presencia de texto, y un juez añadiría varianza sin añadir
 información:
-  - `enfasis_en_nucleo`  — ¿la frase que se dijo con énfasis quedó en una sección núcleo o en
+  - `enfasis_en_nucleo`  ( ¿la frase que se dijo con énfasis quedó en una sección núcleo o en
     el título? (contra `enfasis_en` del manifiesto)
-  - `duda_matizada`      — ¿la cifra dicha con duda aparece con una marca de incertidumbre, y
+  - `duda_matizada`      ) ¿la cifra dicha con duda aparece con una marca de incertidumbre, y
     la cifra firme NO? Las dos mitades importan: matizarlo todo no es acertar.
-  - `hablantes_citados`  — ¿cuántos hablantes distintos se mencionan? (solo clips de 2 voces)
+  - `hablantes_citados`: ¿cuántos hablantes distintos se mencionan? (solo clips de 2 voces)
 Más el costo real por minuto de audio, que es lo que decide si esto es sostenible.
 
 Uso:

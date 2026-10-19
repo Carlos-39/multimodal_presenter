@@ -108,8 +108,8 @@ def test_sin_proxies_de_confianza_la_cabecera_no_se_mira(client: TestClient) -> 
     """Es la parte incómoda y hay que fijarla: con `PROXIES_CONFIABLES=0` el tope NO es por
     dirección, es global, porque `x-forwarded-for` se ignora entera.
 
-    Es lo correcto mientras no se haya medido la cadena del despliegue —creérsela a ciegas deja
-    que cada quien se invente su dirección—, pero significa que los números tienen que ser
+    Es lo correcto mientras no se haya medido la cadena del despliegue (creérsela a ciegas deja
+    que cada quien se invente su dirección), pero significa que los números tienen que ser
     holgados hasta entonces.
     """
     for _ in range(3):
@@ -132,7 +132,7 @@ def test_con_un_proxy_de_confianza_si_separa_por_direccion(
 
 
 def test_los_endpoints_que_no_cuestan_no_llevan_tope(client: TestClient) -> None:
-    """El localizador de regiones es cómputo local —`pypdfium2`, sin modelo— y se llama cada vez
+    """El localizador de regiones es cómputo local (`pypdfium2`, sin modelo) y se llama cada vez
     que alguien abre una fuente. Ponerle tope sería cobrar por lo que es gratis."""
     for _ in range(8):
         r = client.post("/pdf-page", data={"page": "1"})
@@ -143,7 +143,7 @@ def test_los_endpoints_que_no_cuestan_no_llevan_tope(client: TestClient) -> None
 
 def test_el_tope_gana_incluso_a_construir_el_modelo(client_sin_modelo: TestClient) -> None:
     """Sin clave, construir el modelo revienta. Si con el cupo agotado sale un 429 limpio en vez
-    de ese error, el tope corrió antes — que es la única posición en la que sirve de algo."""
+    de ese error, el tope corrió antes: que es la única posición en la que sirve de algo."""
     for _ in range(3):
         # Revienta al construir el modelo: 500, no 429. Lo que importa es que SE CUENTAN.
         assert _transforma(client_sin_modelo).status_code == 500

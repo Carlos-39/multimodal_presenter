@@ -1,4 +1,4 @@
-"""Tests de integración con el modelo REAL (Anthropic claude-sonnet-5) — opcionales, solo local.
+"""Tests de integración con el modelo REAL (Anthropic claude-sonnet-5), opcionales, solo local.
 
 No corren en CI ni por defecto: se saltan si no hay ANTHROPIC_API_KEY real. Para ejecutarlos:
     uv run pytest -m integration
@@ -61,7 +61,7 @@ def _all_values_text(presentation: Presentation) -> str:
 
 
 # ─────────────────────────────────────────────────────────────
-# A1 — PDF nativo: prueba DISCRIMINANTE
+# A1: PDF nativo: prueba DISCRIMINANTE
 # ─────────────────────────────────────────────────────────────
 @pytest.mark.integration
 @_needs_key
@@ -117,7 +117,7 @@ def test_a1_pdf_native_reads_rasterized_chart() -> None:
 
 
 # ─────────────────────────────────────────────────────────────
-# A1 (humo) — PDFs reales aportados (si existen): reporta, NO aserta cifras
+# A1 (humo): PDFs reales aportados (si existen): reporta, NO aserta cifras
 # ─────────────────────────────────────────────────────────────
 # Los PDFs reales pueden ser largos (y Anthropic limita a 100 páginas). Se recorta a las
 # primeras N páginas: acota el costo de tokens y respeta el acuerdo de "usar pocas páginas".
@@ -169,7 +169,7 @@ def test_a1_real_pdf_smoke(pdf_path: Path) -> None:
 
 
 # ─────────────────────────────────────────────────────────────
-# A2 — Verificación semántica de gráficos (juez real, probabilístico)
+# A2: Verificación semántica de gráficos (juez real, probabilístico)
 # ─────────────────────────────────────────────────────────────
 A2_SOURCE = (
     "Informe de ventas de Andina Solar. Las ventas anuales fueron 100 en 2022, "

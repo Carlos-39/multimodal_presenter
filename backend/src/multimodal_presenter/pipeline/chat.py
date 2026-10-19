@@ -1,13 +1,13 @@
 """Chat anclado a fuentes (Hito 6).
 
 Arquitectura (decidida en Fase 2, no se reabre): cada turno RELEE el documento ORIGINAL
-completo — nunca busca sobre la `Presentation` (que es una selección núcleo/satélite y perdería
+completo: nunca busca sobre la `Presentation` (que es una selección núcleo/satélite y perdería
 contenido). Para no reprocesar el documento en cada turno se usa **prompt caching** de Anthropic
 vía `CachePoint`: el documento va antes del marcador y queda cacheado; cada pregunta solo procesa
 lo nuevo (historial + pregunta).
 
 Anclaje: el LLM aporta la cita (`source_quote`); el código la valida con la MISMA regla
-determinista de la Fase 3 (`ground_quote`). Si no se puede anclar, se dice con honestidad — no
+determinista de la Fase 3 (`ground_quote`). Si no se puede anclar, se dice con honestidad, no
 se fabrica una fuente (mismo espíritu que `not_found` en 5c).
 """
 
@@ -93,7 +93,7 @@ def _doc_parts(extraction: ExtractionResult) -> list[str | BinaryContent]:
     El audio NO viaja como binario aquí: el motor del chat es el mismo de la estructuración y
     tampoco admite audio. Relee la MISMA `AudioEvidence` que produjo la Fase 0 (la reenvía el
     frontend), así que el documento es idéntico en todos los turnos y no se vuelve a percibir
-    nada — ni se paga de nuevo, ni la anotación cambia entre preguntas.
+    nada: ni se paga de nuevo, ni la anotación cambia entre preguntas.
     """
     if extraction.source_kind == "text":
         assert extraction.text is not None
@@ -173,7 +173,7 @@ async def chat_stream(
             #
             # La causa va DENTRO del mensaje, entre llaves, y no como atributo suelto: sin token
             # de Logfire los registros salen por la consola, y ahí solo se imprime el mensaje ya
-            # formateado. Un atributo que nadie va a leer es como no haberlo escrito — pasó: la
+            # formateado. Un atributo que nadie va a leer es como no haberlo escrito, pasó: la
             # primera versión de esta línea puso la causa al lado y en Railway no apareció.
             #
             # Hace falta porque el mensaje de pydantic-ai dice QUÉ pasó pero no en qué campo, y

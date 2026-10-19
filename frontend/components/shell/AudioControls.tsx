@@ -115,7 +115,7 @@ export function AudioControls({
                   : status === "paused"
                     ? "En pausa"
                     : // La narración EXISTE: el navegador solo se negó a arrancarla sin un toque
-                      // más. Decirlo así y no «no se pudo generar» no es un matiz — es la
+                      // más. Decirlo así y no «no se pudo generar» no es un matiz, es la
                       // diferencia entre pulsar otra vez y darlo por roto.
                       status === "ready"
                       ? "Lista. Pulsa para escucharla."

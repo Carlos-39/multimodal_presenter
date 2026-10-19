@@ -1,7 +1,7 @@
 """Biblioteca: guardar, listar y recuperar presentaciones de un usuario.
 
 **Toda consulta filtra por usuario.** No hay una función que recupere una presentación "por id" a
-secas: el id del dueño es siempre parte de la condición. Es deliberado — una función así existiría
+secas: el id del dueño es siempre parte de la condición. Es deliberado, una función así existiría
 para que alguien la llamara sin el filtro, y bastaría un descuido en un endpoint para que
 cualquiera leyera la biblioteca de otro. Lo que no existe no se puede olvidar de usar.
 """
@@ -31,7 +31,7 @@ def _resumen(payload: PayloadGuardado) -> str | None:
     ilustraciones son megas por fila. Y se recorta ya: guardar entera una sección larga para
     enseñar dos líneas sería pagar el almacenamiento dos veces.
 
-    Si la primera sección no es texto —una tabla, un gráfico— no hay nada que asomar y se deja
+    Si la primera sección no es texto (una tabla, un gráfico) no hay nada que asomar y se deja
     vacío. La tarjeta se las arregla sin ello.
     """
     secciones = payload.presentation.sections
@@ -108,7 +108,7 @@ async def actualizar(
     duplicarlo.
 
     No se toca `creada_en`: la presentación es la misma: solo se actualiza qué contiene. Y no se
-    toca el documento, que es el mismo por definición — si cambiara, sería otra presentación.
+    toca el documento, que es el mismo por definición, si cambiara, sería otra presentación.
     """
     cur = await conn.execute(
         "UPDATE presentaciones SET titulo = ?, version_contrato = ?, payload_json = ?, "

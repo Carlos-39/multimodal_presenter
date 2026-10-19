@@ -9,8 +9,8 @@ Hay dos usos y no son el mismo problema, aunque compartan la mecánica:
 
 **En memoria del proceso, no en la base.** Un intento fallido no merece una escritura en SQLite y
 el registro no es un dato que haya que conservar. La limitación hay que decirla: se reinicia con
-cada despliegue y con dos instancias cada una contaría por su cuenta. Con una instancia —que es
-como está desplegado esto— es lo correcto.
+cada despliegue y con dos instancias cada una contaría por su cuenta. Con una instancia (que es
+como está desplegado esto) es lo correcto.
 """
 
 from __future__ import annotations
@@ -109,7 +109,7 @@ def vacia_las_ventanas() -> None:
 def ip_del_cliente(request: Request, proxies_confiables: int) -> str:
     """De dónde viene la petición, contando cuántos proxies hay delante.
 
-    Detrás del borde de la plataforma y del propio frontend —que reenvía `/api/*`— `request.client`
+    Detrás del borde de la plataforma y del propio frontend (que reenvía `/api/*`) `request.client`
     es el proxy, no quien llama. La dirección real viaja en `x-forwarded-for`, pero esa cabecera la
     puede poner cualquiera: las entradas de la izquierda son las que el cliente controla y las de la
     derecha las fue añadiendo cada proxy. Con `n` proxies de confianza delante, la entrada n-ésima

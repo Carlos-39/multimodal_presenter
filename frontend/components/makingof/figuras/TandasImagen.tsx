@@ -2,8 +2,8 @@
  * Cuatro tandas de seis imágenes, y cuál arregló el problema.
  *
  * **Seis casillas por fila, y la casilla llena es un fallo.** Puesto así se ve de un vistazo lo que
- * una tabla de proporciones obliga a comparar a mano: que las dos primeras filas son idénticas —o
- * sea que reformular la instrucción, con cinco cambios razonados a la vez, no movió la tasa— y que
+ * una tabla de proporciones obliga a comparar a mano: que las dos primeras filas son idénticas (o
+ * sea que reformular la instrucción, con cinco cambios razonados a la vez, no movió la tasa) y que
  * lo que la movió fue cambiar de proveedor y después apretar la regla.
  *
  * La tercera fila lleva su propia nota porque esconde la parte incómoda: ese 1 de 6 era 0 de 6

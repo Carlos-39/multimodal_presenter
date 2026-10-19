@@ -16,7 +16,7 @@ import { ArrowCounterClockwise, Trash } from "@phosphor-icons/react";
  *
  * **Quien manda es un temporizador, no la animación.** Es una distinción que parece pedante y no
  * lo es: un evento `finish` de animación solo se despacha si el documento se está pintando, así
- * que con la pestaña en segundo plano —o en cualquier entorno sin render— el borrado no llegaría a
+ * que con la pestaña en segundo plano (o en cualquier entorno sin render) el borrado no llegaría a
  * ocurrir nunca. La animación dibuja; el reloj decide. Los dos se pausan juntos.
  *
  * **Se detiene si la pestaña se va.** No se puede deshacer lo que no se está viendo. Al volver,

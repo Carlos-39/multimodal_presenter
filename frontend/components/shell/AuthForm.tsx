@@ -8,7 +8,7 @@ import { entrar, registrarse, registroAbierto, type Usuario } from "@/lib/accoun
  * Entrar o crear cuenta. Componente propio y no un trozo del panel, a propósito.
  *
  * Esta pantalla va a aparecer en más de un sitio: hoy en el cajón de cuenta, mañana en la landing
- * que presente la aplicación. Si viviera dentro del panel, la landing acabaría con una copia —y
+ * que presente la aplicación. Si viviera dentro del panel, la landing acabaría con una copia, y
  * dos copias de un formulario de acceso divergen en silencio, que es la peor forma de divergir.
  *
  * No sabe dónde está montado: recibe `onUsuario` y avisa de quién entró. Quien lo coloca decide

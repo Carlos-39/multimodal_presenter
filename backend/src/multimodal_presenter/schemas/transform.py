@@ -1,4 +1,4 @@
-"""Contrato público de la transformación — frontera backend↔frontend.
+"""Contrato público de la transformación, frontera backend↔frontend.
 
 Mantiene la disciplina tipada del Hito 1: la respuesta es un envelope Pydantic
 `{presentation, grounding}`, no un dict suelto. El estado de grounding viaja en el CUERPO
@@ -13,7 +13,7 @@ Hito 4: el grounding distingue tres estados honestos según la fuente:
 
 Audio (A1): el estado honesto es `unverified`, el MISMO de PDF/imagen, y a propósito no se
 añade un cuarto estado. La cita de una sección generada desde audio proviene de la
-transcripción que hizo el modelo de percepción (Fase 0) — un derivado aplanado de la señal —,
+transcripción que hizo el modelo de percepción (Fase 0) ( un derivado aplanado de la señal ),
 así que encontrarla ahí no verifica nada contra el audio: sería verificar contra el derivado y
 presentarlo como verificación de la fuente, justo la sobre-afirmación que eliminó el Hito 8A.1.
 Lo que sí se aporta es `SectionGrounding.start_s`, el análogo de `page`: lleva al momento del
@@ -39,7 +39,7 @@ class RegionBox(_Strict):
     """Un recuadro dentro de la página, en fracciones 0-1 con origen arriba-izquierda.
 
     En fracciones y no en píxeles a propósito: el frontend solo multiplica por el tamaño de su
-    contenedor y posiciona en porcentaje. Nunca calcula escalas ni aplica rotaciones — eso ya se
+    contenedor y posiciona en porcentaje. Nunca calcula escalas ni aplica rotaciones, eso ya se
     resolvió en el backend, con el mismo motor que dibuja la página, así que el recuadro no puede
     descuadrarse respecto a lo que se ve.
     """
@@ -58,8 +58,8 @@ class CitedRegion(_Strict):
     (momento, A1).
 
     **No existe el valor "página" aquí**, y es deliberado: la fidelidad de página es la AUSENCIA
-    del campo (`region = None`). Así el estado contradictorio —"solo sé la página" pero con
-    recuadros dentro— no se puede ni representar, y un cliente que ignore el campo se comporta
+    del campo (`region = None`). Así el estado contradictorio ("solo sé la página" pero con
+    recuadros dentro) no se puede ni representar, y un cliente que ignore el campo se comporta
     exactamente como antes de que existiera.
 
     **Localizar no es verificar** (mismo criterio que `start_s` en audio): encontrar la cita en la
@@ -76,7 +76,7 @@ class CitedRegion(_Strict):
     quality: Literal["exact", "approximate"]
     """`exact`: la cita está literal (salvo variantes tipográficas y de espaciado).
     `approximate`: se halló un pasaje muy parecido; el recuadro señala una zona, no la frase. La
-    UI debe decirlo — marcar como exacto algo aproximado sería la sobre-afirmación del 8A.1."""
+    UI debe decirlo: marcar como exacto algo aproximado sería la sobre-afirmación del 8A.1."""
 
     boxes: list[RegionBox] = Field(min_length=1)
 
@@ -90,7 +90,7 @@ class SectionGrounding(_Strict):
     char_end: int | None = Field(default=None, ge=0)
     page: int | None = Field(default=None, ge=1)  # solo PDF
     start_s: float | None = Field(default=None, ge=0)  # solo audio: segundo aproximado
-    """Momento del audio del que viene la cita, para que el reproductor salte ahí — el
+    """Momento del audio del que viene la cita, para que el reproductor salte ahí, el
     análogo exacto de `page` en PDF. Se obtiene LOCALIZANDO la cita en la transcripción de la
     Fase 0, no verificándola contra la señal: el estado sigue siendo `unverified`."""
 
@@ -116,7 +116,7 @@ class GroundingReport(_Strict):
     # (dejaría el contenido incompleto): se avisa con honestidad.
     # TODO(Hito5): VERIFICACIÓN por página/región para PDF/imagen (hoy `unverified`). Ojo con la
     # distinción: la localización por región ya existe (ver `CitedRegion`), pero localizar no es
-    # verificar — el estado no cambia por encontrar la cita en la capa de texto. Lo que sigue
+    # verificar: el estado no cambia por encontrar la cita en la capa de texto. Lo que sigue
     # abierto es poder afirmar que el contenido quedó verificado contra la fuente binaria.
 
 
@@ -229,11 +229,11 @@ class GeneratedSlide(_Strict):
     start_s: float | None = Field(default=None, ge=0)
     """Solo audio: momento del que viene la cita, igual que en `SectionGrounding` y en la
     respuesta del chat. Sin esto, abrir la fuente desde una diapositiva arrancaba el reproductor
-    en 0:00 en vez de en la cita — una inconsistencia entre vistas del mismo documento."""
+    en 0:00 en vez de en la cita: una inconsistencia entre vistas del mismo documento."""
     region: CitedRegion | None = None
     """Solo PDF: dónde está la cita dentro de la página, igual que en `SectionGrounding`. Sin
     esto, abrir la fuente desde una diapositiva daría menos precisión que desde una sección del
-    contenido — una inconsistencia entre vistas del mismo documento."""
+    contenido: una inconsistencia entre vistas del mismo documento."""
     is_synthesis: bool = False
     illustration: GeneratedIllustration | None = None
 
@@ -254,7 +254,7 @@ class StreamTranscript(_Strict):
 
     Dos razones para que viaje al frontend, y ninguna contradice el principio de no aplanar
     (ese principio rige lo que entra al MODELO para que lo interprete, no lo que se le muestra
-    al lector para que verifique — esto último aumenta la trazabilidad):
+    al lector para que verifique: esto último aumenta la trazabilidad):
 
     1. La percepción añade varios segundos antes de la primera sección; con la transcripción en
        la mano, el adelanto del audio deja de ser un hueco y pasa a decir qué se dijo.
@@ -271,7 +271,7 @@ class StreamTranscript(_Strict):
     evidence: str
     """La `AudioEvidence` completa serializada. El frontend la guarda como un bloque OPACO (no
     la interpreta) y la reenvía al chat, a las sugeridas y al deck, que así releen el mismo
-    documento sin volver a percibir el audio — ni pagar, ni arriesgarse a que la anotación
+    documento sin volver a percibir el audio, ni pagar, ni arriesgarse a que la anotación
     cambie entre turnos. Lleva los hablantes y el énfasis, no solo el texto: sin eso el chat no
     podría responder "¿quién dijo el 15%?", que es justo donde el audio aporta algo."""
 

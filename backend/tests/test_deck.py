@@ -47,7 +47,7 @@ def test_deck_mix_trazabilidad_y_imagen(monkeypatch, input_text: str) -> None:
     )
     app.dependency_overrides[get_model] = lambda: _deck_model(input_text)
 
-    async def fake_image(settings, prompt):  # noqa: ANN001, ARG001
+    async def fake_image(settings, prompt):  # noqa: ANN001 (ARG001)
         return _FAKE_IMG
 
     monkeypatch.setattr(deck, "_generate_image", fake_image)
@@ -78,7 +78,7 @@ def test_deck_sin_clave_openai_genera_sin_imagenes(monkeypatch, input_text: str)
     )
     app.dependency_overrides[get_model] = lambda: _deck_model(input_text)
 
-    async def boom(settings, prompt):  # noqa: ANN001, ARG001
+    async def boom(settings, prompt):  # noqa: ANN001 (ARG001)
         raise AssertionError("no debe generar imagen sin clave")
 
     monkeypatch.setattr(deck, "_generate_image", boom)

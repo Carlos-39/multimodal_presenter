@@ -8,7 +8,7 @@ del 5h, que es otra cosa). On-demand y cacheada por documento.
 Trazabilidad por slide (mix honesto): se ancla a una cita exacta cuando es limpio; se marca como
 `is_synthesis` cuando simplifica contenido complejo sin cita exacta; `not_found` si el modelo diera
 una cita inexistente. Imágenes: reusa el pipeline de ilustraciones del 5h (gpt-image-1) con su
-etiqueta obligatoria — sin sistema de imágenes paralelo.
+etiqueta obligatoria: sin sistema de imágenes paralelo.
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ _DECK_SYSTEM = (
     "- UNA idea por diapositiva. Si hay dos ideas separables, son DOS diapositivas.\n"
     "\n"
     "LAS VIÑETAS SON LA EXCEPCIÓN, no el formato por defecto. Úsalas SOLO para enumeraciones de "
-    "verdad —tres instrumentos, cuatro países, dos grupos del estudio— donde el orden no implica "
+    "verdad (tres instrumentos, cuatro países, dos grupos del estudio) donde el orden no implica "
     "causa. Máximo 4, y cada una una cláusula completa, no un fragmento telegráfico.\n"
     "- Una CADENA CAUSAL nunca va en viñetas. Si los puntos se encadenan («esto provoca aquello, "
     "que a su vez…»), el nexo entre ellos ES la explicación, y en una lista el nexo desaparece: "
@@ -57,7 +57,7 @@ _DECK_SYSTEM = (
     "indica la página en `source_page`.\n"
     "\n"
     "APOYO VISUAL. La prueba es esta: si alguien puede imaginarse la cosa con solo leer tu "
-    "`body`, NO hay imagen. Solo pide una cuando lo difícil sea algo que se VE — el aspecto de "
+    "`body`, NO hay imagen. Solo pide una cuando lo difícil sea algo que se VE, el aspecto de "
     "algo, su tamaño frente a otra cosa, cómo están dispuestos unos elementos respecto a otros. "
     "Una imagen no puede sostener un argumento ni una causa: eso ya lo hace tu texto. Así que "
     "no pidas «una ilustración que explique el mecanismo»; pide la COSA concreta que hay que ver.\n"
@@ -147,14 +147,14 @@ async def generate_deck(
                     data_uri = await _generate_image(settings, plan.image_prompt)
                     # La clave y el texto alternativo se escriben MIRANDO la imagen, y esa misma
                     # lectura puede tirarla por decorativa. El `alt` de antes se armaba solo
-                    # —«Apoyo visual: » más el título—, que no describe nada para quien usa un
+                    # («Apoyo visual: » más el título), que no describe nada para quien usa un
                     # lector de pantalla: decía de qué iba la diapositiva, no qué se ve.
                     contexto = f"{plan.title}\n{plan.body or ' '.join(plan.bullets)}".strip()
                     illustration = await leer_ilustracion(model, data_uri, contexto)
                     # Cuenta contra el techo aunque se descarte: la imagen ya se pagó, y permitir
                     # reintentos hasta que una pase convertiría el techo en un suelo.
                     images_made += 1
-                except Exception:  # noqa: BLE001 — la imagen es un extra; sin ella la slide sigue
+                except Exception:  # noqa: BLE001 (la imagen es un extra; sin ella la slide sigue)
                     illustration = None
 
             slides.append(

@@ -157,7 +157,7 @@ export interface RegionBox {
 /** Dónde está la cita DENTRO de la página citada. Un recuadro por renglón.
  *
  * No existe un valor "página" aquí: la fidelidad de página (lo de siempre, llevar a la página sin
- * señalar dentro) es la AUSENCIA de este objeto. `approximate` obliga a decirlo en la interfaz —
+ * señalar dentro) es la AUSENCIA de este objeto. `approximate` obliga a decirlo en la interfaz, 
  * marcar como exacto algo aproximado sería la sobre-afirmación que eliminó el Hito 8A.1. */
 export interface CitedRegion {
   /** Página en la que están los recuadros. NO se da por supuesto que sea la de la cita: si el
@@ -173,13 +173,13 @@ export interface OriginalSource {
   /**
    * Solo audio: la evidencia acústica de la fase de percepción, como bloque OPACO (el frontend
    * no la interpreta). Se reenvía al chat, a las sugeridas y al deck para que relean el MISMO
-   * documento sin volver a percibir el audio — ni pagar de nuevo, ni arriesgarse a que la
+   * documento sin volver a percibir el audio, ni pagar de nuevo, ni arriesgarse a que la
    * anotación cambie entre turnos.
    */
   audioEvidence: string | null;
   /**
    * Solo en una presentación RESTAURADA: el documento vive en el almacén del backend, no en el
-   * navegador. Es lo que permite seguir usándola —chat, deck, panel de fuente— sin tener el
+   * navegador. Es lo que permite seguir usándola (chat, deck, panel de fuente) sin tener el
    * `File`, que es justo lo que no se tiene al abrirla desde otro equipo al día siguiente.
    */
   documentId: string | null;

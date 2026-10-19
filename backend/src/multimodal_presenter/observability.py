@@ -1,7 +1,7 @@
 """Integración con Pydantic Logfire (observabilidad desde el Hito 0).
 
 Diseño intencional: si no hay `LOGFIRE_TOKEN`, la app NO falla al arrancar.
-Logfire queda configurado en modo "solo si hay token" — sin token, las trazas se
+Logfire queda configurado en modo "solo si hay token", sin token, las trazas se
 generan pero no se envían (útil en local/CI); con token, se envían al dashboard.
 """
 

@@ -2,7 +2,7 @@
  * Qué sobrevive a un parser y qué llega entero.
  *
  * **La mitad de abajo no dibuja un texto peor: dibuja un texto al que le faltan cosas.** La tabla
- * pierde su rejilla y queda como una línea corrida, y la figura no aparece en absoluto — no hay
+ * pierde su rejilla y queda como una línea corrida, y la figura no aparece en absoluto, no hay
  * nada que un parser de texto pueda poner en su lugar. Esa ausencia es el argumento del capítulo,
  * así que la figura tiene que dejar el hueco a la vista en vez de rellenarlo.
  *

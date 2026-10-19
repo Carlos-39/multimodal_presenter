@@ -1,6 +1,6 @@
 """Explicación bajo demanda de una imagen REAL del documento (Hito 5h Parte 3).
 
-NO genera nada nuevo: es una vía de acceso directa a una capacidad ya construida — el documento se
+NO genera nada nuevo: es una vía de acceso directa a una capacidad ya construida, el documento se
 procesa como binario nativo (Hito 4, el modelo "ve" la imagen real). Se le pide al modelo que
 explique, en lenguaje accesible, lo que muestra una imagen/figura del documento (un diagrama, una
 estructura, una gráfica compleja). La explicación trata sobre la imagen real, así que su atribución

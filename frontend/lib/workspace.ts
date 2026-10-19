@@ -1,7 +1,7 @@
 /**
  * Escala 2 del layout compositivo (Hito 5e): reglas de COLUMNAS opcionales en pantalla.
  *
- * El núcleo fijo (header + nav) nunca compite por espacio — está fuera de esta lógica. Aquí
+ * El núcleo fijo (header + nav) nunca compite por espacio, está fuera de esta lógica. Aquí
  * solo se arbitran los dos paneles OPCIONALES (fuente 5c y chat 6): dónde va cada uno según
  * cuáles pidió abrir el usuario y el ancho de viewport.
  *
@@ -14,7 +14,7 @@
  *   contenido), uno a la vez.
  *
  * Es determinista y depende SOLO de (paneles abiertos, ancho); no de cuántas secciones llegaron
- * por streaming — por eso el streaming no dispara recálculo de columnas.
+ * por streaming: por eso el streaming no dispara recálculo de columnas.
  *
  * NOTA sobre la Escala 1 (composición INTERNA de una sección con varios content_type): es **spec
  * documentada, no cableada**. El contrato define `Section.content` como UN solo bloque, así que

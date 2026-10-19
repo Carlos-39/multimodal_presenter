@@ -1,4 +1,4 @@
-"""Fase 0 — Percepción de audio (LLM con entrada acústica nativa).
+"""Fase 0: Percepción de audio (LLM con entrada acústica nativa).
 
 Fase NUEVA y AISLADA: solo se activa para entradas de audio, antes del pipeline existente.
 Para texto, PDF e imagen no se ejecuta y el flujo de las Fases 1-3 no cambia en absoluto.
@@ -6,7 +6,7 @@ Para texto, PDF e imagen no se ejecuta y el flujo de las Fases 1-3 no cambia en 
     audio (BinaryContent) → agente de percepción (Gemini) → AudioEvidence (tipado)
                           → Fase 1 → Fase 2 (Sonnet, sin cambios) → Fase 3
 
-Por qué existe: Claude Sonnet —el motor de estructuración— no admite audio como modalidad de
+Por qué existe: Claude Sonnet (el motor de estructuración) no admite audio como modalidad de
 entrada en su API. La alternativa obvia (transcribir con un STT y pasar texto) aplana la
 fuente antes de que cualquier modelo la interprete, que es justo lo que el principio rector
 prohíbe y lo que el Hito 4 corrigió para PDF/imagen. Así que se delega SOLO la percepción a
@@ -15,7 +15,7 @@ un modelo que sí oye, y lo que entra a la Fase 2 es una representación estruct
 
 Lo que NO se hizo (decisión cerrada, no reabrir): enrutar la estructuración completa del
 audio a Gemini. Partiría la narrativa "Sonnet estructura" en dos motores con calidades
-distintas — demasiado riesgo metodológico. La Fase 2 y su `FallbackModel` quedan intactos.
+distintas: demasiado riesgo metodológico. La Fase 2 y su `FallbackModel` quedan intactos.
 
 Modo de salida: `ToolOutput`. La percepción no se streamea (es un paso previo, no hay nada
 que mostrar en vivo), así que conviene la garantía de esquema a nivel de proveedor; misma
@@ -42,7 +42,7 @@ la forma de decirlo (delivery) y si hubo pausa antes.
 - emphasis: cada frase que anotes debe aparecer LITERALMENTE dentro del `text` de su \
 segmento. Si no puedes copiarla literal, no la anotes.
 - non_verbal_events: risas, suspiros, carraspeos, música, ruido, aplausos, silencios largos \
-— solo si se oyen.
+, solo si se oyen.
 - acoustic_context: calidad de la grabación, ruido de fondo, y si eso pudo afectar la \
 inteligibilidad. Si una cifra, nombre propio o sigla quedó dudosa POR EL AUDIO, enumérala \
 en at_risk_items.
@@ -96,7 +96,7 @@ async def run_perception(
 async def perceive_audio(audio: bytes, media_type: str, model: Model) -> AudioEvidence:
     """Fase 0: pide al modelo acústico la anotación estructurada del audio.
 
-    El audio viaja como `BinaryContent` nativo — el mismo mecanismo con el que el PDF y la
+    El audio viaja como `BinaryContent` nativo, el mismo mecanismo con el que el PDF y la
     imagen llegan a la Fase 2 desde el Hito 4. Nunca se transcribe primero.
     """
     with logfire.span("fase0.percepcion", media_type=media_type, bytes=len(audio)):

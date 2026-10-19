@@ -15,7 +15,7 @@ jobs:
   # Mismo orden que el backend (lint, tipos, tests) y sin construir la aplicación: `next build`
   # tarda varios minutos y lo que caza, en este proyecto, ya lo cazan los tipos.
   frontend:
-    name: Frontend — lint, tipos & tests
+    name: Frontend: lint, tipos & tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -55,7 +55,7 @@ jobs:
         run: npm test
 
   backend:
-    name: Backend — lint & tests
+    name: Backend: lint & tests
     runs-on: ubuntu-latest
     defaults:
       run:

@@ -8,7 +8,7 @@ import { SourceCitation, UnanchoredNotice } from "./SourceCitation";
  * Tarjeta de UNA sección: cabecera (núcleo/satélite) + contenido (Generative UI) + notas +
  * atribución de fuente. Fuente ÚNICA de este render: la comparten la vista de scroll
  * (`ContentArea`) y la vista de slides (Hito 5h Parte 2), para que la trazabilidad y el aspecto
- * sean idénticos entre ambas — una slide no es contenido nuevo, es el mismo contenido re-compuesto.
+ * sean idénticos entre ambas: una slide no es contenido nuevo, es el mismo contenido re-compuesto.
  */
 interface SectionCardProps {
   section: Section;

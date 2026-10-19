@@ -7,12 +7,12 @@ import * as THREE from "three";
  * La trama del hero: un semitono que respira, y que contesta cuando lo tocas.
  *
  * **Adaptado del PixelBlast de la galería, con el postprocesado fuera.** El original importa
- * `postprocessing` para dos efectos que aquí no se usan —el líquido y el grano— y ese import es de
+ * `postprocessing` para dos efectos que aquí no se usan (el líquido y el grano) y ese import es de
  * primer nivel, así que entra en el bundle aunque las dos opciones estén apagadas. Quitándolo, la
  * pieza cuesta solo `three`.
  *
  * **Por qué un semitono y no los anillos.** Un dither de Bayer es, literalmente, cómo se imprime
- * un tono continuo con UNA sola tinta — que es exactamente lo que hace esta paleta desde el
+ * un tono continuo con UNA sola tinta, que es exactamente lo que hace esta paleta desde el
  * segundo rediseño. Unos anillos concéntricos son bonitos y no significan nada aquí.
  *
  * **El color entra desde fuera**, leído del token en el momento de montar y re-leído al cambiar de

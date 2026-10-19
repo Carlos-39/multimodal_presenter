@@ -181,7 +181,7 @@ def test_chat_stream_rehace_el_turno_sin_streaming_si_la_validacion_falla(
     streamea. En producción eso salía como «La generación se interrumpió», con el turno perdido.
 
     Aquí se fuerza ese fallo y se comprueba lo que importa: que el turno termina igual, con su
-    respuesta anclada, por el camino sin streaming — que sí reintenta.
+    respuesta anclada, por el camino sin streaming, que sí reintenta.
     """
     from pydantic_ai.exceptions import UnexpectedModelBehavior
 

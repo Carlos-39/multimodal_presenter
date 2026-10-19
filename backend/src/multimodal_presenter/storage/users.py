@@ -1,8 +1,8 @@
 """Cuentas y sesiones.
 
 **Autenticación de PROTOTIPO, y conviene decirlo con esas palabras.** Lleva lo que no se puede
-omitir sin que sea una irresponsabilidad —hash moderno de contraseña, cookie `HttpOnly`, sesiones
-revocables— y no lleva verificación de correo, recuperación de contraseña, segundo factor ni
+omitir sin que sea una irresponsabilidad (hash moderno de contraseña, cookie `HttpOnly`, sesiones
+revocables) y no lleva verificación de correo, recuperación de contraseña, segundo factor ni
 límite de intentos. Es una decisión de alcance declarada, no un olvido.
 
 Sesiones guardadas en la base, no un JWT firmado. Un token guardado se puede revocar: cerrar
@@ -44,7 +44,7 @@ def valida_email(email: str) -> str:
     """Comprobación deliberadamente simple, no RFC-5322.
 
     Validar correos de verdad es un problema sorprendentemente difícil y la biblioteca que lo
-    hace bien consulta DNS por defecto, lo que fallaría sin conexión — justo en una sesión de
+    hace bien consulta DNS por defecto, lo que fallaría sin conexión, justo en una sesión de
     evaluación. Para un prototipo, lo que importa es que haya una arroba y algo a cada lado.
     """
     limpio = _normaliza_email(email)
@@ -98,7 +98,7 @@ async def verificar_credenciales(
     hash_guardado = fila["password_hash"] if fila else _HASH_SENUELO
     try:
         _hasher.verify(hash_guardado, contrasena)
-    except Exception:  # noqa: BLE001 — cualquier fallo de verificación es "no cuadra"
+    except Exception:  # noqa: BLE001 (cualquier fallo de verificación es "no cuadra")
         return None
     return fila["id"] if fila else None
 

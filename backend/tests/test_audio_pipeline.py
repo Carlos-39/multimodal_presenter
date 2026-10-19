@@ -138,7 +138,7 @@ def test_la_instruccion_del_usuario_acompana_al_audio(wav_bytes: bytes) -> None:
 
 
 # ─────────────────────────────────────────────────────────────
-# Fase 3: grounding de audio — unverified + momento (localiza, no verifica)
+# Fase 3: grounding de audio: unverified + momento (localiza, no verifica)
 # ─────────────────────────────────────────────────────────────
 def _section(quote: str) -> Section:
     return Section.model_validate(
@@ -155,7 +155,7 @@ def test_grounding_de_audio_es_unverified_con_el_momento(wav_bytes: bytes) -> No
     extraction = prepare_input(binary=wav_bytes, media_type="audio/wav", audio_evidence=_evidence())
     _section_out, entry = ground_section(_section(QUOTE), extraction)
     # unverified, NO verified: la cita se halló en la transcripción de la Fase 0, que es un
-    # derivado aplanado de la señal — encontrarla ahí no la verifica contra el audio.
+    # derivado aplanado de la señal: encontrarla ahí no la verifica contra el audio.
     assert entry.status == "unverified"
     assert entry.start_s == 1.5
     # Y no se inventan offsets de texto ni páginas, que el audio no tiene.
@@ -423,7 +423,7 @@ def test_el_adelanto_de_audio_explica_que_va_por_la_transcripcion(client, wav_by
 def test_el_chat_sobre_audio_lee_la_evidencia_y_ancla_al_momento(wav_bytes: bytes) -> None:
     """El chat relee la MISMA evidencia: ni re-percibe, ni cambia de documento entre turnos.
 
-    Y su respuesta queda `unverified` con el momento — nunca `verified`, porque la cita se
+    Y su respuesta queda `unverified` con el momento, nunca `verified`, porque la cita se
     localiza en la transcripción (un derivado) y no en la señal.
     """
     from multimodal_presenter.pipeline.chat import _doc_parts, chat_stream

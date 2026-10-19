@@ -1,7 +1,7 @@
 """Endpoints de cuenta: registrarse, entrar, salir y saber quién está dentro.
 
 **El modo invitado no es una cortesía: es un requisito.** Sin cuenta, la aplicación entera sigue
-funcionando exactamente como antes — y tiene que seguir siendo así, porque las sesiones de
+funcionando exactamente como antes: y tiene que seguir siendo así, porque las sesiones de
 evaluación del Hito 8 corren sin login. Entrar añade *guardar y volver*; no habilita usar el
 sistema. Por eso existen dos dependencias: `usuario_actual` para lo que sí exige cuenta, y
 `usuario_opcional` para todo lo demás.
@@ -190,7 +190,7 @@ async def estado_endpoint(settings: Settings = Depends(get_settings)) -> EstadoD
 
     No pide sesión y no cuenta nada de nadie: dice si una puerta está abierta, que es información
     del servicio y no de ninguna persona. No va dentro de `/auth/yo` porque ese endpoint responde
-    `null` cuando no hay sesión —el estado normal de esta aplicación— y un campo dentro de `null`
+    `null` cuando no hay sesión (el estado normal de esta aplicación) y un campo dentro de `null`
     no se puede leer.
     """
     return EstadoDeCuentas(registro_abierto=settings.registro_abierto)
@@ -204,7 +204,7 @@ async def yo_endpoint(
 
     No tener cuenta no es un error: es el estado NORMAL de esta aplicación, el que usan las
     sesiones de evaluación del Hito 8. Con 401, cada carga sin sesión pintaba dos errores rojos en
-    la consola del navegador por algo que estaba funcionando como debía — y un error que no lo es
+    la consola del navegador por algo que estaba funcionando como debía, y un error que no lo es
     enseña a ignorar los que sí lo son.
     """
     if usuario is None:

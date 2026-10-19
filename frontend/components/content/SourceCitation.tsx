@@ -1,6 +1,6 @@
 /**
  * Cita a la fuente (rastro de verificación). Pieza ÚNICA para las tres superficies que anclan
- * contenido —secciones, respuestas del chat y slides de la presentación generada—, para que la
+ * contenido (secciones, respuestas del chat y slides de la presentación generada), para que la
  * trazabilidad se vea y se use igual en todas.
  *
  * La muestra de resaltador anuncia el color con que el pasaje aparece marcado en el documento;

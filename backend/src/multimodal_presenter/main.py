@@ -35,7 +35,7 @@ async def ciclo_de_vida(_app: FastAPI):
 
     Los ajustes se leen AQUÍ y no se toma el `settings` de arriba, que quedó fijado al importar el
     módulo. Los endpoints los resuelven por dependencia en cada petición, así que si ambos no leen
-    lo mismo se migra una base y se usa otra — que es exactamente lo que pasó al escribir los
+    lo mismo se migra una base y se usa otra, que es exactamente lo que pasó al escribir los
     tests: tablas que no existían en la base contra la que corría la aplicación.
     """
     aplicadas = await migrar(get_settings())
@@ -48,14 +48,14 @@ app = FastAPI(
     lifespan=ciclo_de_vida,
     title=settings.app_name,
     version="0.1.0",
-    description="Transformador de información multimodal — trabajo de grado (Univalle).",
+    description="Transformador de información multimodal, trabajo de grado (Univalle).",
 )
 
 # Instrumenta FastAPI (span por request) y PydanticAI (llamadas al modelo, tokens, reintentos).
 logfire.instrument_fastapi(app)
 
-# `include_content=False`: las trazas siguen trayendo lo que sirve para operar —duración, tokens,
-# modelo, reintentos, errores— pero NO el cuerpo de los prompts ni de las respuestas.
+# `include_content=False`: las trazas siguen trayendo lo que sirve para operar (duración, tokens,
+# modelo, reintentos, errores) pero NO el cuerpo de los prompts ni de las respuestas.
 #
 # Por defecto PydanticAI envía el contenido, así que el texto de cada documento acababa en un panel
 # de un tercero. Para documentos propios es una decisión; para las sesiones del Hito 8 sería un

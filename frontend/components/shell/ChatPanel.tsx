@@ -79,7 +79,7 @@ export function ChatPanel({
 
   // Telemetría (Hito 8): este es el ÚNICO punto que distingue una pregunta SUGERIDA de una
   // ESCRITA (el backend/`useChat` ya no pueden diferenciarlas). Solo metadatos: origen, posición
-  // de la sugerencia y LONGITUD de la pregunta — nunca su texto (privacidad).
+  // de la sugerencia y LONGITUD de la pregunta, nunca su texto (privacidad).
   function submit(question: string, origin: "suggested" | "typed", suggestionIndex?: number) {
     const q = question.trim();
     if (!q || disabled || streaming) return;
@@ -131,7 +131,7 @@ export function ChatPanel({
               Lo primero, porque en un teléfono tres preguntas largas se comen media conversación
               y estorban justo a quien ya sabe lo que quiere preguntar. Lo segundo, porque son una
               invitación: si nacieran plegadas no las vería quien más las necesita, y además
-              `suggested_question_click` es una de las señales que mide el Hito 8 — arrancar
+              `suggested_question_click` es una de las señales que mide el Hito 8, arrancar
               escondidas cambiaría lo que esa medición significa.
               La elección se recuerda en este navegador, que es donde se tomó. */}
           <button
@@ -140,7 +140,7 @@ export function ChatPanel({
             aria-expanded={!plegadas}
             // De ancho completo y con el margen negativo que lo compensa: así el objetivo del
             // pulgar es toda la franja en vez de las dos palabras, y no cuesta ni un píxel de
-            // alto — que es justo lo que se estaba intentando ahorrar.
+            // alto: que es justo lo que se estaba intentando ahorrar.
             className="-m-1.5 flex w-[calc(100%+0.75rem)] items-center gap-1.5 p-1.5 text-xs text-muted transition-colors hover:text-foreground"
           >
             <CaretDown

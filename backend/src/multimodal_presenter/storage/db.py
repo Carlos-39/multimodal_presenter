@@ -92,7 +92,7 @@ async def conectar(settings: Settings) -> AsyncIterator[aiosqlite.Connection]:
         conn.row_factory = aiosqlite.Row  # filas por nombre de columna, no por posición
         # Los cursores se CIERRAN. `journal_mode` devuelve una fila, así que su cursor se queda
         # abierto si nadie lo recoge, y para SQLite eso es «hay sentencias en marcha»: `VACUUM
-        # INTO` —el respaldo consistente— se niega a correr con una abierta. Lo demás funcionaba
+        # INTO` (el respaldo consistente) se niega a correr con una abierta. Lo demás funcionaba
         # igual, así que la fuga no se notaba hasta que algo la pisó.
         for pragma in ("PRAGMA foreign_keys = ON", "PRAGMA journal_mode = WAL"):
             cursor = await conn.execute(pragma)
@@ -106,7 +106,7 @@ async def respaldar(settings: Settings, destino: Path) -> Path:
     """Copia consistente de la base, con la aplicación corriendo. Devuelve la ruta escrita.
 
     **No es `cp`, y la diferencia importa.** Copiar el archivo en caliente puede pillar la base a
-    mitad de una transacción, y con WAL hay además un segundo archivo —el `-wal`— con cambios que
+    mitad de una transacción, y con WAL hay además un segundo archivo (el `-wal`) con cambios que
     todavía no están en el principal: la copia resultante puede abrir perfectamente y haber perdido
     lo último, o no abrir. `VACUUM INTO` lo hace desde dentro de SQLite, que sabe esperar a un
     punto coherente, y de paso compacta.

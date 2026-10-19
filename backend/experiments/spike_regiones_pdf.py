@@ -1,4 +1,4 @@
-"""Spike F0 — ¿se puede dibujar un recuadro sobre la parte exacta de una página de PDF?
+"""Spike F0: ¿se puede dibujar un recuadro sobre la parte exacta de una página de PDF?
 
 NO ES CÓDIGO DE PRODUCCIÓN. Es la verificación VISUAL previa a construir el localizador: dibuja
 los rectángulos calculados sobre un PNG de la página y los deja en disco para mirarlos con los
@@ -64,8 +64,8 @@ def rects_de_rango(page, textpage, idx: int, cnt: int, w_px: int, h_px: int) -> 
     """Rectángulos (uno por LÍNEA) del rango de caracteres [idx, idx+cnt).
 
     pypdfium2 devuelve una caja por CARÁCTER, así que hay que agrupar. La regla no es agrupar por
-    altura parecida —eso une la última línea de una columna con la primera de la siguiente, porque
-    comparten altura—, sino recorrer los caracteres EN ORDEN DE LECTURA y cortar cuando la pluma
+    altura parecida (eso une la última línea de una columna con la primera de la siguiente, porque
+    comparten altura), sino recorrer los caracteres EN ORDEN DE LECTURA y cortar cuando la pluma
     salta: cambia de renglón, o retrocede en horizontal. Un salto de columna hace las dos cosas a
     la vez, así que queda cortado igual que un salto de línea.
     """
@@ -248,7 +248,7 @@ def main() -> None:
             # Comprobación clave del mapeo: los rects deben caer DENTRO de la imagen.
             fuera = [r for r in rects if r.x0 < -0.01 or r.y0 < -0.01 or r.x1 > 1.01 or r.y1 > 1.01]
             if fuera:
-                print(f"      ¡OJO! {len(fuera)} rect(s) fuera de la página — mapeo roto")
+                print(f"      ¡OJO! {len(fuera)} rect(s) fuera de la página, mapeo roto")
             print(f"      imagen {iw}x{ih} · cita: {recuperado.strip()[:60]!r}")
 
     print(f"\nPNGs en: {SALIDA}")
