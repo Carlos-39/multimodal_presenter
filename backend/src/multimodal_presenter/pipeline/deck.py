@@ -18,22 +18,50 @@ from pydantic_ai import Agent, BinaryContent, PromptedOutput
 from pydantic_ai.models import Model
 
 from ..config import Settings
-from ..schemas.transform import GeneratedDeck, GeneratedSlide
+from ..schemas.transform import (
+    Comparacion,
+    GeneratedDeck,
+    GeneratedSlide,
+    LadoDeComparacion,
+    PapelDeSlide,
+)
 from .illustration import _generate_image, has_image_provider, leer_ilustracion
 from .models import ExtractionResult
 from .pdf_locator import abrir_localizador
 from .validation import ground_quote
 
-#: Techo de imágenes por presentación. Bajó de 3 a 2 con el rediseño: el problema de las
-#: ilustraciones no era que hubiera pocas, era que estaban por estar. Menos, y cada una
-#: ganándose el sitio.
-_IMAGE_CAP = 2
-
 _DECK_SYSTEM = (
     "Genera una PRESENTACIÓN EN DIAPOSITIVAS a partir del documento que recibes. Es una síntesis "
-    "nueva pensada para leerse como slides, no un resumen corrido.\n"
+    "nueva pensada para leerse como slides, no un resumen corrido. Si al terminar se parece al "
+    "documento troceado en cajas, no has hecho una presentación: has repetido el documento.\n"
     "\n"
-    "LO QUE TIENE QUE HACER CADA DIAPOSITIVA. Una diapositiva AFIRMA algo y lo SOSTIENE. No es "
+    "PRIMERO EL HILO. Antes de escribir ninguna diapositiva, decide en UNA frase qué defiende la "
+    "presentación entera y ponla en `hilo`. Todo lo demás cuelga de ahí: una presentación va a "
+    "alguna parte, y si no sabes a dónde, salen láminas sueltas.\n"
+    "\n"
+    "CADA DIAPOSITIVA DECLARA SU `papel`, y el papel decide su forma. VARÍA: una presentación "
+    "donde todo son `afirmacion` es exactamente el problema que esto viene a resolver.\n"
+    "- `apertura`: SOLO la primera. Plantea la tensión o la pregunta que el documento resuelve, "
+    "en `title`, en una frase. Sin `body`, sin viñetas. Pide `image_prompt` con "
+    "`imagen_evocadora` en true: una imagen que ambienta, que dice de qué va esto antes de leer.\n"
+    "- `cierre`: SOLO la última. Qué se lleva quien la vio, en `title`. También admite imagen "
+    "evocadora.\n"
+    "- `dato`: UNA cifra que importe, en `cifra` tal como se lee («80 km», «15,3 %», «99"
+    " estudiantes»), y en `body` una o dos frases con qué significa o contra qué se compara. Sin "
+    "viñetas. La cifra sale del documento, así que ESTA SIEMPRE VA ANCLADA: copia en "
+    "`source_quote` la frase exacta donde aparece.\n"
+    "- `comparacion`: dos cosas que el lector confunde o que el documento contrapone. Llena "
+    "`comparacion` con los dos lados, cada uno con su `titulo` y de dos a cuatro `puntos` cortos "
+    "y PARALELOS (si el primero habla de altura, el primero del otro lado también). En `title`, "
+    "qué los separa.\n"
+    "- `cita`: cuando una frase del documento dice algo mejor de lo que tú lo dirías. La frase "
+    "EXACTA va en `source_quote` y es lo que se muestra en grande; `title` es qué hay que notar "
+    "en ella. Sin `body`. Nunca `synthesis`.\n"
+    "- `figura`: la imagen ES la diapositiva. `title` corto y la imagen explicando lo que el "
+    "texto no puede.\n"
+    "- `afirmacion`: lo de siempre, para todo lo demás.\n"
+    "\n"
+    "LO QUE TIENE QUE HACER UNA `afirmacion`. AFIRMA algo y lo SOSTIENE. No es "
     "una etiqueta con una lista debajo.\n"
     "- El `title` es la afirmación: una frase que dice algo que podría discutirse, no un rótulo "
     "de índice. Mal: «El mecanismo: de un rayo al resplandor». Bien: «El resplandor no lo "
@@ -64,22 +92,41 @@ _DECK_SYSTEM = (
     "- Si la pides, `image_prompt` en español y detallado: nombra los objetos a dibujar, su "
     "disposición y sus colores. La imagen NO llevará ni una palabra dentro (se dibujan mal y "
     "quedarían con faltas), así que NO pidas texto, etiquetas, leyendas ni pasos numerados.\n"
-    "- Como mucho DOS diapositivas de toda la presentación llevan imagen. Si dudas, no la pidas.\n"
+    "- La apertura y el cierre son la excepción: ahí la imagen AMBIENTA en vez de explicar, y se "
+    "marca con `imagen_evocadora` en true. A esa no le exijas que enseñe nada.\n"
+    "- Hay un presupuesto de imágenes y es pequeño. Si dudas, no la pidas.\n"
     "Responde en el idioma del documento."
 )
 
 
+class _LadoPlan(BaseModel):
+    titulo: str = Field(min_length=1)
+    puntos: list[str] = Field(default_factory=list)
+
+
+class _ComparacionPlan(BaseModel):
+    izquierda: _LadoPlan
+    derecha: _LadoPlan
+
+
 class _SlidePlan(BaseModel):
+    papel: PapelDeSlide = "afirmacion"
     title: str = Field(min_length=1)
     body: str | None = None
     bullets: list[str] = Field(default_factory=list)
+    cifra: str | None = None
+    comparacion: _ComparacionPlan | None = None
     source_quote: str | None = None
     source_page: int | None = None
     synthesis: bool = False
     image_prompt: str | None = None
+    #: `evocadora` para la apertura y el cierre: ambienta en vez de explicar, así que no pasa por
+    #: el filtro de «¿qué aprendo mirándola?» ni lleva clave debajo.
+    imagen_evocadora: bool = False
 
 
 class _DeckPlan(BaseModel):
+    hilo: str = Field(default="", description="En una frase, qué defiende la presentación.")
     slides: list[_SlidePlan] = Field(default_factory=list)
 
 
@@ -109,6 +156,30 @@ def _doc_parts(extraction: ExtractionResult) -> list[str | BinaryContent]:
     ]
 
 
+def _presupuesto_de_imagenes(n_slides: int) -> int:
+    """Cuántas imágenes puede llevar una presentación de `n_slides`.
+
+    Proporcional y no fijo. El tope de dos era arbitrario: lo puse bajo cuando el problema era que
+    sobraban imágenes, pero ahora cada una pasa por un filtro que mira el dibujo y descarta las
+    decorativas, así que se puede aflojar sin que vuelva la basura. Lo que sigue costando dinero
+    es que una descartada ya se pagó, y por eso el techo se queda.
+    """
+    return min(5, max(2, -(-n_slides // 4)))
+
+
+def _comparacion(plan: _SlidePlan) -> Comparacion | None:
+    """Pasa la comparación del plan al contrato, solo si la diapositiva es de ese papel."""
+    if plan.papel != "comparacion" or plan.comparacion is None:
+        return None
+    lados = plan.comparacion
+    return Comparacion(
+        izquierda=LadoDeComparacion(
+            titulo=lados.izquierda.titulo, puntos=lados.izquierda.puntos[:4]
+        ),
+        derecha=LadoDeComparacion(titulo=lados.derecha.titulo, puntos=lados.derecha.puntos[:4]),
+    )
+
+
 async def generate_deck(
     model: Model, settings: Settings, extraction: ExtractionResult
 ) -> GeneratedDeck:
@@ -122,6 +193,7 @@ async def generate_deck(
     plans = result.output.slides or []
 
     images_made = 0
+    presupuesto = _presupuesto_de_imagenes(len(plans))
     can_make_images = has_image_provider(settings)
     slides: list[GeneratedSlide] = []
     # Una sola apertura del PDF para todas las diapositivas, igual que en la presentación.
@@ -142,26 +214,36 @@ async def generate_deck(
 
             # Apoyo visual: reusa el generador de ilustraciones (con etiqueta obligatoria), acotado.
             illustration = None
-            if plan.image_prompt and can_make_images and images_made < _IMAGE_CAP:
+            if plan.image_prompt and can_make_images and images_made < presupuesto:
                 try:
                     data_uri = await _generate_image(settings, plan.image_prompt)
                     # La clave y el texto alternativo se escriben MIRANDO la imagen, y esa misma
                     # lectura puede tirarla por decorativa. El `alt` de antes se armaba solo
                     # («Apoyo visual: » más el título), que no describe nada para quien usa un
                     # lector de pantalla: decía de qué iba la diapositiva, no qué se ve.
+                    #
+                    # La evocadora no pasa por ese filtro, y no es una excepción cómoda: su
+                    # trabajo es otro. Una apertura existe para ambientar, para decir de qué va
+                    # esto antes de leer nada, y preguntarle «¿qué aprendo mirándote?» es
+                    # preguntarle por un trabajo que no es el suyo.
                     contexto = f"{plan.title}\n{plan.body or ' '.join(plan.bullets)}".strip()
-                    illustration = await leer_ilustracion(model, data_uri, contexto)
-                    # Cuenta contra el techo aunque se descarte: la imagen ya se pagó, y permitir
-                    # reintentos hasta que una pase convertiría el techo en un suelo.
+                    illustration = await leer_ilustracion(
+                        model, data_uri, contexto, exigir_utilidad=not plan.imagen_evocadora
+                    )
+                    # Cuenta contra el presupuesto aunque se descarte: la imagen ya se pagó, y
+                    # permitir reintentos hasta que una pase lo convertiría en un suelo.
                     images_made += 1
                 except Exception:  # noqa: BLE001 (la imagen es un extra; sin ella la slide sigue)
                     illustration = None
 
             slides.append(
                 GeneratedSlide(
+                    papel=plan.papel,
                     title=plan.title,
                     body=plan.body,
                     bullets=plan.bullets[:6],
+                    cifra=(plan.cifra or None) if plan.papel == "dato" else None,
+                    comparacion=_comparacion(plan),
                     source=source,
                     grounding=grounding,
                     start_s=start_s,
@@ -173,6 +255,6 @@ async def generate_deck(
 
     if not slides:  # nunca un deck vacío: una slide con el título del documento
         slides = [GeneratedSlide(title="Presentación", bullets=[], is_synthesis=True)]
-    deck = GeneratedDeck(slides=slides)
+    deck = GeneratedDeck(hilo=result.output.hilo or None, slides=slides)
     _cache[key] = deck
     return deck

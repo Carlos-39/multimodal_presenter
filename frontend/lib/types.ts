@@ -100,10 +100,37 @@ export interface Section {
  * separado de `Presentation`. Trazabilidad por slide: `source` anclada, o `is_synthesis` si es una
  * simplificación declarada.
  */
+/**
+ * Qué hace una diapositiva, y por tanto qué forma tiene.
+ *
+ * Antes la composición se deducía de qué campos venían llenos: con imagen al lado, con viñetas en
+ * lista, y si no, texto centrado. Tres formas para catorce láminas, y por eso la presentación
+ * parecía el documento troceado en cajas en vez de una presentación.
+ */
+export type PapelDeSlide =
+  | "apertura"
+  | "afirmacion"
+  | "dato"
+  | "comparacion"
+  | "cita"
+  | "figura"
+  | "cierre";
+
+export interface LadoDeComparacion {
+  titulo: string;
+  puntos: string[];
+}
+
 export interface GeneratedSlide {
+  /** Ausente en las presentaciones guardadas antes del rediseño: se trata como `afirmacion`. */
+  papel?: PapelDeSlide;
   title: string;
   body: string | null;
   bullets: string[];
+  /** Solo `dato`: la cifra tal como se muestra, con su unidad. */
+  cifra?: string | null;
+  /** Solo `comparacion`: los dos lados. */
+  comparacion?: { izquierda: LadoDeComparacion; derecha: LadoDeComparacion } | null;
   source: SourceReference | null;
   grounding: GroundingStatus;
   /** Solo audio: momento de la cita, para que el reproductor del panel arranque ahí. */
@@ -115,6 +142,8 @@ export interface GeneratedSlide {
 }
 
 export interface GeneratedDeck {
+  /** En una frase, qué defiende la presentación entera. Ausente en las guardadas de antes. */
+  hilo?: string | null;
   slides: GeneratedSlide[];
 }
 

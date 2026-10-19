@@ -113,7 +113,13 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
         <p className="flex min-w-0 items-baseline gap-1.5 text-xs text-muted">
           <Sparkle size={12} weight="fill" className="shrink-0 translate-y-px text-accent" aria-hidden />
           <span className="shrink-0 font-medium text-foreground">Presentación generada</span>
-          <span className="hidden truncate sm:inline">con guion propio a partir de tu documento</span>
+          {/* El hilo es lo que la presentación defiende, en una frase. Se le pide al modelo antes
+              de escribir ninguna lámina, y enseñarlo aquí no es adorno: dice a dónde va esto
+              antes de pasar la primera diapositiva. Si no viene (guardadas de antes), queda la
+              frase de siempre. */}
+          <span className="hidden truncate sm:inline">
+            {deck.hilo || "con guion propio a partir de tu documento"}
+          </span>
         </p>
         {canFullscreen ? (
           <button
@@ -145,21 +151,53 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
               className={`min-h-0 flex-1 ${
                 layout === "media"
                   ? "slide-media"
-                  : layout === "statement"
+                  : layout === "enunciado" || layout === "cita" || layout === "dato"
                     ? "flex flex-col justify-center"
                     : ""
               }`}
             >
               <div className="min-w-0">
-                <h2 className="slide-title text-balance font-serif font-semibold text-foreground">
-                  {slide.title}
-                </h2>
+                {/* La cita manda sobre el título: en esa lámina lo que tiene peso es lo que dijo
+                    el documento, y el título solo apunta qué hay que notar en ella. Invertir la
+                    jerarquía es toda la diferencia entre citar y resumir. */}
+                {layout === "cita" ? (
+                  <>
+                    <p className="slide-cita font-serif text-foreground">
+                      <span aria-hidden>“</span>
+                      {slide.source!.quote}
+                      <span aria-hidden>”</span>
+                    </p>
+                    {/* Sigue siendo el encabezado de la diapositiva aunque se vea pequeño: lo
+                        que cambia es el peso visual, no la estructura. Sin esto, esta lámina
+                        sería la única del deck sin título para un lector de pantalla. */}
+                    <h2 className="slide-cita-nota font-sans font-normal text-muted">
+                      {slide.title}
+                    </h2>
+                  </>
+                ) : (
+                  <h2 className="slide-title text-balance font-serif font-semibold text-foreground">
+                    {slide.title}
+                  </h2>
+                )}
+
+                {/* La cifra sola y enorme. Existe para verse desde el fondo de la sala, así que
+                    el cuerpo pasa a glosarla y no al revés. */}
+                {layout === "dato" ? (
+                  <div className="slide-dato">
+                    <p className="slide-cifra font-serif font-semibold text-accent">
+                      {slide.cifra}
+                    </p>
+                    {slide.body ? (
+                      <p className="slide-dato-glosa font-serif text-foreground">{slide.body}</p>
+                    ) : null}
+                  </div>
+                ) : null}
 
                 {/* No todo es viñetas: `body` es una frase/idea central; los bullets, enumeraciones. */}
-                {slide.body ? (
+                {slide.body && layout !== "dato" && layout !== "cita" ? (
                   <p
                     className={`font-serif ${
-                      layout === "statement"
+                      layout === "enunciado"
                         ? "slide-statement text-foreground-secondary"
                         : "slide-body text-foreground"
                     }`}
@@ -168,7 +206,26 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
                   </p>
                 ) : null}
 
-                {slide.bullets.length > 0 ? (
+                {layout === "comparacion" && slide.comparacion ? (
+                  <div className="slide-comparacion">
+                    {[slide.comparacion.izquierda, slide.comparacion.derecha].map((lado, i) => (
+                      <div key={i} className={i === 1 ? "slide-lado slide-lado-derecho" : "slide-lado"}>
+                        <p
+                          className={`slide-lado-titulo ${i === 1 ? "text-accent" : "text-muted"}`}
+                        >
+                          {lado.titulo}
+                        </p>
+                        <ul className="slide-lado-puntos font-serif text-foreground">
+                          {lado.puntos.map((p, j) => (
+                            <li key={j}>{p}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {slide.bullets.length > 0 && layout !== "comparacion" && layout !== "dato" ? (
                   <ul className="slide-bullets font-serif text-foreground">
                     {slide.bullets.map((b, i) => (
                       <li key={i} className="flex items-baseline gap-[0.7em]">
@@ -197,7 +254,9 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
                 <span className="text-muted">Síntesis del documento, sin cita exacta</span>
               ) : slide.source && isAnchored(slide.grounding) ? (
                 <SourceCitation onOpen={() => openSource(slide.source!, slide.grounding, slide.start_s, slide.region ?? null)}>
-                  {truncate(slide.source.quote)}
+                  {/* En una lámina de cita, la cita YA se está leyendo en grande. Repetirla aquí
+                      recortada sería decir dos veces lo mismo y peor la segunda. */}
+                  {layout === "cita" ? "Ver esta frase en el documento" : truncate(slide.source.quote)}
                 </SourceCitation>
               ) : (
                 <UnanchoredNotice>No anclada a la fuente</UnanchoredNotice>

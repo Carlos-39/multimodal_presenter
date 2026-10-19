@@ -449,7 +449,7 @@ def test_el_chat_sobre_audio_lee_la_evidencia_y_ancla_al_momento(wav_bytes: byte
         return [
             e
             async for e in chat_stream(
-                TestModel(custom_output_text=json.dumps(respuesta)),
+                TestModel(custom_output_args=respuesta),
                 extraction=extraction,
                 history=[],
                 question="¿cuánto subieron las ventas?",
