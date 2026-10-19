@@ -5,10 +5,10 @@
 # euros con un proxy delante, sin cambiar una línea.
 #
 # Dos piezas, como en el despliegue:
-#   - `api`  — FastAPI, con el volumen. **Sin puerto publicado**, igual que allí: no tiene dominio
+#   - `api`: FastAPI, con el volumen. **Sin puerto publicado**, igual que allí: no tiene dominio
 #              propio y solo se llega a él desde `web`. Para mirarlo de cerca: `docker compose
 #              exec api sh`.
-#   - `web`  — Next, que es quien da la cara y reenvía `/api/*` por la red interna.
+#   - `web`: Next, que es quien da la cara y reenvía `/api/*` por la red interna.
 #
 #   docker compose up --build        levantar
 #   docker compose down              parar (el volumen SOBREVIVE)
@@ -77,8 +77,8 @@ services:
     restart: unless-stopped
 
 networks:
-  # **Con IPv6, y no por capricho.** Uvicorn escuchando en `::` crea un socket SOLO de IPv6 —lo
-  # comprobé: desde el propio contenedor, `localhost` responde y `127.0.0.1` rechaza—, y `::` es lo
+  # **Con IPv6, y no por capricho.** Uvicorn escuchando en `::` crea un socket SOLO de IPv6 (lo
+  # comprobé: desde el propio contenedor, `localhost` responde y `127.0.0.1` rechaza), y `::` es lo
   # que hay que usar porque la red privada de la plataforma puede ser IPv6.
   #
   # Así que lo que se arregla es la red local, no el servidor: una red de compose sin IPv6 no se

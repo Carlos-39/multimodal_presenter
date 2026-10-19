@@ -52,8 +52,8 @@ describe("tramoDe", () => {
   /*
    * Las fechas se construyen en hora LOCAL y no con cadenas en UTC a propósito.
    *
-   * `tramoDe` agrupa por el día del calendario de quien mira, que es lo correcto —«hoy» significa
-   * hoy para ti—, así que depende de la zona horaria. Escribí la primera versión de este test con
+   * `tramoDe` agrupa por el día del calendario de quien mira, que es lo correcto («hoy» significa
+   * hoy para ti), así que depende de la zona horaria. Escribí la primera versión de este test con
    * cadenas terminadas en `Z` y falló en una máquina en UTC−5: `2026-10-05T01:00:00Z` es el día 4
    * por la tarde aquí. El fallo era del test, no de la función.
    */

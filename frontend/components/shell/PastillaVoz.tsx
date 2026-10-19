@@ -11,7 +11,7 @@ import type { VoiceStatus } from "@/hooks/useVoiceInput";
  * **La onda es la única señal de que el micrófono te está oyendo.** Antes había un borde que
  * pulsaba, y un borde pulsa igual con el micrófono silenciado, con el canal equivocado o con la
  * mano encima: parecía que grababa y no se sabía. La onda sale del nivel real de la señal, así que
- * si no se mueve es que no entra nada — y eso es información, no decoración.
+ * si no se mueve es que no entra nada, y eso es información, no decoración.
  *
  * **Se despliega hacia la izquierda, encima de lo que ya hay.** El botón conserva su hueco de
  * 36 px, así que la caja de texto no se mueve al empezar a grabar. Un control que empuja el layout
@@ -107,7 +107,7 @@ export function PastillaVoz({ estado, nivel, onToggle, disabled = false }: Pasti
       <div
         aria-hidden={!grabando}
         // Se despliega hacia la DERECHA, sobre la caja de texto. Hacia la izquierda no hay sitio
-        // —el micro es lo más a la izquierda de la fila— y se salía del panel del chat por encima
+        // (el micro es lo más a la izquierda de la fila) y se salía del panel del chat por encima
         // del documento. Y tapar la caja mientras grabas es honesto: en ese momento eso no es una
         // caja de texto.
         //

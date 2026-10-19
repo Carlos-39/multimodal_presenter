@@ -7,8 +7,55 @@ on:
     branches: [main, develop]
 
 jobs:
+  # El frontend no lo miraba nadie hasta ahora, y ahí vive la mitad de la aplicación: el armazón
+  # responsive, la narración, el cliente de telemetría. Pasaban los tipos y los tests porque yo los
+  # corría a mano antes de cada commit, que es exactamente la clase de garantía que se cae el día
+  # que hay prisa. Y el día que hay prisa es el de las sesiones.
+  #
+  # Mismo orden que el backend (lint, tipos, tests) y sin construir la aplicación: `next build`
+  # tarda varios minutos y lo que caza, en este proyecto, ya lo cazan los tipos.
+  frontend:
+    name: Frontend: lint, tipos & tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # `ci` y no `install`: instala lo que dice el lockfile y falla si no cuadran, en vez de
+      # resolver versiones nuevas por su cuenta. Un lockfile hecho en Windows al que le faltaban
+      # paquetes de Linux ya costó un despliegue en este proyecto.
+      - name: Install dependencies (lockfile)
+        run: npm ci
+
+      - name: Lint (eslint)
+        run: npx eslint .
+
+      # Next genera los tipos de las rutas al construir, y aquí no se construye. Sin este paso,
+      # `LayoutProps` y compañía no existen y `tsc` falla en la primera página que los use, aunque
+      # en una máquina de desarrollo pase: ahí los tipos ya están escritos en `.next` de haber
+      # levantado el servidor alguna vez. Me pasó justo así, y es la razón de que el CI del
+      # frontend exista: comprobar sobre un repositorio recién clonado, no sobre mi carpeta.
+      - name: Tipos de las rutas (los genera el build, y aquí no hay build)
+        run: npx next typegen
+
+      - name: Types (tsc)
+        run: npx tsc --noEmit
+
+      - name: Tests (vitest)
+        run: npm test
+
   backend:
-    name: Backend — lint & tests
+    name: Backend: lint & tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,8 +87,8 @@ jobs:
       # Va al FINAL porque deja el entorno sin el grupo de desarrollo.
       #
       # Existe por un fallo que ninguno de los 330 tests podía ver: `render_pagina` dibuja el PDF
-      # con `to_pil()`, que necesita Pillow, y Pillow llegaba de rebote por matplotlib —que es de
-      # desarrollo—. En mi máquina y aquí funcionaba; en la imagen de producción, instalada con
+      # con `to_pil()`, que necesita Pillow, y Pillow llegaba de rebote por matplotlib, que es de
+      # desarrollo. En mi máquina y aquí funcionaba; en la imagen de producción, instalada con
       # `--no-dev`, el visor de página respondía 502.
       #
       # Así que esto monta el entorno de producción DE VERDAD y comprueba que puede dibujar. Es

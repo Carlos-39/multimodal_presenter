@@ -9,13 +9,13 @@ import { MUESTRAS } from "./muestras";
  * El héroe: la aplicación, jugable, antes de entrar.
  *
  * **Sustituye a una ilustración que se reproducía una vez y se quedaba muerta.** El argumento del
- * proyecto es un gesto —pulsas una frase escrita y te lleva a la del original— y un gesto se
+ * proyecto es un gesto (pulsas una frase escrita y te lleva a la del original) y un gesto se
  * demuestra, no se describe. Aquí se pulsa de verdad: no hay llamadas a la API ni coste por
  * visita, el contenido es fijo, pero el movimiento es el mismo que dentro.
  *
  * **Y se recorre solo, porque la mayoría de quien llega no pulsa nada.** El recorrido es plano y
- * atraviesa las tres entradas —las dos secciones del texto, las dos del PDF, las dos de la
- * grabación—, así que quien se quede mirando ve las tres clases de prueba sin hacer nada. En
+ * atraviesa las tres entradas (las dos secciones del texto, las dos del PDF, las dos de la
+ * grabación), así que quien se quede mirando ve las tres clases de prueba sin hacer nada. En
  * cuanto alguien toca un control se detiene para siempre: ver `useAvanceSolo`.
  *
  * El primer paso espera un momento antes de encenderse. Es el único movimiento de la portada que
@@ -169,7 +169,7 @@ export function Demostracion() {
                         />
                         <span className="font-serif text-[0.75rem] italic leading-[1.5] text-foreground-secondary">
                           {s.cita}{" "}
-                          <span className="whitespace-nowrap not-italic text-muted">— {s.pie}</span>
+                          <span className="whitespace-nowrap not-italic text-muted">, {s.pie}</span>
                         </span>
                       </span>
                     ) : null}

@@ -22,7 +22,7 @@ import { Barra } from "./Barra";
  * que vive en las preguntas frecuentes y no en el héroe.
  *
  * El texto y el PDF son EL MISMO documento. Cambiar de pestaña entre esos dos no cambia el
- * contenido, cambia la fuerza de la prueba — que es el argumento entero.
+ * contenido, cambia la fuerza de la prueba, que es el argumento entero.
  */
 export interface SeccionMuestra {
   id: string;
@@ -140,7 +140,7 @@ function reloj(segundos: number) {
 /**
  * El reproductor se coloca en el segundo de la cita, igual que al abrir la fuente dentro de la
  * aplicación. El cabezal se mueve: aquí el movimiento SÍ informa, porque el momento es la
- * posición. No suena nada — es una maqueta del gesto, no un reproductor.
+ * posición. No suena nada: es una maqueta del gesto, no un reproductor.
  */
 function DocumentoAudio({ activa }: { activa: string | null }) {
   const turno = TURNOS.find((t) => t.id === activa);

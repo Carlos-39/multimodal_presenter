@@ -14,7 +14,7 @@ import type { Section } from "@/lib/types";
  *
  * ## Por qué hay UN solo `<audio>` y por qué empieza sonando en silencio
  *
- * En iOS —y por tanto en el navegador de WhatsApp, que es por donde llegan los participantes— un
+ * En iOS (y por tanto en el navegador de WhatsApp, que es por donde llegan los participantes) un
  * `play()` solo se permite si sale del toque del dedo. Generar la narración tarda unos veinte
  * segundos, así que cuando el mp3 llegaba, el permiso del toque hacía rato que había caducado y
  * el navegador bloqueaba la reproducción. El `catch` metía ese bloqueo en el mismo saco que un
@@ -22,7 +22,7 @@ import type { Section } from "@/lib/types";
  * el mensaje mandaba a buscar donde no era. Lo vimos en producción.
  *
  * Por eso dos cosas. Primera: el elemento se crea UNA vez y se reusa toda la sesión, en lugar de
- * un `new Audio(url)` por reproducción — el desbloqueo se concede al elemento, así que uno nuevo
+ * un `new Audio(url)` por reproducción, el desbloqueo se concede al elemento, así que uno nuevo
  * nace bloqueado otra vez. Segunda: en cuanto se pulsa, y antes de pedir nada, ese elemento
  * reproduce un milisegundo de silencio. Eso ocurre todavía dentro del toque, que es lo único que
  * el navegador mira, y deja el elemento desbloqueado para cuando el mp3 llegue.
@@ -50,11 +50,11 @@ export const NARRATION_SKIP_S = 15;
 
 /**
  * Un milisegundo de silencio: WAV PCM de 44,1 kHz, mono, 16 bits. Son 132 bytes y se construyen
- * aquí, sin pedir nada a la red — tiene que estar disponible en el mismo instante del toque, y
+ * aquí, sin pedir nada a la red: tiene que estar disponible en el mismo instante del toque, y
  * cualquier cosa que haya que ir a buscar llega tarde.
  *
  * Se sirve como `blob:` y no como `data:` por la CSP de la aplicación: `media-src` admite `'self'`
- * y `blob:` —que ya hacían falta para el mp3 de la narración— pero no `data:`, así que un
+ * y `blob:` (que ya hacían falta para el mp3 de la narración) pero no `data:`, así que un
  * `data:audio/wav` se rechaza con `NotSupportedError` antes de sonar. Medido contra la cabecera
  * real, no supuesto. La alternativa era ensanchar la política para 132 bytes de silencio.
  *
@@ -154,7 +154,7 @@ export function useNarration(
 
     // El mismo guardia que los demás, y hace falta: el silencio del desbloqueo dura un
     // milisegundo, así que TERMINA en cuanto empieza. Sin esto, su `ended` llegaba justo después
-    // de poner «generando la narración…» y lo pisaba con «en pausa» — mientras el TTS seguía
+    // de poner «generando la narración…» y lo pisaba con «en pausa», mientras el TTS seguía
     // trabajando, la pantalla decía que ya estaba. Lo que no es la narración no termina nada.
     audio.addEventListener("ended", () => {
       if (urlMontadaRef.current) setStatus("paused");
@@ -215,8 +215,8 @@ export function useNarration(
    * Hay dos motivos muy distintos por los que un `play()` se rechaza, y meterlos en el mismo saco
    * es el error que hubo que venir a arreglar. `NotAllowedError` es el navegador diciendo «esto no
    * me lo has pedido con el dedo»: la narración está entera y suena con el siguiente toque, así
-   * que el estado es `ready`. Cualquier otro nombre —`NotSupportedError` sobre todo, que es lo que
-   * sale cuando la fuente no se puede abrir— significa que no hay audio que reproducir, y eso sí
+   * que el estado es `ready`. Cualquier otro nombre (`NotSupportedError` sobre todo, que es lo que
+   * sale cuando la fuente no se puede abrir) significa que no hay audio que reproducir, y eso sí
    * es un fallo: decirle «lista, pulsa» a alguien que va a pulsar en vano es peor que no decir
    * nada.
    */
@@ -293,7 +293,7 @@ export function useNarration(
    *
    * Es para subirlo cuando alguien pulsa «Guardar» DESPUÉS de haber escuchado la narración: sin
    * esto, guardar justo después de generarla la dejaría fuera y habría que pagar el TTS otra vez
-   * —y sonaría distinta, que es lo que de verdad molesta.
+   *, y sonaría distinta, que es lo que de verdad molesta.
    */
   const audioGenerado = useCallback(() => cacheRef.current?.audio ?? null, []);
 
@@ -309,8 +309,8 @@ export function useNarration(
       montar(audio, cacheRef.current.key, cacheRef.current.url);
       if (audio.ended) audio.currentTime = 0;
       const resultado = await sonar(audio);
-      // Una narración guardada que no se puede abrir —el archivo ya no está, el servidor devuelve
-      // 404— no se arregla pulsando otra vez: esta misma rama volvería a intentarlo contra la
+      // Una narración guardada que no se puede abrir (el archivo ya no está, el servidor devuelve
+      // 404) no se arregla pulsando otra vez: esta misma rama volvería a intentarlo contra la
       // misma url para siempre, y «Reintentar» sería un botón que no reintenta nada. Olvidarla
       // deja que el siguiente toque la genere de nuevo. Solo la guardada: si lo que falla es el
       // mp3 que acabamos de generar, tirarlo significaría pagar el TTS otra vez a ciegas.
@@ -337,7 +337,7 @@ export function useNarration(
 
       montar(audio, key, url);
       // Desde aquí la narración EXISTE. Lo que pase con la reproducción ya no la deshace: o
-      // suena, o queda lista. El `catch` de abajo cubre solo lo de arriba — generarla.
+      // suena, o queda lista. El `catch` de abajo cubre solo lo de arriba, generarla.
       await sonar(audio);
       // Después de que suene: si guardarla falla, lo que el oyente tiene ya está bien.
       alGenerar?.(blob);
@@ -370,7 +370,7 @@ export function useNarration(
     audio.currentTime = 0;
     setCurrentTime(0);
     // `idle`, no `paused`: detener devuelve al principio, así que el control debe decir
-    // "Pulsa para escuchar" y no "En pausa" con el reloj en 0:00. El audio sigue cacheado —
+    // "Pulsa para escuchar" y no "En pausa" con el reloj en 0:00. El audio sigue cacheado, 
     // `play` lo reusa por `cacheRef`, sin volver a pedirlo al TTS.
     setStatus("idle");
   }, []);

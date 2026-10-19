@@ -18,13 +18,13 @@ import { ThemeToggle } from "./ThemeToggle";
 /**
  * Núcleo estructural fijo (Stable Core Pattern, Punto 8).
  *
- * El marco —header y rail de navegación/controles— NO cambia según el contenido generado.
+ * El marco (header y rail de navegación/controles) NO cambia según el contenido generado.
  * Lo dinámico es `children` (contenido + columnas opcionales, que gestiona `Workspace`).
  *
  * Dos familias de controles, separadas a propósito para que no se confundan:
- * - VER (header): cómo se muestra el contenido YA generado — Documento | Slides y Resumen |
+ * - VER (header): cómo se muestra el contenido YA generado ( Documento | Slides y Resumen |
  *   Detallado. No generan nada.
- * - GENERAR (rail, `GeneratePanel`): piezas NUEVAS a partir del documento — presentación y
+ * - GENERAR (rail, `GeneratePanel`): piezas NUEVAS a partir del documento ) presentación y
  *   narración.
  *
  * Cambio consciente en el Hito 5e: el chat dejó de ser un rail SIEMPRE presente (como en el
@@ -142,7 +142,7 @@ export function AppShell({
           tres o cuatro renglones distintos cada vez que cambiaba una etiqueta, y un marco que se
           recoloca solo es un marco que no se aprende.
           El corte es `lg` y no `sm` por lo mismo: con `sm` el teléfono bajaba los controles de VER
-          y la tableta bajaba los de la cuenta — la misma cabecera plegándose de dos maneras
+          y la tableta bajaba los de la cuenta, la misma cabecera plegándose de dos maneras
           distintas según la anchura. Ahora se pliega igual en todo el camino, y solo se estira
           cuando de verdad cabe entera. */}
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border bg-surface px-4 py-2.5 lg:justify-between">
@@ -164,11 +164,11 @@ export function AppShell({
             sitio vuelve a su lugar. Los dos controles de VER se quedan en la cabecera y no se
             esconden en un menú por un motivo que no es estético: `view_change` y
             `detail_mode_change` son los eventos que mide el Hito 8. Enterrarlos cambiaría lo que
-            significa la medición — pasaría a medir cuánto cuesta encontrar el botón. */}
+            significa la medición: pasaría a medir cuánto cuesta encontrar el botón. */}
         <div className="order-3 flex basis-full flex-wrap items-center justify-end gap-x-3 gap-y-2 lg:order-2 lg:basis-auto">
           <GroundingIndicator grounding={grounding} />
           {/* `flex-wrap`: en una pantalla de 320 px los dos controles juntos miden más que la
-              fila, y sin esto no se encogían — se comían el margen derecho hasta pegarse al
+              fila, y sin esto no se encogían: se comían el margen derecho hasta pegarse al
               borde. Partirse en dos renglones es lo correcto: son dos preguntas distintas (cómo
               se ve y cuánto detalle), no una sola barra que haya que mantener entera. */}
           <div className="flex flex-wrap items-center justify-end gap-2 border-border lg:flex-nowrap lg:border-l lg:pl-3">
@@ -192,7 +192,7 @@ export function AppShell({
             El atajo a la presentación que vivía aquí para pantallas angostas desaparece, y no es
             una pérdida: ahora la presentación está en la hoja de «Generar», al lado de la
             narración, que es donde siempre debió estar. Era un parche que tapaba la mitad del
-            agujero — la narración seguía sin existir en el móvil. */}
+            agujero: la narración seguía sin existir en el móvil. */}
         <div className="order-2 flex items-center justify-end gap-2 lg:order-3 lg:border-l lg:border-border lg:pl-3">
           {/* El chat no es una acción que pasa y se acaba: es un estado que se queda. Un
               rectángulo que cambia de color obliga a recordar qué color era «abierto».

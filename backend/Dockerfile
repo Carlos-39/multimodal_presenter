@@ -3,7 +3,7 @@
 # Imagen del backend.
 #
 # `python:3.12-slim` pelada: ninguna dependencia de este proyecto necesita compilar nada ni pide
-# una biblioteca del sistema. `pypdfium2` —el motor de PDF— trae rueda manylinux, igual que
+# una biblioteca del sistema. `pypdfium2` (el motor de PDF) trae rueda manylinux, igual que
 # `argon2-cffi` y `mutagen`. Lo único que se instala con apt es `gosu`, y no es una dependencia
 # del programa sino de cómo arranca (ver `entrypoint.sh`).
 #
@@ -23,7 +23,7 @@ ENV UV_COMPILE_BYTECODE=1 \
 
 WORKDIR /app
 
-# Primero el manifiesto y nada más. Así la capa de dependencias —la lenta— se reaprovecha mientras
+# Primero el manifiesto y nada más. Así la capa de dependencias (la lenta) se reaprovecha mientras
 # no cambien, que es casi siempre: tocar código no vuelve a resolver 80 paquetes.
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
@@ -48,8 +48,8 @@ ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     # El volumen. Las dos variables van explícitas porque su valor por defecto cae en el home del
-    # usuario, que aquí es efímero: un redespliegue se llevaría las cuentas, la biblioteca y —lo
-    # que de verdad no se puede repetir— la telemetría de una sesión.
+    # usuario, que aquí es efímero: un redespliegue se llevaría las cuentas, la biblioteca y (lo
+    # que de verdad no se puede repetir) la telemetría de una sesión.
     DATA_DIR=/datos/base \
     TELEMETRY_DIR=/datos/telemetria \
     # Sin esto la cookie de sesión viaja sin `Secure`.

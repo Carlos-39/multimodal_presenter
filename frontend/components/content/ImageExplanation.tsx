@@ -9,7 +9,7 @@ import { SkeletonText } from "./Skeleton";
  * en el `SourcePanel`: pide al modelo una explicación accesible de lo que muestra. Colapsada por
  * defecto (progressive disclosure, Punto 9): no se muestra explicación no solicitada.
  *
- * Es trazabilidad REFORZADA sobre una imagen real — NO una ilustración generada (Parte 1): vive en
+ * Es trazabilidad REFORZADA sobre una imagen real, NO una ilustración generada (Parte 1): vive en
  * el panel de fuente, sobre la imagen real, y no lleva etiqueta de "no verificable". Si falla, se
  * dice (honestidad), no queda en silencio.
  */

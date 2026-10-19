@@ -4,7 +4,7 @@ import { __resetForTest, flush, initTelemetry, track } from "./telemetry";
 /**
  * El tracker toca APIs del navegador (window, sessionStorage, fetch…). Los tests del repo corren
  * en Node, así que se stubbean esos globals a mano (sin traer jsdom). Se verifica la tubería:
- * sobre del evento, reuso del id de sesión, participante por URL — y, sobre todo, que un evento
+ * sobre del evento, reuso del id de sesión, participante por URL, y, sobre todo, que un evento
  * no se da por entregado hasta que el servidor lo dice.
  *
  * Ese último grupo no es teórico: en la primera prueba real se perdieron 8 de 60 eventos porque
@@ -187,7 +187,7 @@ describe("ningún evento se da por entregado sin confirmación", () => {
     await asentar();
 
     // La recarga: módulo nuevo, mismo sessionStorage. Sin persistir la cola, el evento moriría
-    // aquí — y es justo el momento en que un móvil cambia de aplicación o se queda sin cobertura.
+    // aquí: y es justo el momento en que un móvil cambia de aplicación o se queda sin cobertura.
     __resetForTest();
     fetchMock.mockResolvedValue({ ok: true, status: 204 } as Response);
     initTelemetry();

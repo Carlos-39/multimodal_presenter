@@ -5,8 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 /**
  * Un recorrido que avanza solo, y que se calla en cuanto alguien participa.
  *
- * La portada tiene tres piezas que enseñan algo paso a paso —la demostración del héroe, el
- * párrafo con y sin fuente, y el carrusel de capacidades—, y **la mayoría de quien llega no pulsa
+ * La portada tiene tres piezas que enseñan algo paso a paso (la demostración del héroe, el
+ * párrafo con y sin fuente, y el carrusel de capacidades), y **la mayoría de quien llega no pulsa
  * nada**. Si no se mueven solas, no enseñan nada. Pero un carrusel que sigue girando mientras
  * intentas leer una tarjeta es exactamente el motivo por el que los carruseles tienen mala fama,
  * así que las tres se rigen por las mismas cuatro reglas:
@@ -26,7 +26,7 @@ import { useCallback, useEffect, useState } from "react";
  * Devuelve `i` dentro de `[0, total)`, dando la vuelta por los dos lados.
  *
  * El `% total` de JavaScript conserva el signo, así que `-1 % 6` es `-1` y no `5`. La fórmula
- * anterior del carrusel —`(i + total) % total`— arreglaba un solo paso por debajo de cero, que es
+ * anterior del carrusel (`(i + total) % total`) arreglaba un solo paso por debajo de cero, que es
  * lo único que podía pasar con su botón «Anterior». Esta aguanta cualquier salto, que es lo que
  * hace falta ahora que el mismo recorrido lo comparten tres piezas con distinto número de pasos.
  */

@@ -1,4 +1,4 @@
-"""Parte B3 (Hito 5f) — El sistema arranca con SOLO Anthropic; el fallback es opt-in por clave.
+"""Parte B3 (Hito 5f): El sistema arranca con SOLO Anthropic; el fallback es opt-in por clave.
 
 Sin red: `build_model` solo CONSTRUYE los objetos del modelo (no llama a la API). Demuestra:
 - con solo `ANTHROPIC_API_KEY` → un `AnthropicModel` (primario, sin fallback),
@@ -7,7 +7,7 @@ Sin red: `build_model` solo CONSTRUYE los objetos del modelo (no llama a la API)
 
 El fallback pasó de *Gemini vía OpenRouter* a **Gemini directo**: mismo modelo, un
 intermediario menos y una clave menos. La misma `GOOGLE_API_KEY` sirve a la percepción de
-audio (Fase 0), así que ambos roles comparten credencial — pero NO modelo ni código: la
+audio (Fase 0), así que ambos roles comparten credencial, pero NO modelo ni código: la
 percepción se construye aparte y sin fallback (ver `build_perception_model`).
 
 Honestidad: esto verifica el CABLEADO (qué modelo se arma según las claves). El fallback NO se

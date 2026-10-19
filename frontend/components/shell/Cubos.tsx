@@ -7,8 +7,8 @@ import { useEffect, useRef } from "react";
  *
  * **Vive solo en la biblioteca vacía.** Donde hay tarjetas no entra: esas ya se encienden por el
  * borde al pasar el ratón, y dos cosas reaccionando al cursor en la misma pantalla compiten justo
- * cuando alguien está eligiendo un documento. Aquí no hay nada con qué competir — la pantalla está
- * vacía por definición — y es el momento en que más se agradece que algo se vea trabajado.
+ * cuando alguien está eligiendo un documento. Aquí no hay nada con qué competir ( la pantalla está
+ * vacía por definición ) y es el momento en que más se agradece que algo se vea trabajado.
  *
  * **Escrito desde cero.** Del componente original solo había el uso, no el código, así que esto
  * sale de la descripción y de una captura: rejilla de 8, inclinación máxima de 45 grados, radio de
@@ -19,7 +19,7 @@ import { useEffect, useRef } from "react";
  * DOM, como el pulgar del segmentado o la baraja de la portada.
  *
  * **Se para cuando no hay nadie.** Sin puntero encima y sin onda viva, el bucle se cancela: no
- * queda nada corriendo detrás. Con «reducir movimiento» no se inclina ni ondea — se queda la
+ * queda nada corriendo detrás. Con «reducir movimiento» no se inclina ni ondea, se queda la
  * retícula quieta, que sigue siendo un dibujo.
  */
 interface CubosProps {

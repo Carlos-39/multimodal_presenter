@@ -1,4 +1,4 @@
-"""Punto de equilibrio del RAG vectorial frente al baseline — recálculo auditable (Hito 7).
+"""Punto de equilibrio del RAG vectorial frente al baseline, recálculo auditable (Hito 7).
 
 La primera versión del Registro afirmaba que indexar "solo se paga tras ~267 preguntas por
 documento". Era incorrecto por dos órdenes de magnitud y, para los documentos donde la pregunta

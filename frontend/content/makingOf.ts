@@ -4,7 +4,7 @@ import type { Capitulo } from "@/lib/makingOf";
  * El contenido del «making of», curado a mano desde el Registro de Hitos.
  *
  * **No se genera.** Es estático por tres razones, y la última es la que decide: cuesta lo mismo
- * que servir HTML, el autor controla exactamente qué dice, y —sobre todo— generarlo con un modelo
+ * que servir HTML, el autor controla exactamente qué dice, y (sobre todo) generarlo con un modelo
  * en cada visita sería lo único de este sistema que no se puede verificar. El making of argumenta
  * durante catorce capítulos que lo generado debe ser trazable a su fuente; generarlo al vuelo
  * contradiría su propia tesis en el acto.
@@ -124,7 +124,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Una tabla aplanada deja de ser una tabla: las celdas se convierten en una línea corrida de palabras y números en la que ya no se sabe qué cifra iba con qué fila. Un gráfico no deja ni eso — no hay texto que extraer, así que simplemente no aparece. Dos columnas se entrelazan. Un pie de figura acaba pegado al párrafo de al lado.",
+          "Una tabla aplanada deja de ser una tabla: las celdas se convierten en una línea corrida de palabras y números en la que ya no se sabe qué cifra iba con qué fila. Un gráfico no deja ni eso, no hay texto que extraer, así que simplemente no aparece. Dos columnas se entrelazan. Un pie de figura acaba pegado al párrafo de al lado.",
       },
       {
         tipo: "hallazgo",
@@ -194,7 +194,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Con un texto pegado, comprobar una cita es buscarla. O está, carácter por carácter, o no está. En cuanto la fuente es un PDF, una grabación o una foto, esa comprobación deja de existir, porque no hay texto plano contra el que buscar — y aplanarlo para poder buscar sería deshacer el capítulo anterior.",
+          "Con un texto pegado, comprobar una cita es buscarla. O está, carácter por carácter, o no está. En cuanto la fuente es un PDF, una grabación o una foto, esa comprobación deja de existir, porque no hay texto plano contra el que buscar, y aplanarlo para poder buscar sería deshacer el capítulo anterior.",
       },
       {
         tipo: "prosa",
@@ -242,7 +242,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Hay un detalle del contrato que vale por toda la idea: **no existe el valor «página»**. La fidelidad de página es la AUSENCIA del campo de región. Así el estado contradictorio —«solo sé la página» y aun así traer recuadros dentro— no se puede ni escribir. Es el capítulo 1, aplicado tres hitos después.",
+          "Hay un detalle del contrato que vale por toda la idea: **no existe el valor «página»**. La fidelidad de página es la AUSENCIA del campo de región. Así el estado contradictorio («solo sé la página» y aun así traer recuadros dentro) no se puede ni escribir. Es el capítulo 1, aplicado tres hitos después.",
       },
 
       { tipo: "encabezado", texto: "El umbral, y el caso que lo rompía" },
@@ -254,7 +254,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Un caso real se colaba por debajo. Cuando el modelo cita con puntos suspensivos —«…a una altitud tan alta… que no representan…»— y se busca la frase entera, la parte elidida hunde la puntuación: ==78 puntos== frente al umbral de 90. Se perdía una localización que era exacta.",
+          "Un caso real se colaba por debajo. Cuando el modelo cita con puntos suspensivos («…a una altitud tan alta… que no representan…») y se busca la frase entera, la parte elidida hunde la puntuación: ==78 puntos== frente al umbral de 90. Se perdía una localización que era exacta.",
       },
       {
         tipo: "prosa",
@@ -297,7 +297,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Antes de dibujar nada, una regla mira la forma de los datos —si las series están alineadas, si los números son finitos, si el eje tiene un orden, cuántas categorías hay, si todo es positivo— y devuelve el conjunto de tipos que esa forma admite. Sin modelo, sin juicio, sin prompt.",
+          "Antes de dibujar nada, una regla mira la forma de los datos (si las series están alineadas, si los números son finitos, si el eje tiene un orden, cuántas categorías hay, si todo es positivo) y devuelve el conjunto de tipos que esa forma admite. Sin modelo, sin juicio, sin prompt.",
       },
       {
         tipo: "tabla",
@@ -325,7 +325,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "El caso que casi nadie implementa es el segundo. Si los datos vienen desalineados —tres categorías y dos valores— o traen un infinito, el conjunto de tipos admisibles queda **vacío**. No hay gráfico correcto que dibujar.",
+          "El caso que casi nadie implementa es el segundo. Si los datos vienen desalineados (tres categorías y dos valores) o traen un infinito, el conjunto de tipos admisibles queda **vacío**. No hay gráfico correcto que dibujar.",
       },
       {
         tipo: "prosa",
@@ -351,7 +351,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "El efecto final es el mismo —el tipo que sale siempre está dentro de lo válido— y el camino está escrito tal cual en el Registro en vez de contado como si la regla fuera preventiva. ==10 pruebas== cubren la regla: que acepta lo válido, que corrige lo inválido, y que la corrección es siempre la misma.",
+          "El efecto final es el mismo (el tipo que sale siempre está dentro de lo válido) y el camino está escrito tal cual en el Registro en vez de contado como si la regla fuera preventiva. ==10 pruebas== cubren la regla: que acepta lo válido, que corrige lo inválido, y que la corrección es siempre la misma.",
       },
       {
         tipo: "prosa",
@@ -377,7 +377,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Pero esa presentación es **una selección**: separó lo esencial del detalle y dejó cosas fuera a propósito. Preguntarle a un resumen es preguntarle a alguien que ya decidió qué no te iba a contar — y lo que no contó es exactamente lo que quizá vas a preguntar.",
+          "Pero esa presentación es **una selección**: separó lo esencial del detalle y dejó cosas fuera a propósito. Preguntarle a un resumen es preguntarle a alguien que ya decidió qué no te iba a contar, y lo que no contó es exactamente lo que quizá vas a preguntar.",
       },
       {
         tipo: "prosa",
@@ -389,7 +389,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "La objeción obvia es el coste: mandar el documento entero en cada pregunta. La respuesta no fue recortarlo, fue cachearlo. Lo que entra al modelo se arma siempre igual — el documento, un marcador, y después el historial con la pregunta — y el marcador separa lo estable de lo nuevo.",
+          "La objeción obvia es el coste: mandar el documento entero en cada pregunta. La respuesta no fue recortarlo, fue cachearlo. Lo que entra al modelo se arma siempre igual ( el documento, un marcador, y después el historial con la pregunta ) y el marcador separa lo estable de lo nuevo.",
       },
       {
         tipo: "figura",
@@ -446,7 +446,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "La calibración era todo el problema, porque algo así se vuelve insoportable si se dispara de más. Tiene **sesgo por defecto a responder** —ante preguntas cortas, informales o con erratas, responde; ante la duda, responde— y pide aclaración **a lo sumo una vez**: si el turno anterior ya fue una aclaración, contesta con la mejor interpretación. No hay ciclos.",
+          "La calibración era todo el problema, porque algo así se vuelve insoportable si se dispara de más. Tiene **sesgo por defecto a responder** (ante preguntas cortas, informales o con erratas, responde; ante la duda, responde) y pide aclaración **a lo sumo una vez**: si el turno anterior ya fue una aclaración, contesta con la mejor interpretación. No hay ciclos.",
       },
       {
         tipo: "prosa",
@@ -456,12 +456,12 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Y lo que no salió redondo, que también se midió: en una pregunta de frontera el criterio **varió entre corridas** —una vez aclaró, otra respondió—. La variación cae del lado seguro, que es responder, porque esto es una invitación y nunca un muro: el campo de texto no se bloquea nunca y se puede ignorar la pregunta y reescribir.",
+          "Y lo que no salió redondo, que también se midió: en una pregunta de frontera el criterio **varió entre corridas** (una vez aclaró, otra respondió). La variación cae del lado seguro, que es responder, porque esto es una invitación y nunca un muro: el campo de texto no se bloquea nunca y se puede ignorar la pregunta y reescribir.",
       },
       {
         tipo: "prosa",
         texto:
-          "Queda una deuda dicha en su sitio: el historial del chat vivía solo en la memoria de la pestaña y se perdía al recargar. Fue una decisión temporal, aislada en un único sitio para que el hito de guardar y volver —el capítulo 13— la reemplazara sin tocar nada más. Eso es lo que acabó pasando.",
+          "Queda una deuda dicha en su sitio: el historial del chat vivía solo en la memoria de la pestaña y se perdía al recargar. Fue una decisión temporal, aislada en un único sitio para que el hito de guardar y volver (el capítulo 13) la reemplazara sin tocar nada más. Eso es lo que acabó pasando.",
       },
     ],
   },
@@ -487,7 +487,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Cuatro condiciones con el mismo generador y el mismo prompt — solo cambia de dónde sale el contexto. Tres documentos de 15, 47 y 98 páginas, treinta preguntas, ==120 corridas, cero errores==.",
+          "Cuatro condiciones con el mismo generador y el mismo prompt, solo cambia de dónde sale el contexto. Tres documentos de 15, 47 y 98 páginas, treinta preguntas, ==120 corridas, cero errores==.",
       },
 
       { tipo: "encabezado", texto: "En calidad gana el camino simple" },
@@ -546,7 +546,7 @@ export const CAPITULOS: Capitulo[] = [
           ["Juan Valdez", "47", "0,0742", "0,0480", "~1,2 preguntas"],
           ["Decreto 1016", "98", "0,1045", "0,0582", "~1,7 preguntas"],
         ],
-        nota: "Recalculado desde los 120 registros crudos, sin regenerar nada y sin llamar a ninguna API: `experiments/breakeven.py` lo reproduce entero. El caché funcionó —27 de las 30 preguntas de la línea base LEYERON caché— así que son costes de uso real, no inflados.",
+        nota: "Recalculado desde los 120 registros crudos, sin regenerar nada y sin llamar a ninguna API: `experiments/breakeven.py` lo reproduce entero. El caché funcionó (27 de las 30 preguntas de la línea base LEYERON caché) así que son costes de uso real, no inflados.",
       },
       {
         tipo: "hallazgo",
@@ -562,7 +562,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "El sistema trabaja con documentos de 10 a 100 páginas, de forma conversacional, con pocas preguntas por documento y en una sola sesión. Ahí la diferencia de coste son céntimos, y la de exactitud —0,987 contra 0,953— se nota en cada respuesta.",
+          "El sistema trabaja con documentos de 10 a 100 páginas, de forma conversacional, con pocas preguntas por documento y en una sola sesión. Ahí la diferencia de coste son céntimos, y la de exactitud (0,987 contra 0,953) se nota en cada respuesta.",
       },
       {
         tipo: "prosa",
@@ -579,7 +579,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "De ahí salieron dos problemas con impacto medido. El primero es metodológico y es el más interesante: **la métrica de las preguntas sin respuesta premiaba el fallo de recuperación.** El juez solo comprobaba que el sistema dijera «no está en el documento», sin comprobar que hubiera buscado. Medido: el modo grafo sacó un 1,0 perfecto en dos preguntas **recuperando cero páginas** — su peor modo de fallo, disfrazado de acierto.",
+          "De ahí salieron dos problemas con impacto medido. El primero es metodológico y es el más interesante: **la métrica de las preguntas sin respuesta premiaba el fallo de recuperación.** El juez solo comprobaba que el sistema dijera «no está en el documento», sin comprobar que hubiera buscado. Medido: el modo grafo sacó un 1,0 perfecto en dos preguntas **recuperando cero páginas**, su peor modo de fallo, disfrazado de acierto.",
       },
       {
         tipo: "cita",
@@ -599,14 +599,14 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "**El orden no cambió** — base, vectorial, naive, grafo — pero la corrección honestiza la historia en las dos direcciones: el empate de todos en las preguntas sin respuesta era un artefacto de la métrica, y la penalización en las preguntas visuales la producía un *gold* equivocado y no los sistemas.",
+          "**El orden no cambió** ( base, vectorial, naive, grafo ) pero la corrección honestiza la historia en las dos direcciones: el empate de todos en las preguntas sin respuesta era un artefacto de la métrica, y la penalización en las preguntas visuales la producía un *gold* equivocado y no los sistemas.",
       },
 
       { tipo: "encabezado", texto: "Lo que este experimento no demuestra" },
       {
         tipo: "prosa",
         texto:
-          "Las amenazas a la validez van aparte y ninguna se esconde: **una sola repetición**, así que no hay medida de varianza; el juez es de la misma familia que el generador y no de otro proveedor; la muestra es pequeña —tres documentos, treinta preguntas— y señala tendencias sin cerrar el tema; el documento de 98 páginas hubo que comprimirlo para entrar en el límite del proveedor.",
+          "Las amenazas a la validez van aparte y ninguna se esconde: **una sola repetición**, así que no hay medida de varianza; el juez es de la misma familia que el generador y no de otro proveedor; la muestra es pequeña (tres documentos, treinta preguntas) y señala tendencias sin cerrar el tema; el documento de 98 páginas hubo que comprimirlo para entrar en el límite del proveedor.",
       },
       {
         tipo: "prosa",
@@ -797,12 +797,12 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Se modificó de forma acotada: se genera una ilustración **solo** si el documento de esa sección no trae imagen propia, si el contenido se beneficia de verdad de un apoyo visual —un proceso físico, un mecanismo espacial— y entendiendo que es una ayuda didáctica y nunca una prueba. El motivo real es simple: hay documentos que no traen una sola imagen.",
+          "Se modificó de forma acotada: se genera una ilustración **solo** si el documento de esa sección no trae imagen propia, si el contenido se beneficia de verdad de un apoyo visual (un proceso físico, un mecanismo espacial) y entendiendo que es una ayuda didáctica y nunca una prueba. El motivo real es simple: hay documentos que no traen una sola imagen.",
       },
       {
         tipo: "prosa",
         texto:
-          "La salvaguarda no es una etiqueta de buena voluntad, es **una imposibilidad estructural**, y salió de un hallazgo al diseñar el esquema. Toda `Section` tiene fuente obligatoria, así que meter la ilustración como un tipo más del contenido le habría dado fuente — es decir, la habría hecho confundible con contenido verificado.",
+          "La salvaguarda no es una etiqueta de buena voluntad, es **una imposibilidad estructural**, y salió de un hallazgo al diseñar el esquema. Toda `Section` tiene fuente obligatoria, así que meter la ilustración como un tipo más del contenido le habría dado fuente, es decir, la habría hecho confundible con contenido verificado.",
       },
       {
         tipo: "prosa",
@@ -828,7 +828,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Lo primero fue comprobar que la regla estuviera aplicada, antes de medir nada. Lo estaba, **en las tres capas**: en el clasificador, en el bloque de estilo y en la instrucción negativa del proveedor. Así que el problema no era una regla olvidada sino cómo estaba formulada — y se encontraron cinco debilidades que se suman.",
+          "Lo primero fue comprobar que la regla estuviera aplicada, antes de medir nada. Lo estaba, **en las tres capas**: en el clasificador, en el bloque de estilo y en la instrucción negativa del proveedor. Así que el problema no era una regla olvidada sino cómo estaba formulada, y se encontraron cinco debilidades que se suman.",
       },
       {
         tipo: "prosa",
@@ -852,7 +852,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "La hipótesis barata se probó y se descartó con datos, que es para lo que sirve medir. Lo que sí movió la aguja fue **cambiar de proveedor**: el mismo prompt, en otro modelo, salió limpio — y el caso que en el primero salía lleno de garabatos salió además mejor dibujado. De paso resultó más barato que el que estaba, y sin clave nueva.",
+          "La hipótesis barata se probó y se descartó con datos, que es para lo que sirve medir. Lo que sí movió la aguja fue **cambiar de proveedor**: el mismo prompt, en otro modelo, salió limpio, y el caso que en el primero salía lleno de garabatos salió además mejor dibujado. De paso resultó más barato que el que estaba, y sin clave nueva.",
       },
       {
         tipo: "prosa",
@@ -864,7 +864,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Al revisar la batería apareció algo que el diagnóstico no había visto. **No basta con que no haya texto.** Una imagen con pasos numerados, o con letras clave, o con líneas guía, remite a una leyenda que no existe — y eso deja **peor** a quien no conoce el tema que no poner nada, porque se pone a buscar una explicación que no está en ninguna parte.",
+          "Al revisar la batería apareció algo que el diagnóstico no había visto. **No basta con que no haya texto.** Una imagen con pasos numerados, o con letras clave, o con líneas guía, remite a una leyenda que no existe, y eso deja **peor** a quien no conoce el tema que no poner nada, porque se pone a buscar una explicación que no está en ninguna parte.",
       },
       {
         tipo: "cita",
@@ -886,7 +886,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "La presentación en diapositivas y la narración en voz son la misma idea terminando en dos sitios: una síntesis didáctica del documento, escrita **desde el original** y no desde el resumen ya generado — por el mismo motivo del capítulo 5.",
+          "La presentación en diapositivas y la narración en voz son la misma idea terminando en dos sitios: una síntesis didáctica del documento, escrita **desde el original** y no desde el resumen ya generado, por el mismo motivo del capítulo 5.",
       },
       {
         tipo: "prosa",
@@ -940,7 +940,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "La causa se diagnosticó, no se supuso: el agente pedía su salida como **llamada a herramienta**. Con ese modo, toda la presentación viaja como los argumentos de una sola herramienta, y la librería no puede entregar nada hasta que esa llamada está **completa**. No había parciales que trocear — ni siquiera el título.",
+          "La causa se diagnosticó, no se supuso: el agente pedía su salida como **llamada a herramienta**. Con ese modo, toda la presentación viaja como los argumentos de una sola herramienta, y la librería no puede entregar nada hasta que esa llamada está **completa**. No había parciales que trocear, ni siquiera el título.",
       },
       {
         tipo: "tabla",
@@ -992,7 +992,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Es una limitación real de ser agnóstico del modelo, y está documentada en vez de forzada. La interfaz no se rompe —el render es el mismo— pero la experiencia sería peor, y conviene decirlo antes de que alguien lo descubra solo.",
+          "Es una limitación real de ser agnóstico del modelo, y está documentada en vez de forzada. La interfaz no se rompe (el render es el mismo) pero la experiencia sería peor, y conviene decirlo antes de que alguien lo descubra solo.",
       },
     ],
   },
@@ -1013,7 +1013,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "La salida habitual es un catálogo de plantillas: una para cada combinación de paneles y de tamaño. Envejece mal — cada panel nuevo multiplica los casos — y nadie puede predecir qué va a pasar sin mirarse la lista.",
+          "La salida habitual es un catálogo de plantillas: una para cada combinación de paneles y de tamaño. Envejece mal ( cada panel nuevo multiplica los casos ) y nadie puede predecir qué va a pasar sin mirarse la lista.",
       },
       {
         tipo: "prosa",
@@ -1028,7 +1028,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "El criterio cuando solo cabe una columna es **la más reciente**: la que acabas de abrir es la que se ve. Es predecible sin explicarlo, porque coincide con lo que acabas de hacer. La otra no se cierra —sigue abierta en el estado— y reaparece sola al ensanchar la ventana.",
+          "El criterio cuando solo cabe una columna es **la más reciente**: la que acabas de abrir es la que se ve. Es predecible sin explicarlo, porque coincide con lo que acabas de hacer. La otra no se cierra (sigue abierta en el estado) y reaparece sola al ensanchar la ventana.",
       },
       {
         tipo: "hallazgo",
@@ -1054,7 +1054,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Así que la Escala 1 quedó como **especificación escrita y no cableada**, con su jerarquía de peso visual decidida —gráfico, tabla, línea de tiempo, texto, por huella espacial decreciente— lista para el día que el contrato gane secciones de varios bloques. **Cero deuda oculta:** está anotada, no olvidada.",
+          "Así que la Escala 1 quedó como **especificación escrita y no cableada**, con su jerarquía de peso visual decidida (gráfico, tabla, línea de tiempo, texto, por huella espacial decreciente) lista para el día que el contrato gane secciones de varios bloques. **Cero deuda oculta:** está anotada, no olvidada.",
       },
       {
         tipo: "prosa",
@@ -1102,12 +1102,12 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Todo lo anterior sigue siendo verdad, y aun así **la respuesta estaba mal**. El diagnóstico era correcto —faltaba contraste de temperatura— y la solución resolvió el problema medido. Lo que no vi es hacia dónde lo resolvía.",
+          "Todo lo anterior sigue siendo verdad, y aun así **la respuesta estaba mal**. El diagnóstico era correcto (faltaba contraste de temperatura) y la solución resolvió el problema medido. Lo que no vi es hacia dónde lo resolvía.",
       },
       {
         tipo: "prosa",
         texto:
-          "Lo dijo el autor del proyecto mirando la aplicación terminada: *«está bonito, pero parece un producto de Anthropic»*. Y tenía razón. **Papel crema con serifa para el cuerpo es, literalmente, la casa de Claude** — es así como se componen sus respuestas. La guía de diseño que usé para hacer este rediseño advierte del fondo crema cercano a `#F4F1EA` como el tic más repetido de interfaz generada, y aterricé justo ahí sin verlo.",
+          "Lo dijo el autor del proyecto mirando la aplicación terminada: *«está bonito, pero parece un producto de Anthropic»*. Y tenía razón. **Papel crema con serifa para el cuerpo es, literalmente, la casa de Claude**, es así como se componen sus respuestas. La guía de diseño que usé para hacer este rediseño advierte del fondo crema cercano a `#F4F1EA` como el tic más repetido de interfaz generada, y aterricé justo ahí sin verlo.",
       },
       {
         tipo: "hallazgo",
@@ -1176,7 +1176,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Se separaron en dos sitios distintos. *Ver* —documento o diapositivas, resumen o detallado— son formas de mostrar lo que ya existe, y no generan nada. *Generar* —presentación y narración— vive en su propio panel, cada una con una línea que dice qué es, y el botón nombra su estado en vez de quedarse mudo mientras trabaja.",
+          "Se separaron en dos sitios distintos. *Ver* (documento o diapositivas, resumen o detallado) son formas de mostrar lo que ya existe, y no generan nada. *Generar* (presentación y narración) vive en su propio panel, cada una con una línea que dice qué es, y el botón nombra su estado en vez de quedarse mudo mientras trabaja.",
       },
       {
         tipo: "prosa",
@@ -1209,7 +1209,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "No se captura contenido de documentos, ni el texto de las preguntas, ni nombres de archivo. Solo metadatos: enums, milisegundos, longitudes en caracteres y **ordinales** de sección en vez del identificador —porque ese identificador lo escribe el modelo y podría describir el contenido.",
+          "No se captura contenido de documentos, ni el texto de las preguntas, ni nombres de archivo. Solo metadatos: enums, milisegundos, longitudes en caracteres y **ordinales** de sección en vez del identificador, porque ese identificador lo escribe el modelo y podría describir el contenido.",
       },
       {
         tipo: "prosa",
@@ -1226,12 +1226,12 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "La telemetría se construyó antes del rediseño del capítulo 11, antes del audio y antes de una ronda de arreglos. Antes de sentar a nadie delante del sistema había que comprobar que siguiera midiendo lo que dice medir — **porque un instrumento roto no se nota durante la sesión, se nota al analizar los datos, cuando ya no hay forma de repetirla.**",
+          "La telemetría se construyó antes del rediseño del capítulo 11, antes del audio y antes de una ronda de arreglos. Antes de sentar a nadie delante del sistema había que comprobar que siguiera midiendo lo que dice medir, **porque un instrumento roto no se nota durante la sesión, se nota al analizar los datos, cuando ya no hay forma de repetirla.**",
       },
       {
         tipo: "prosa",
         texto:
-          "Casi todo estaba bien. Los ocho eventos llegaban, sin contenido; las cuentas cuadraban —25.492 más 94.560 milisegundos dan exactamente la sesión, y el porcentaje de tiempo en detallado sale de esa división— y el identificador del participante estaba donde hacía falta para cruzar con el cuestionario.",
+          "Casi todo estaba bien. Los ocho eventos llegaban, sin contenido; las cuentas cuadraban (25.492 más 94.560 milisegundos dan exactamente la sesión, y el porcentaje de tiempo en detallado sale de esa división) y el identificador del participante estaba donde hacía falta para cruzar con el cuestionario.",
       },
       {
         tipo: "prosa",
@@ -1272,7 +1272,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Así que el exportador también cambió: ahora ordena por **sello de tiempo** —la verdad de terreno, que no depende de un detalle del cliente— y usa el contador solo para desempatar eventos del mismo milisegundo. Y el arranque y la primera pregunta se eligen por tiempo, no por posición.",
+          "Así que el exportador también cambió: ahora ordena por **sello de tiempo** (la verdad de terreno, que no depende de un detalle del cliente) y usa el contador solo para desempatar eventos del mismo milisegundo. Y el arranque y la primera pregunta se eligen por tiempo, no por posición.",
       },
       {
         tipo: "prosa",
@@ -1339,7 +1339,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Así que vive en la base de datos y nunca en el contrato. El contenido se guarda como un bloque opaco con un número de versión del contrato — que no es ceremonia: **el contrato cambió dos veces en un mes**, al añadir el momento del audio y la región del PDF, y sin ese campo el primer cambio habría dejado ilegible todo lo ya guardado.",
+          "Así que vive en la base de datos y nunca en el contrato. El contenido se guarda como un bloque opaco con un número de versión del contrato, que no es ceremonia: **el contrato cambió dos veces en un mes**, al añadir el momento del audio y la región del PDF, y sin ese campo el primer cambio habría dejado ilegible todo lo ya guardado.",
       },
 
       { tipo: "encabezado", texto: "Decisiones de infraestructura, con su motivo" },
@@ -1395,7 +1395,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "La suite estaba verde todo el tiempo. Lo encontró usar la aplicación con un documento real, que es lo que ninguna prueba automática sustituye del todo — y la razón por la que en este proyecto cada hito termina delante del sistema corriendo.",
+          "La suite estaba verde todo el tiempo. Lo encontró usar la aplicación con un documento real, que es lo que ninguna prueba automática sustituye del todo, y la razón por la que en este proyecto cada hito termina delante del sistema corriendo.",
       },
     ],
   },
@@ -1459,7 +1459,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "No es lo mismo que fallaron. En la anotación de audio hay dos campos —qué cifras quedan en riesgo y si algo resulta ininteligible— que **nunca se activaron**: tras dos grabaciones no se consiguió un caso donde el ruido volviera una cifra ininteligible para los modelos, y forzarlo habría exigido un clip que ya no representa el caso de uso.",
+          "No es lo mismo que fallaron. En la anotación de audio hay dos campos (qué cifras quedan en riesgo y si algo resulta ininteligible) que **nunca se activaron**: tras dos grabaciones no se consiguió un caso donde el ruido volviera una cifra ininteligible para los modelos, y forzarlo habría exigido un clip que ya no representa el caso de uso.",
       },
       {
         tipo: "prosa",
@@ -1476,7 +1476,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "El audio tiene un tope de **quince minutos**, y no es un número redondo: lo fija el techo de salida del modelo que escucha, medido en unos 18,5 minutos. Pasar de ahí exige trocear el audio en ventanas y unir anotaciones, con sus propias preguntas sin respuesta todavía — la continuidad de los hablantes, los tiempos globales.",
+          "El audio tiene un tope de **quince minutos**, y no es un número redondo: lo fija el techo de salida del modelo que escucha, medido en unos 18,5 minutos. Pasar de ahí exige trocear el audio en ventanas y unir anotaciones, con sus propias preguntas sin respuesta todavía, la continuidad de los hablantes, los tiempos globales.",
       },
       {
         tipo: "prosa",
@@ -1493,7 +1493,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Eso quitó tres piezas de arquitectura en el capítulo 6, cambió el modo de salida del agente en el 9, desmontó una hipótesis razonable sobre los prompts en el 8, encontró un instrumento roto en el 12, y convirtió ocho endpoints en una función en el 13. Y las cuatro cosas que ninguna suite verde encontró —el buffer del proxy, el contador que se reiniciaba, el tope de un megabyte, el cálculo del punto de equilibrio— aparecieron todas usando el sistema o releyendo los datos crudos.",
+          "Eso quitó tres piezas de arquitectura en el capítulo 6, cambió el modo de salida del agente en el 9, desmontó una hipótesis razonable sobre los prompts en el 8, encontró un instrumento roto en el 12, y convirtió ocho endpoints en una función en el 13. Y las cuatro cosas que ninguna suite verde encontró (el buffer del proxy, el contador que se reiniciaba, el tope de un megabyte, el cálculo del punto de equilibrio) aparecieron todas usando el sistema o releyendo los datos crudos.",
       },
       {
         tipo: "hallazgo",
@@ -1502,7 +1502,7 @@ export const CAPITULOS: Capitulo[] = [
       {
         tipo: "prosa",
         texto:
-          "Y el capítulo 11 añade el límite de ese método, que es el más incómodo de todos. **Medir solo responde la pregunta que hiciste.** El primer rediseño midió por qué la interfaz se sentía plana, lo arregló, y la dejó pareciéndose a otro producto — porque «¿a qué se parece esto?» no era una de las preguntas. Lo encontró alguien mirándola, meses después.",
+          "Y el capítulo 11 añade el límite de ese método, que es el más incómodo de todos. **Medir solo responde la pregunta que hiciste.** El primer rediseño midió por qué la interfaz se sentía plana, lo arregló, y la dejó pareciéndose a otro producto, porque «¿a qué se parece esto?» no era una de las preguntas. Lo encontró alguien mirándola, meses después.",
       },
       {
         tipo: "prosa",

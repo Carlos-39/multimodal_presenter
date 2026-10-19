@@ -1,8 +1,8 @@
 import type { TimelineContent } from "@/lib/types";
 
 /**
- * Línea de tiempo. Con espacio suficiente se lee en dos columnas —la fecha a la izquierda, el
- * hecho a la derecha, y la línea entre ambas—; en contenedores angostos (p. ej. una respuesta del
+ * Línea de tiempo. Con espacio suficiente se lee en dos columnas (la fecha a la izquierda, el
+ * hecho a la derecha, y la línea entre ambas); en contenedores angostos (p. ej. una respuesta del
  * chat) la fecha pasa encima del hecho. Depende del ancho del CONTENEDOR, no de la ventana.
  */
 export function TimelineSection({ content }: { content: TimelineContent }) {

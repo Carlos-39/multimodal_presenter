@@ -2,7 +2,7 @@
 --
 -- El contrato de datos (Presentation/Section/SourceReference) NO aparece aquí como columnas: se
 -- guarda como bloque OPACO en `presentaciones.payload_json`. La propiedad no es una propiedad del
--- resultado, sino del acto de guardarlo — y, sobre todo, `Presentation` viaja a los modelos (es
+-- resultado, sino del acto de guardarlo, y, sobre todo, `Presentation` viaja a los modelos (es
 -- el cuerpo de /narration y /illustrations), así que un `usuario_id` dentro del contrato acabaría
 -- en un prompt por una ruta perfectamente normal. Fuera, eso es imposible por construcción.
 
@@ -19,7 +19,7 @@ CREATE TABLE usuarios (
 -- comparten esta fila y sus bytes, sin coordinación y sin duplicar nada.
 --
 -- Los bytes viven en disco, no aquí: mantiene la base pequeña y los archivos se pueden mirar a
--- mano. La ruta NO se guarda porque se deriva del id — una ruta guardada es una ruta que puede
+-- mano. La ruta NO se guarda porque se deriva del id, una ruta guardada es una ruta que puede
 -- quedar desincronizada del archivo real.
 CREATE TABLE documentos (
     document_id    TEXT PRIMARY KEY,

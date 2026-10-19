@@ -1,4 +1,4 @@
-"""Batería de diagnóstico — ¿por qué aparece texto dentro de las imágenes generadas?
+"""Batería de diagnóstico: ¿por qué aparece texto dentro de las imágenes generadas?
 
 NO ES CÓDIGO DE PRODUCCIÓN. Mide una cosa concreta: en cuántas imágenes aparece texto no deseado,
 con el prompt ACTUAL y con el prompt propuesto, sobre los mismos casos y el mismo proveedor; y de
@@ -159,7 +159,7 @@ async def prompts_reales() -> list[tuple[str, str]]:
         if planes:
             salida.append((nombre, planes[0].image_prompt))
         else:
-            print(f"  (el clasificador no marcó '{nombre}' — se omite)")
+            print(f"  (el clasificador no marcó '{nombre}', se omite)")
     return salida
 
 
@@ -251,7 +251,7 @@ async def main() -> None:
                 }
                 guarda_indice(indice)  # tras CADA imagen: lo pagado no se pierde
                 print(f"  {nombre}: OK ({len(datos) // 1024} KB)")
-            except Exception as exc:  # noqa: BLE001 — se anota y se sigue con las demás
+            except Exception as exc:  # noqa: BLE001 (se anota y se sigue con las demás)
                 print(f"  {nombre}: FALLÓ ({type(exc).__name__}: {str(exc)[:90]})")
 
     print(f"\nImágenes en: {SALIDA}")

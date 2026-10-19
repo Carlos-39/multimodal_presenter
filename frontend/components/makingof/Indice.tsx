@@ -27,7 +27,7 @@ interface IndiceProps {
   /** El capítulo donde estás. Sin él (la portada) no hay nada marcado. */
   actual?: string;
   /**
-   * `rail` abre solo el acto actual y deja plegar los demás — es una columna estrecha al lado de
+   * `rail` abre solo el acto actual y deja plegar los demás, es una columna estrecha al lado de
    * algo que se está leyendo. `portada` los abre todos y se dibuja al entrar: ahí el árbol no
    * acompaña a nada, **es** lo que se viene a mirar.
    */

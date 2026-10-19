@@ -7,7 +7,7 @@ import { Espera } from "./Espera";
 
 /**
  * "Generar": lo que el sistema puede CREAR a partir del documento, reunido en un solo lugar del
- * núcleo fijo (rail). Hoy son dos piezas —la presentación en diapositivas y la narración— y cada
+ * núcleo fijo (rail). Hoy son dos piezas (la presentación en diapositivas y la narración) y cada
  * una dice en una línea qué es, para no confundirse con las formas de VER el contenido ya
  * generado (Documento / Slides, en el header). Añadir otro generador = añadir otro bloque aquí.
  *
@@ -32,7 +32,7 @@ interface GeneratePanelProps {
   onNarrationSkip: (delta: number) => void;
   /**
    * Si el panel pone su propio título. En el carril sí: nadie más lo nombra. Dentro de la hoja
-   * del móvil no, porque la hoja ya se llama «Generar» en su cabecera — y dos veces la misma
+   * del móvil no, porque la hoja ya se llama «Generar» en su cabecera, y dos veces la misma
    * palabra, una encima de otra, no es énfasis: es una costura a la vista.
    *
    * También evita que `generate-heading` exista dos veces en la página: el carril sigue montado
@@ -81,7 +81,7 @@ export function GeneratePanel({
 
           {/* Error y espera comparten bloque, y ese bloque es la MISMA `Espera` en la misma
               posición del árbol: así, cuando la generación falla, el cronómetro no se reinicia ni
-              desaparece — se queda parado en lo que llegó a costar, que es la única pista de si
+              desaparece: se queda parado en lo que llegó a costar, que es la única pista de si
               reventó al empezar o a mitad de camino. */}
           {deckLoading || deckError ? (
             <div className="mt-2.5" role="status">

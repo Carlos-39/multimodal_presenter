@@ -1,7 +1,7 @@
 [project]
 name = "multimodal-presenter-backend"
 version = "0.1.0"
-description = "Backend del transformador de información multimodal (trabajo de grado — Univalle)."
+description = "Backend del transformador de información multimodal (trabajo de grado, Univalle)."
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.115",
@@ -22,7 +22,7 @@ dependencies = [
     # Pillow es dependencia de pypdfium2 en la PRÁCTICA, aunque él no la declare: el bitmap que
     # devuelve `render()` se convierte a PNG con `to_pil()`, y sin Pillow eso lanza. Aquí estaba
     # llegando de rebote por matplotlib, que es de desarrollo, así que en mi máquina y en el CI
-    # funcionaba y en la imagen de producción —instalada con `--no-dev`— el visor de página
+    # funcionaba y en la imagen de producción (instalada con `--no-dev`) el visor de página
     # respondía 502. Se declara donde se usa.
     "pillow>=11",
     "rapidfuzz>=3.14",

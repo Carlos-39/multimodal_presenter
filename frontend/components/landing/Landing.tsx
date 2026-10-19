@@ -122,7 +122,7 @@ export function Landing({ onEntrar }: { onEntrar: () => void }) {
  * El héroe, a una sola columna y con la demostración a lo ancho.
  *
  * Estuvo en dos columnas mientras el visual era una ilustración estrecha. La demostración son dos
- * paneles —el documento y lo que la aplicación escribe— y en media pantalla cada panel quedaba en
+ * paneles (el documento y lo que la aplicación escribe) y en media pantalla cada panel quedaba en
  * 300 px: se lee peor justo donde hay que leer. A lo ancho cada panel tiene el doble, y el titular
  * conserva su medida en vez de partirse en cinco líneas para dejarle hueco.
  */

@@ -80,7 +80,7 @@ async def index_phase() -> None:
     for doc_id, doc in docs.items():
         pdf = _pdf_path(doc).read_bytes()
         n = page_count(pdf)
-        print(f"\n[{doc_id}] {n} páginas — indexando…")
+        print(f"\n[{doc_id}] {n} páginas: indexando…")
         t0 = time.monotonic()
 
         # Transcripción (cacheada).
@@ -198,7 +198,7 @@ async def query_phase() -> None:
                         correctness = apply_unanswerable_gate(
                             q["category"], cond, pages if cond != "baseline" else [], correctness
                         )
-                    except Exception as exc:  # noqa: BLE001 — un fallo es un HALLAZGO, se registra
+                    except Exception as exc:  # noqa: BLE001 (un fallo es un HALLAZGO, se registra)
                         print(f"  [ERROR] {cond}/{q['id']}: {type(exc).__name__}: {exc}")
                         append_jsonl(
                             RUN_LOG,

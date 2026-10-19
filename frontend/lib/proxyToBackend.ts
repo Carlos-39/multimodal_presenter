@@ -17,8 +17,8 @@ const BACKEND_URL = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
  * así que al backend llegaba una petición anónima. Y cuatro de los endpoints que pasan por aquí
  * aceptan `document_id`, que exige cuenta Y propiedad: abrir una presentación guardada cuya fuente
  * es un PDF y preguntarle al chat daba 401, porque al restaurarla ya no hay `File` y lo único que
- * viaja es el id. Las fuentes de texto se salvaban por casualidad —el texto se trae entero al
- * restaurar y va en el formulario—, que es justo lo que hacía el fallo difícil de ver.
+ * viaja es el id. Las fuentes de texto se salvaban por casualidad (el texto se trae entero al
+ * restaurar y va en el formulario), que es justo lo que hacía el fallo difícil de ver.
  *
  * No se reenvía el resto de la petición a propósito. `host`, `content-length` y `connection`
  * describen ESTA conexión, no la de salida, y copiarlas es la forma clásica de que el backend

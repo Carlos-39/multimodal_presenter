@@ -2,7 +2,7 @@
 
 El módulo en sí ya está probado aparte (`test_pdf_locator.py`). Lo que se fija aquí es el
 cableado, que es donde se rompen estas cosas: que los tres caminos que abren el panel de fuente
-—una sección del contenido, una respuesta del chat y una diapositiva generada— lleven la región,
+(una sección del contenido, una respuesta del chat y una diapositiva generada) lleven la región,
 y que las demás fuentes sigan intactas.
 
 Y lo más importante de todo: que el LLM NUNCA reciba nada de esto. No basta con que sea la
@@ -173,8 +173,8 @@ def test_lo_que_se_le_manda_al_modelo_no_contiene_texto_ni_coordenadas(
     """La promesa de "nunca aplanar" se comprueba, no se declara.
 
     Se inspecciona lo que REALMENTE se le pasa al agente de estructuración: tiene que ser el PDF
-    binario nativo y nada más. Si alguien cableara el localizador antes de la generación —para
-    "ayudar" al modelo con el texto extraído— este test lo caza: aparecería el párrafo como
+    binario nativo y nada más. Si alguien cableara el localizador antes de la generación (para
+    "ayudar" al modelo con el texto extraído) este test lo caza: aparecería el párrafo como
     string entre las partes del prompt.
     """
     extraction = prepare_input(binary=pdf_con_texto, media_type="application/pdf")

@@ -1,4 +1,4 @@
-"""Endpoint que dibuja una página del PDF (F3) — el que alimenta el visor con recuadro."""
+"""Endpoint que dibuja una página del PDF (F3), el que alimenta el visor con recuadro."""
 
 from __future__ import annotations
 

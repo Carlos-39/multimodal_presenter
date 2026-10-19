@@ -8,12 +8,12 @@ import { useEffect, useRef } from "react";
  * **Solo al señalar.** La primera versión florecía sola al llegar y se quedaba puesta, y estaba
  * mal por dos motivos: en modo claro la trama competía con el texto justo mientras se lee, y una
  * sección que se decora sola convierte en decorado lo que es el argumento del proyecto. Así solo
- * aparece si alguien la señala, y desaparece al irse — que es lo que hacía el componente del que
+ * aparece si alguien la señala, y desaparece al irse, que es lo que hacía el componente del que
  * sale esto y yo había cambiado sin necesidad.
  *
  * **El píxel va en la tinta del texto, no en el acento.** En claro son puntos oscuros sobre papel
  * claro; en oscuro, claros sobre papel oscuro. La trama es siempre lo contrario del papel, que es
- * de donde sale el contraste — y de paso no gasta el azul, que ya trabaja en el héroe.
+ * de donde sale el contraste: y de paso no gasta el azul, que ya trabaja en el héroe.
  *
  * **El retardo de cada píxel es su distancia al centro**, así que la trama se abre como una onda.
  * Esa idea es de la referencia y es la buena.

@@ -1,11 +1,11 @@
-"""Biblioteca (F2): guardar, listar, volver a abrir — y que nadie lea lo de otro.
+"""Biblioteca (F2): guardar, listar, volver a abrir, y que nadie lea lo de otro.
 
 Lo que de verdad hay que blindar aquí es el aislamiento entre cuentas. El resto son caminos
 felices; esto es lo que, si falla, convierte la función en un problema.
 
 Y una segunda cosa que importa igual: que **mandar `document_id` en vez del archivo** funcione y
-exija propiedad. Es lo que permite que una presentación guardada siga sirviendo —chat, deck,
-panel de fuente— desde un navegador que ya no tiene el `File`.
+exija propiedad. Es lo que permite que una presentación guardada siga sirviendo (chat, deck,
+panel de fuente) desde un navegador que ya no tiene el `File`.
 """
 
 from __future__ import annotations
@@ -360,7 +360,7 @@ def test_un_mensaje_del_usuario_no_lleva_respuesta_anclada(client: TestClient) -
 
 def test_el_chat_de_otro_no_se_puede_escribir(client: TestClient) -> None:
     """Sin esto, conocer un id de presentación bastaría para meter mensajes en la de otra
-    persona — y quedarían indistinguibles de los suyos."""
+    persona: y quedarían indistinguibles de los suyos."""
     _registra(client, "ana@x.com")
     ajena = _guarda(client)["id"]
     client.put(f"/biblioteca/presentaciones/{ajena}/chat", json=CONVERSACION)

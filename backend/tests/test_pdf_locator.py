@@ -1,4 +1,4 @@
-"""Localizador de regiones en PDF (F1) — la escalera de matching y la degradación honesta.
+"""Localizador de regiones en PDF (F1), la escalera de matching y la degradación honesta.
 
 Lo que estos tests fijan, por orden de importancia:
 
@@ -247,7 +247,7 @@ def test_rotacion_90_varias_lineas_degrada_en_vez_de_mentir() -> None:
 
     El modelo cita siguiendo el orden que VE, así que una cita de varias líneas deja de ser
     contigua en la capa de texto y no casa. Lo que importa es que eso degrada a fidelidad de
-    página —el comportamiento de siempre— en vez de producir un recuadro en el sitio equivocado.
+    página (el comportamiento de siempre) en vez de producir un recuadro en el sitio equivocado.
     Es el mismo criterio de todo el módulo: antes sin recuadro que con uno que señale mal.
     """
     with PdfLocator(_rotar(_pdf(TEXTO), 90)) as loc:

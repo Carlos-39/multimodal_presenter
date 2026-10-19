@@ -1,8 +1,8 @@
-"""Fase 2 — Estructuración con LLM (PydanticAI + Anthropic claude-sonnet-5).
+"""Fase 2: Estructuración con LLM (PydanticAI + Anthropic claude-sonnet-5).
 
 El modelo emite un objeto validado contra el contrato (`Presentation`), con reintentos
 automáticos. El documento entra como texto o como BINARIO multimodal nativo (PDF/imagen vía
-`BinaryContent`) — nunca como texto extraído de un binario.
+`BinaryContent`): nunca como texto extraído de un binario.
 
 Modo de salida: `PromptedOutput` (el modelo escribe el JSON como su respuesta de texto y
 PydanticAI lo parsea). Se eligió sobre `ToolOutput` porque el streaming (Hito 5d) necesita
@@ -103,7 +103,7 @@ def build_model_input(extraction: ExtractionResult) -> str | list[str | BinaryCo
     if extraction.source_kind == "audio":
         # El audio NO llega como binario a esta fase: Sonnet no admite audio como modalidad
         # de entrada. Entra la `AudioEvidence` de la Fase 0, que conserva hablantes, énfasis,
-        # pausas y condiciones acústicas — no una transcripción plana.
+        # pausas y condiciones acústicas: no una transcripción plana.
         return _audio_prompt(extraction)
 
     assert extraction.binary is not None and extraction.media_type is not None

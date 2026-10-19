@@ -10,7 +10,7 @@ commitean, y viven fuera de esta carpeta.
 ## Qué dejar aquí (sugerencia)
 
 - Un PDF con **tablas** (p. ej. *Attention Is All You Need*, arXiv 1706.03762).
-- Un PDF con **gráficos/diagramas** (p. ej. *IPCC AR6 WGI — Summary for Policymakers*).
+- Un PDF con **gráficos/diagramas** (p. ej. *IPCC AR6 WGI, Summary for Policymakers*).
 - Un PDF **escaneado** o más largo (páginas como imagen, para probar OCR real).
 
 Mantén los PDFs **cortos** (≤ ~10 páginas) para acotar el costo de tokens; el test de humo los
@@ -20,7 +20,7 @@ Los tests de humo detectan automáticamente los PDFs presentes aquí y los **rep
 tipos, si captó tablas/diagramas, alucinaciones) sin asertar cifras. Si la carpeta está vacía,
 esos casos simplemente se saltan.
 
-## `audio/` — clips de la mini-evaluación de audio (A1)
+## `audio/`: clips de la mini-evaluación de audio (A1)
 
 La subcarpeta `audio/` es para los **8 clips grabados por el autor** que alimentan la
 mini-evaluación de la entrada de audio (hallazgo A1 de la auditoría). Están ignorados por git

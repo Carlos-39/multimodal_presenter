@@ -14,7 +14,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
  * **Sin contador de intentos aquí, a propósito.** La documentación de Next dice que el proxy «no
  * debe confiar en módulos compartidos ni en variables globales», así que un contador en memoria
  * contradiría su contrato y se rompería el día que esto se sirva desde más de un sitio. Y contra un
- * código de dieciséis caracteres al azar —ochenta bits— un contador no añade nada medible: el
+ * código de dieciséis caracteres al azar (ochenta bits) un contador no añade nada medible: el
  * límite de intentos vive donde el secreto es débil, que es el login, y ya está puesto.
  */
 
@@ -41,7 +41,7 @@ export function valorDeLaCookie(codigo: string): string {
  * ¿Coincide? Comparación en tiempo constante.
  *
  * Los dos lados son digests de sha256, así que miden siempre 32 bytes y `timingSafeEqual` nunca
- * lanza por longitudes distintas — que es su única forma de fallar y la que haría falsa la
+ * lanza por longitudes distintas: que es su única forma de fallar y la que haría falsa la
  * promesa de «tiempo constante».
  */
 function iguales(a: Buffer, b: Buffer): boolean {
