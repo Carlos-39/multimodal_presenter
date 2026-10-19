@@ -77,6 +77,13 @@ export interface GeneratedIllustration {
   image_url: string;
   alt: string;
   label: string;
+  /**
+   * Una frase que dice qué mirar. La escribe el backend LEYENDO la imagen ya generada, no al
+   * pedirla: una clave escrita de antemano describiría lo que se encargó y no lo que salió.
+   *
+   * Opcional porque las presentaciones guardadas antes de esto no la llevan.
+   */
+  clave?: string | null;
 }
 
 export interface Section {

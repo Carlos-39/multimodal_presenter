@@ -1,5 +1,7 @@
 """Tests de las ilustraciones de apoyo generadas (Hito 5h Parte 1), con Haiku e imagen mockeados."""
 
+import asyncio
+import base64
 import json
 
 import pytest
@@ -107,3 +109,56 @@ def test_una_url_normal_del_proveedor_si_se_descarga() -> None:
     url = "https://ideogram.ai/api/images/direct/abc123.png"
     assert illustration._url_descargable(url) == url
     assert illustration._url_descargable("https://cdn.otro-proveedor.com/x.png")
+
+
+# ── La clave se escribe MIRANDO la imagen (rediseño de las ilustraciones) ──
+
+_IMG_OK = "data:image/png;base64," + base64.b64encode(b"\x89PNG fingido").decode()
+
+
+def _lectura(util: bool, clave: str = "", alt: str = "") -> TestModel:
+    return TestModel(custom_output_text=json.dumps({"util": util, "clave": clave, "alt": alt}))
+
+
+def test_la_lectura_descarta_una_ilustracion_decorativa() -> None:
+    """El filtro de antes decidía si el TEMA pedía imagen; este decide sobre la imagen concreta.
+
+    Es la diferencia entre preguntar «¿esto se beneficiaría de un dibujo?» y «¿este dibujo
+    aporta algo?». Lo segundo solo se puede comprobar con la imagen delante, y es lo que faltaba:
+    una ilustración genérica se publicaba igual porque nadie la miraba.
+    """
+    salida = asyncio.run(
+        illustration.leer_ilustracion(_lectura(False), _IMG_OK, "el ciclo del agua")
+    )
+    assert salida is None
+
+
+def test_la_lectura_pone_la_clave_y_el_alt() -> None:
+    salida = asyncio.run(
+        illustration.leer_ilustracion(
+            _lectura(True, clave="Lo rojo es el nitrógeno a 80 km.", alt="Resplandor sobre nube"),
+            _IMG_OK,
+            "duendes rojos",
+        )
+    )
+    assert salida is not None
+    assert salida.clave == "Lo rojo es el nitrógeno a 80 km."
+    assert salida.alt == "Resplandor sobre nube"  # ya no es «Apoyo visual: » + el título
+    assert salida.label == ILLUSTRATION_LABEL  # la etiqueta obligatoria sigue
+
+
+def test_si_la_lectura_falla_la_imagen_se_publica_sin_clave() -> None:
+    """La lectura es una mejora, no un requisito: no puede costar una imagen ya pagada."""
+    salida = asyncio.run(
+        illustration.leer_ilustracion(_lectura(True), "esto no es un data uri", "lo que sea")
+    )
+    assert salida is not None
+    assert salida.clave is None
+    assert salida.alt  # queda un alt de respaldo, nunca vacío
+
+
+@pytest.mark.parametrize("malo", ["", "https://example.com/x.png", "data:image/png,sin-base64"])
+def test_data_uri_malformado_se_rechaza(malo: str) -> None:
+    """Lo que entra aquí lo devuelve un proveedor externo, así que se comprueba la forma."""
+    with pytest.raises(ValueError):
+        illustration._partes_de_data_uri(malo)

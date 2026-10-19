@@ -170,6 +170,21 @@ class GeneratedIllustration(_Strict):
     image_url: str = Field(min_length=1, description="Imagen generada (data URI).")
     alt: str = Field(min_length=1, description="Descripción accesible de la ilustración.")
     label: str = ILLUSTRATION_LABEL  # etiqueta obligatoria, siempre visible
+    clave: str | None = Field(
+        default=None,
+        description="Una frase que dice qué mirar en la imagen. Se escribe LEYENDO la imagen ya "
+        "generada, no al pedirla.",
+    )
+    """La clave de lectura, debajo de la imagen.
+
+    Las imágenes se generan SIN una palabra dentro —los modelos de imagen escriben con faltas, y
+    una figura con marcas y sin clave deja peor a quien no conoce el tema—. Pero esa prohibición
+    era sobre el INTERIOR de la imagen: nada impide que la clave viva fuera, en el HTML, donde el
+    texto lo controlamos nosotros y siempre está bien escrito. Eso convierte una ilustración
+    decorativa en una que se puede leer.
+
+    Es opcional porque las presentaciones guardadas antes de esto no la tienen, y una biblioteca
+    que deje de abrirse por un campo nuevo no vale lo que cuesta."""
 
 
 class Section(_Strict):
