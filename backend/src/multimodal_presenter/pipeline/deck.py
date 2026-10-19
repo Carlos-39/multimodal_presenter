@@ -13,7 +13,8 @@ etiqueta obligatoria: sin sistema de imágenes paralelo.
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+import logfire
+from pydantic import BaseModel, Field, ValidationError
 from pydantic_ai import Agent, BinaryContent, PromptedOutput
 from pydantic_ai.models import Model
 
@@ -29,6 +30,11 @@ from .illustration import _generate_image, has_image_provider, leer_ilustracion
 from .models import ExtractionResult
 from .pdf_locator import abrir_localizador
 from .validation import ground_quote
+
+#: Lo que cabe en una cifra. El mismo número vive en el contrato público, y los dos tienen
+#: que coincidir: si el plan admite más de lo que el contrato acepta, la diapositiva revienta
+#: al montarse. Hay un test que comprueba justo eso.
+_CIFRA_MAX = 16
 
 _DECK_SYSTEM = (
     "Genera una PRESENTACIÓN EN DIAPOSITIVAS a partir del documento que recibes. Es una síntesis "
@@ -114,7 +120,10 @@ class _SlidePlan(BaseModel):
     title: str = Field(min_length=1)
     body: str | None = None
     bullets: list[str] = Field(default_factory=list)
-    cifra: str | None = None
+    #: El mismo tope que el contrato público, y esa es toda la gracia: aquí pydantic puede
+    #: devolverle el error al modelo para que lo corrija. Sin el tope, el plan aceptaba «un 15,3
+    #: por ciento más» y reventaba después, al montar la diapositiva, con un 500 en producción.
+    cifra: str | None = Field(default=None, max_length=_CIFRA_MAX)
     comparacion: _ComparacionPlan | None = None
     source_quote: str | None = None
     source_page: int | None = None
@@ -165,6 +174,20 @@ def _presupuesto_de_imagenes(n_slides: int) -> int:
     es que una descartada ya se pagó, y por eso el techo se queda.
     """
     return min(5, max(2, -(-n_slides // 4)))
+
+
+def _cifra(plan: _SlidePlan) -> str | None:
+    """La cifra, solo si cabe y si la diapositiva es de ese papel.
+
+    Es la segunda red, y hace falta aunque el plan ya tenga el tope. Lo que llega aquí lo escribió
+    un modelo, y una diapositiva que no se puede montar tiraba la PRESENTACIÓN ENTERA con un 500:
+    una lámina perdiendo su número es un mal menor comparado con eso. Sin cifra, el frontend la
+    compone como una afirmación, que es la caída que ya estaba prevista.
+    """
+    if plan.papel != "dato" or not plan.cifra:
+        return None
+    cifra = plan.cifra.strip()
+    return cifra if cifra and len(cifra) <= _CIFRA_MAX else None
 
 
 def _comparacion(plan: _SlidePlan) -> Comparacion | None:
@@ -236,22 +259,35 @@ async def generate_deck(
                 except Exception:  # noqa: BLE001 (la imagen es un extra; sin ella la slide sigue)
                     illustration = None
 
-            slides.append(
-                GeneratedSlide(
-                    papel=plan.papel,
-                    title=plan.title,
-                    body=plan.body,
-                    bullets=plan.bullets[:6],
-                    cifra=(plan.cifra or None) if plan.papel == "dato" else None,
-                    comparacion=_comparacion(plan),
-                    source=source,
-                    grounding=grounding,
-                    start_s=start_s,
-                    region=region,
-                    is_synthesis=is_synthesis,
-                    illustration=illustration,
+            try:
+                slides.append(
+                    GeneratedSlide(
+                        papel=plan.papel,
+                        title=plan.title,
+                        body=plan.body,
+                        bullets=plan.bullets[:6],
+                        cifra=_cifra(plan),
+                        comparacion=_comparacion(plan),
+                        source=source,
+                        grounding=grounding,
+                        start_s=start_s,
+                        region=region,
+                        is_synthesis=is_synthesis,
+                        illustration=illustration,
+                    )
                 )
-            )
+            except ValidationError as exc:
+                # Lo que entra aquí lo escribió un modelo, y una lámina que no valida se llevaba
+                # por delante la PRESENTACIÓN ENTERA con un 500. Pasó en producción: el plan
+                # admitía una cifra más larga de la que el contrato acepta.
+                #
+                # Se registra el campo que falló, no el valor: lo que hace falta para arreglarlo
+                # es saber QUÉ campo se desincronizó, y el valor es contenido del documento.
+                campos = ", ".join(str(e.get("loc", ("?",))[0]) for e in exc.errors()) or "?"
+                logfire.warn(
+                    "deck: una diapositiva no validó y se descarta (campos: {campos})",
+                    campos=campos,
+                )
 
     if not slides:  # nunca un deck vacío: una slide con el título del documento
         slides = [GeneratedSlide(title="Presentación", bullets=[], is_synthesis=True)]
