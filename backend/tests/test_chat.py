@@ -16,27 +16,28 @@ from multimodal_presenter.pipeline.validation import ground_quote
 QUOTE_OK = "En 2023 las ventas fueron 100 y en 2024 fueron 150."
 
 
-def _answer(text: str, *, quote: str | None = None, page: int | None = None) -> str:
-    """JSON de un ChatAnswer (salida cruda del LLM) para TestModel (PromptedOutput = texto)."""
-    return json.dumps(
-        {
-            "content": {"content_type": "text", "text": text},
-            "source_quote": quote,
-            "source_page": page,
-        }
-    )
+def _answer(text: str, *, quote: str | None = None, page: int | None = None) -> dict:
+    """Argumentos de un ChatAnswer para TestModel.
+
+    Son argumentos y no texto porque el chat usa `ToolOutput`: el modelo rellena los parámetros de
+    una herramienta en vez de escribir JSON dentro de su respuesta. Ese cambio existe porque lo
+    segundo fallaba en producción con las preguntas cortas.
+    """
+    return {
+        "content": {"content_type": "text", "text": text},
+        "source_quote": quote,
+        "source_page": page,
+    }
 
 
-def _clarify(question: str, options: list[str]) -> str:
-    """JSON de un ChatAnswer que PIDE aclaración (opción D) en vez de responder."""
-    return json.dumps(
-        {
-            "content": {"content_type": "text", "text": question},
-            "source_quote": None,
-            "source_page": None,
-            "clarification": {"question": question, "options": options},
-        }
-    )
+def _clarify(question: str, options: list[str]) -> dict:
+    """ChatAnswer que PIDE aclaración (opción D) en vez de responder."""
+    return {
+        "content": {"content_type": "text", "text": question},
+        "source_quote": None,
+        "source_page": None,
+        "clarification": {"question": question, "options": options},
+    }
 
 
 async def _collect(gen):
@@ -73,7 +74,7 @@ def test_ground_quote_binary_is_unverified_with_page(pdf_bytes: bytes) -> None:
 
 # ── chat_stream: eventos y anclaje ──
 def test_chat_stream_ends_with_grounded_done(input_text: str) -> None:
-    model = TestModel(custom_output_text=_answer("La empresa vendió 150 en 2024.", quote=QUOTE_OK))
+    model = TestModel(custom_output_args=_answer("La empresa vendió 150 en 2024.", quote=QUOTE_OK))
     ext = prepare_input(text=input_text)
     events = asyncio.run(_collect(chat_stream(model, extraction=ext, history=[], question="¿?")))
 
@@ -85,7 +86,7 @@ def test_chat_stream_ends_with_grounded_done(input_text: str) -> None:
 
 
 def test_chat_stream_ungrounded_when_no_quote(input_text: str) -> None:
-    model = TestModel(custom_output_text=_answer("No encuentro eso en el documento.", quote=None))
+    model = TestModel(custom_output_args=_answer("No encuentro eso en el documento.", quote=None))
     ext = prepare_input(text=input_text)
     events = asyncio.run(_collect(chat_stream(model, extraction=ext, history=[], question="¿?")))
     done = events[-1]
@@ -96,7 +97,7 @@ def test_chat_stream_ungrounded_when_no_quote(input_text: str) -> None:
 # ── Opción D: Cognitive Forcing Function (pedido de aclaración) ──
 def test_chat_stream_clarification_is_not_an_answer(input_text: str) -> None:
     model = TestModel(
-        custom_output_text=_clarify("¿Te refieres a 2023 o a 2024?", ["2023", "2024"])
+        custom_output_args=_clarify("¿Te refieres a 2023 o a 2024?", ["2023", "2024"])
     )
     ext = prepare_input(text=input_text)
     events = asyncio.run(
@@ -115,7 +116,7 @@ def test_chat_stream_clarification_is_not_an_answer(input_text: str) -> None:
 # ── Endpoint SSE ──
 def test_chat_stream_endpoint_emits_sse(input_text: str) -> None:
     app.dependency_overrides[get_model] = lambda: TestModel(
-        custom_output_text=_answer("R.", quote=QUOTE_OK)
+        custom_output_args=_answer("R.", quote=QUOTE_OK)
     )
     try:
         client = TestClient(app)
@@ -131,7 +132,7 @@ def test_chat_stream_endpoint_emits_sse(input_text: str) -> None:
 
 
 def test_chat_stream_endpoint_rejects_empty_question(input_text: str) -> None:
-    app.dependency_overrides[get_model] = lambda: TestModel(custom_output_text=_answer("x"))
+    app.dependency_overrides[get_model] = lambda: TestModel(custom_output_args=_answer("x"))
     try:
         client = TestClient(app)
         response = client.post("/chat/stream", data={"text": input_text, "question": "   "})
@@ -141,7 +142,7 @@ def test_chat_stream_endpoint_rejects_empty_question(input_text: str) -> None:
 
 
 def test_chat_stream_endpoint_rejects_bad_history(input_text: str) -> None:
-    app.dependency_overrides[get_model] = lambda: TestModel(custom_output_text=_answer("x"))
+    app.dependency_overrides[get_model] = lambda: TestModel(custom_output_args=_answer("x"))
     try:
         client = TestClient(app)
         response = client.post(
@@ -194,7 +195,7 @@ def test_chat_stream_rehace_el_turno_sin_streaming_si_la_validacion_falla(
 
     monkeypatch.setattr(modulo.chat_agent, "run_stream", revienta_al_streamear)
 
-    model = TestModel(custom_output_text=_answer("La empresa vendió 150 en 2024.", quote=QUOTE_OK))
+    model = TestModel(custom_output_args=_answer("La empresa vendió 150 en 2024.", quote=QUOTE_OK))
     ext = prepare_input(text=input_text)
     events = asyncio.run(_collect(chat_stream(model, extraction=ext, history=[], question="¿?")))
 

@@ -150,3 +150,46 @@ def test_deck_sobre_audio_lleva_el_momento_de_la_cita(wav_bytes: bytes) -> None:
     assert anclada.start_s == 4.5
     assert sintesis.is_synthesis is True
     assert sintesis.start_s is None
+
+
+# ── Fase 2: el papel decide la forma, y el presupuesto de imágenes es proporcional ──
+
+
+@pytest.mark.parametrize(
+    ("slides", "esperado"),
+    [(1, 2), (4, 2), (8, 2), (12, 3), (14, 4), (20, 5), (60, 5)],
+)
+def test_el_presupuesto_de_imagenes_crece_con_la_presentacion(slides: int, esperado: int) -> None:
+    """Dos imágenes era un número arbitrario, puesto cuando el problema era que sobraban.
+
+    Ahora cada imagen pasa por un filtro que mira el dibujo y descarta las decorativas, así que se
+    puede aflojar sin que vuelva la basura. El techo se queda porque una imagen descartada ya se
+    pagó, y el suelo también: una presentación corta sin ninguna imagen es un documento.
+    """
+    assert deck._presupuesto_de_imagenes(slides) == esperado
+
+
+def test_la_cifra_solo_sobrevive_en_una_diapositiva_de_dato() -> None:
+    """El modelo declara el papel y rellena los campos por separado, así que puede dejar una
+    cifra en una diapositiva que no es un dato. Si pasara al contrato, el frontend tendría que
+    decidir a quién creer; aquí se decide una vez."""
+    plan = deck._SlidePlan(papel="afirmacion", title="x", cifra="80 km")
+    assert plan.cifra == "80 km"
+    assert deck._comparacion(plan) is None
+
+
+def test_la_comparacion_recorta_a_cuatro_puntos_por_lado() -> None:
+    lados = deck._ComparacionPlan(
+        izquierda=deck._LadoPlan(titulo="A", puntos=[f"p{i}" for i in range(7)]),
+        derecha=deck._LadoPlan(titulo="B", puntos=["q"]),
+    )
+    plan = deck._SlidePlan(papel="comparacion", title="x", comparacion=lados)
+    salida = deck._comparacion(plan)
+    assert salida is not None
+    assert len(salida.izquierda.puntos) == 4, "cinco puntos no caben en una columna"
+    assert salida.derecha.titulo == "B"
+
+
+def test_una_comparacion_declarada_sin_lados_no_rompe_nada() -> None:
+    plan = deck._SlidePlan(papel="comparacion", title="x", comparacion=None)
+    assert deck._comparacion(plan) is None

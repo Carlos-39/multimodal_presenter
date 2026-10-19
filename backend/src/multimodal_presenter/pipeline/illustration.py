@@ -342,7 +342,7 @@ def _partes_de_data_uri(data_uri: str) -> tuple[bytes, str]:
 
 
 async def leer_ilustracion(
-    model: Model, data_uri: str, contexto: str
+    model: Model, data_uri: str, contexto: str, *, exigir_utilidad: bool = True
 ) -> GeneratedIllustration | None:
     """Monta la ilustración MIRANDO la imagen. Devuelve None si no aporta nada.
 
@@ -359,6 +359,12 @@ async def leer_ilustracion(
 
     Si la lectura falla (red, filtro del proveedor), la imagen se queda sin clave pero se publica:
     es lo que había antes de este cambio, y no justifica perder una imagen ya pagada.
+
+    `exigir_utilidad=False` es para la imagen EVOCADORA, la de la apertura y el cierre de una
+    presentación. No es una excepción por comodidad: su trabajo es otro. Esa imagen ambienta, dice
+    de qué va esto antes de que se lea nada, y preguntarle «¿qué aprendo mirándote?» es juzgarla
+    por un trabajo que no es el suyo. Se queda sin clave por la misma razón: no hay nada que
+    descifrar en ella, y un pie didáctico la convertiría en lo que no es.
     """
     try:
         datos, media_type = _partes_de_data_uri(data_uri)
@@ -375,13 +381,15 @@ async def leer_ilustracion(
         return GeneratedIllustration(image_url=data_uri, alt=f"Ilustración sobre: {contexto[:80]}")
 
     lectura = resultado.output
-    if not lectura.util:
+    if exigir_utilidad and not lectura.util:
         logfire.info("ilustración descartada por decorativa: {ctx}", ctx=contexto[:80])
         return None
     return GeneratedIllustration(
         image_url=data_uri,
         alt=lectura.alt or f"Ilustración sobre: {contexto[:80]}",
-        clave=lectura.clave or None,
+        # La evocadora no lleva clave aunque el modelo la escriba: una imagen que ambienta no
+        # tiene nada que descifrar, y ponerle un pie didáctico la convierte en lo que no es.
+        clave=(lectura.clave or None) if exigir_utilidad else None,
     )
 
 
