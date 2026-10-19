@@ -14,6 +14,7 @@ import type { GeneratedSlide, PapelDeSlide } from "./types";
  * - `comparacion`: dos columnas con una línea en medio.
  * - `cita`: el documento hablando, en grande.
  * - `figura`: la imagen ES la diapositiva.
+ * - con `evidencia`: la afirmación arriba y debajo el gráfico, la tabla o la línea de tiempo.
  * - `afirmacion`: afirma y sostiene. Lo de siempre, y el valor por defecto.
  */
 export type SlideLayout =
@@ -21,6 +22,7 @@ export type SlideLayout =
   | "dato"
   | "comparacion"
   | "cita"
+  | "evidencia"
   | "media"
   | "lista"
   | "afirmacion";
@@ -28,7 +30,7 @@ export type SlideLayout =
 export function slideLayout(
   slide: Pick<
     GeneratedSlide,
-    "bullets" | "illustration" | "papel" | "cifra" | "comparacion" | "source"
+    "bullets" | "illustration" | "papel" | "cifra" | "comparacion" | "source" | "evidencia"
   >,
 ): SlideLayout {
   // Una presentación guardada antes del rediseño no trae papel. Se compone como antes, que es lo
@@ -44,6 +46,10 @@ export function slideLayout(
   if (papel === "apertura" || papel === "cierre") return "enunciado";
   if (papel === "figura" && slide.illustration) return "media";
 
+  // La evidencia visual manda sobre la imagen y sobre las viñetas. Es la mitad del modelo que
+  // faltaba: una afirmación sostenida por un gráfico, una tabla o una línea de tiempo es otra
+  // perspectiva del documento; sostenida por un párrafo es el documento otra vez.
+  if (slide.evidencia) return "evidencia";
   if (slide.illustration) return "media";
   if (slide.bullets.length > 0) return "lista";
   return "afirmacion";

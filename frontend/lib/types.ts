@@ -131,6 +131,12 @@ export interface GeneratedSlide {
   cifra?: string | null;
   /** Solo `comparacion`: los dos lados. */
   comparacion?: { izquierda: LadoDeComparacion; derecha: LadoDeComparacion } | null;
+  /**
+   * Lo que SOSTIENE la afirmación cuando no es texto: los mismos tipos que ya dibuja el
+   * contenido del documento, así que no hay renderizador nuevo. El gráfico, además, pasa por
+   * la misma regla de isomorfismo que el contenido verificado.
+   */
+  evidencia?: TableContent | ChartContent | TimelineContent | null;
   source: SourceReference | null;
   grounding: GroundingStatus;
   /** Solo audio: momento de la cita, para que el reproductor del panel arranque ahí. */

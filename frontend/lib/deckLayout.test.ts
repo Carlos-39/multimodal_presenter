@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { slideLayout } from "./deckLayout";
-import type { GeneratedIllustration, SourceReference } from "./types";
+import type { ChartContent, GeneratedIllustration, SourceReference } from "./types";
 
 const IMAGE: GeneratedIllustration = {
   kind: "generated_illustration",
@@ -77,5 +77,32 @@ describe("slideLayout: lo guardado antes del rediseño", () => {
     expect(slideLayout({ ...base, illustration: IMAGE })).toBe("media");
     expect(slideLayout({ ...base, bullets: ["a", "b"] })).toBe("lista");
     expect(slideLayout(base)).toBe("afirmacion");
+  });
+});
+
+describe("slideLayout: la evidencia visual", () => {
+  const GRAFICO: ChartContent = {
+    content_type: "chart",
+    chart_type: "bar",
+    data: { categories: ["a"], series: [{ name: "s", values: [1] }] },
+  };
+
+  it("una afirmación con gráfico se compone como evidencia", () => {
+    expect(slideLayout({ ...base, evidencia: GRAFICO })).toBe("evidencia");
+  });
+
+  /**
+   * Es el orden que define el rediseño. Una lámina puede traer imagen y evidencia a la vez, y
+   * entonces manda la evidencia: es lo que sostiene la afirmación, mientras que la imagen
+   * acompaña. Lo mismo con las viñetas, que son la forma vieja de sostener algo.
+   */
+  it("la evidencia manda sobre la imagen y sobre las viñetas", () => {
+    expect(slideLayout({ ...base, evidencia: GRAFICO, illustration: IMAGE })).toBe("evidencia");
+    expect(slideLayout({ ...base, evidencia: GRAFICO, bullets: ["a"] })).toBe("evidencia");
+  });
+
+  it("pero no le gana a un papel que tiene su propia forma", () => {
+    expect(slideLayout({ ...base, papel: "cita", source: FUENTE, evidencia: GRAFICO })).toBe("cita");
+    expect(slideLayout({ ...base, papel: "dato", cifra: "80 km", evidencia: GRAFICO })).toBe("dato");
   });
 });

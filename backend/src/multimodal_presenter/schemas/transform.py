@@ -20,11 +20,19 @@ Lo que sí se aporta es `SectionGrounding.start_s`, el análogo de `page`: lleva
 audio, sin afirmar que el contenido quedó verificado.
 """
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .presentation import GeneratedIllustration, Presentation, Section, SourceReference
+from .presentation import (
+    ChartContent,
+    GeneratedIllustration,
+    Presentation,
+    Section,
+    SourceReference,
+    TableContent,
+    TimelineContent,
+)
 
 
 class _Strict(BaseModel):
@@ -241,6 +249,25 @@ class Comparacion(_Strict):
     derecha: LadoDeComparacion
 
 
+EvidenciaVisual = Annotated[
+    TableContent | ChartContent | TimelineContent,
+    Field(discriminator="content_type"),
+]
+"""Lo que SOSTIENE la afirmación de una diapositiva, cuando no es texto.
+
+Son los mismos tipos que ya usa el contenido del documento, a propósito: la aplicación sabe
+dibujarlos, están validados y, en el caso del gráfico, pasan por la misma regla de isomorfismo. No
+hay un renderizador nuevo ni un contrato paralelo.
+
+Existe porque faltaba la otra mitad del modelo que esto sigue. Una diapositiva es una afirmación
+sostenida por EVIDENCIA, y la evidencia es visual; poner un párrafo debajo de la afirmación deja
+la misma perspectiva que el documento, solo que más corta. Esa era la queja, y era correcta.
+
+`TextContent` queda fuera de la unión aunque sea del mismo grupo: el texto ya tiene su sitio en
+`body`, y dos maneras de decir lo mismo son dos sitios donde mirar.
+"""
+
+
 class GeneratedSlide(_Strict):
     """Una diapositiva de la presentación GENERADA (síntesis propia desde la fuente).
 
@@ -259,6 +286,7 @@ class GeneratedSlide(_Strict):
     """Corta a propósito. Una diapositiva `dato` existe para que se vea UN número desde el fondo
     de la sala; si cupiera una frase, dejaría de ser un dato y sería una afirmación."""
     comparacion: Comparacion | None = None
+    evidencia: EvidenciaVisual | None = None
     title: str = Field(min_length=1)
     body: str | None = None  # frase/idea central (no todo tiene que ser viñetas)
     bullets: list[str] = Field(default_factory=list)
