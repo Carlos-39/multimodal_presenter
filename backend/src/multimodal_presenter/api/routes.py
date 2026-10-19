@@ -649,7 +649,17 @@ async def deck_endpoint(
         filename=filename,
         audio_evidence=evidencia,
     )
-    return await generate_deck(model, settings, extraction)
+    try:
+        return await generate_deck(model, settings, extraction)
+    except Exception as exc:  # el modelo o el proveedor fallaron → error visible, no un 500 pelado
+        # Mismo motivo que en la narración: sin esta línea, el registro guarda una traza de
+        # pydantic y ni una palabra sobre QUÉ documento ni en qué fase. Esa falta de contexto es
+        # lo que convirtió el último fallo de /deck en dos días de conjeturas.
+        logfire.exception(
+            "deck: no se pudo generar la presentación (fuente: {kind})",
+            kind=extraction.source_kind,
+        )
+        raise HTTPException(status_code=502, detail="No se pudo generar la presentación.") from exc
 
 
 @router.post(

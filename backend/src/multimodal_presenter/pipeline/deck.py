@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logfire
 from pydantic import BaseModel, Field, ValidationError
-from pydantic_ai import Agent, BinaryContent, PromptedOutput
+from pydantic_ai import Agent, BinaryContent, ToolOutput
 from pydantic_ai.models import Model
 
 from ..config import Settings
@@ -40,10 +40,15 @@ _CIFRA_MAX = 16
 
 #: Lo que cabe en el cuerpo de una lámina, en caracteres. Unas 35 palabras en español.
 #:
-#: Es un tope DURO y vive en el plan, no solo en el prompt, porque la indicación blanda no
-#: bastó: pedí «2 o 3 frases» y llegaron párrafos de 70 palabras. Con el tope aquí, pydantic
-#: le devuelve el error al modelo y este parte la lámina en dos, que es lo que había que
-#: hacer desde el principio. Un párrafo en una diapositiva deja de ser una diapositiva.
+#: Lo aplica el CÓDIGO recortando, no el plan rechazando, y la diferencia costó un fin de semana
+#: de producción. Como tope del plan, un cuerpo de 70 palabras no invalidaba su lámina: invalidaba
+#: la presentación COMPLETA, porque el modelo devuelve el deck entero de una vez. Pydantic se lo
+#: devolvía para que lo corrigiera, el modelo volvía a pasarse, y a la segunda saltaba
+#: «Exceeded maximum output retries» y catorce láminas buenas se iban con la mala.
+#:
+#: Recortar no es resignarse: el tope existe porque un párrafo en una diapositiva deja de ser una
+#: diapositiva, y quedarse con las frases que caben es exactamente eso, hecho sin pedirle permiso
+#: al modelo ni pagar otra vuelta.
 _BODY_MAX = 280
 
 _DECK_SYSTEM = (
@@ -62,9 +67,13 @@ _DECK_SYSTEM = (
     "`imagen_evocadora` en true: una imagen que ambienta, que dice de qué va esto antes de leer.\n"
     "- `cierre`: SOLO la última. Qué se lleva quien la vio, en `title`. También admite imagen "
     "evocadora.\n"
+    "`title` LLEVA TEXTO EN TODAS LAS LÁMINAS, sin excepción y sea cual sea el papel. Una "
+    "lámina sin título no se puede mostrar, así que se descarta entera y se pierde todo lo "
+    "que llevaba dentro.\n"
     "- `dato`: UNA cifra que importe, en `cifra` tal como se lee («80 km», «15,3 %», «99"
     " estudiantes»), y en `body` una frase con qué significa o contra qué se compara. Sin "
-    "viñetas. EL TÍTULO NO REPITE LA CIFRA: la cifra ya se ve enorme debajo, y decirla dos veces "
+    "viñetas. En `title`, la AFIRMACIÓN que el número sostiene, y nunca el número otra vez: la "
+    "cifra ya se ve enorme debajo, y decirla dos veces "
     "gasta la lámina. Mal: «A 50-90 km de altura, donde empieza el espectáculo». Bien: «Más alto "
     "que cualquier avión, y por eso casi nadie los ve». La cifra sale del documento, así que ESTA "
     "SIEMPRE VA ANCLADA: copia en `source_quote` la frase exacta donde aparece.\n"
@@ -85,9 +94,10 @@ _DECK_SYSTEM = (
     "de índice. Mal: «El mecanismo: de un rayo al resplandor». Bien: «El resplandor no lo "
     "enciende el rayo, sino el hueco que el rayo deja».\n"
     "- El `body` sostiene la afirmación, y es CORTO: 35 palabras como mucho, una o dos frases. "
-    "Esto es un tope duro, no una sugerencia. Un párrafo en una diapositiva deja de ser una "
-    "diapositiva y vuelve a ser el documento, que es justo lo que esto no quiere ser. Si no cabe "
-    "en 35 palabras, es que hay dos ideas: parte la lámina en dos.\n"
+    "Esto es un tope duro, no una sugerencia: lo que se pase se RECORTA por la última frase "
+    "que cabe, así que la cola sobrante no la lee nadie. Un párrafo en una diapositiva deja "
+    "de ser una diapositiva y vuelve a ser el documento, que es lo que esto no quiere ser. Si no "
+    "cabe en 35 palabras, es que hay dos ideas: parte la lámina en dos.\n"
     "\n"
     "LA EVIDENCIA. Esto es lo que separa una presentación de un documento troceado. La afirmación "
     "va arriba y debajo va la EVIDENCIA que la sostiene, y la evidencia es VISUAL siempre que se "
@@ -146,13 +156,13 @@ class _ComparacionPlan(BaseModel):
 
 class _SlidePlan(BaseModel):
     papel: PapelDeSlide = "afirmacion"
-    title: str = Field(min_length=1)
-    body: str | None = Field(default=None, max_length=_BODY_MAX)
+    #: Sin `min_length` ni `max_length` en todo el plan, a propósito. Un tope aquí no recorta la
+    #: lámina que se pasa: rechaza el deck entero, porque el modelo lo devuelve de una vez. Los
+    #: topes se aplican al montar cada diapositiva, donde lo que falla es UNA.
+    title: str = ""
+    body: str | None = None
     bullets: list[str] = Field(default_factory=list)
-    #: El mismo tope que el contrato público, y esa es toda la gracia: aquí pydantic puede
-    #: devolverle el error al modelo para que lo corrija. Sin el tope, el plan aceptaba «un 15,3
-    #: por ciento más» y reventaba después, al montar la diapositiva, con un 500 en producción.
-    cifra: str | None = Field(default=None, max_length=_CIFRA_MAX)
+    cifra: str | None = None
     comparacion: _ComparacionPlan | None = None
     evidencia: EvidenciaVisual | None = None
     source_quote: str | None = None
@@ -169,7 +179,11 @@ class _DeckPlan(BaseModel):
     slides: list[_SlidePlan] = Field(default_factory=list)
 
 
-deck_agent = Agent(output_type=PromptedOutput(_DeckPlan), system_prompt=_DECK_SYSTEM)
+#: `ToolOutput` y no `PromptedOutput`: la forma la impone la API en la llamada a herramienta en
+#: vez de pedirle al modelo que escriba el JSON dentro de su prosa. Es el mismo cambio que arregló
+#: el chat, y aquí urgía más: los campos del rediseño (`papel`, `cifra`, `comparacion`,
+#: `evidencia`) le dan muchas más formas de escribir algo que no encaja.
+deck_agent = Agent(output_type=ToolOutput(_DeckPlan), system_prompt=_DECK_SYSTEM)
 
 _cache: dict[str, GeneratedDeck] = {}
 
@@ -206,13 +220,61 @@ def _presupuesto_de_imagenes(n_slides: int) -> int:
     return min(5, max(2, -(-n_slides // 4)))
 
 
+def _titulo_y_cuerpo(plan: _SlidePlan) -> tuple[str, str | None]:
+    """El título y el cuerpo se deciden juntos, porque uno puede rellenar al otro.
+
+    El contrato exige título, así que una lámina sin él se descarta entera. Y la que llega sin
+    título con más frecuencia es justo la de `dato`: desde que el prompt le prohíbe repetir la
+    cifra ahí, el modelo a veces prefiere dejarlo en blanco antes que escribir la afirmación que
+    el número sostiene. Descartarla es perder el número, que es lo único que esa lámina tenía.
+
+    Cuando falta, la primera frase del cuerpo asciende a título y DEJA de estar en el cuerpo.
+    Repetirla en los dos sitios sería la duplicación que este rediseño vino a quitar, y es la
+    misma que se vio en la primera prueba: el título diciendo lo que ya decía el número.
+    """
+    titulo = plan.title.strip()
+    cuerpo = _cuerpo(plan)
+    if titulo:
+        return titulo, cuerpo
+    if cuerpo is None:
+        return "", None  # nada que ascender: el montaje la descarta, y es lo correcto
+    corte = min((pos for pos in (cuerpo.find(c) for c in ".!?") if pos > 0), default=-1)
+    if corte < 0:
+        return cuerpo, None
+    return cuerpo[: corte + 1], (cuerpo[corte + 1 :].strip() or None)
+
+
+def _cuerpo(plan: _SlidePlan) -> str | None:
+    """El cuerpo de la lámina, recortado a lo que cabe en una diapositiva.
+
+    Corta por el final de una FRASE, no por el carácter 280. Un cuerpo cortado a mitad de palabra
+    se lee como un error de la aplicación; cortado tras un punto se lee como una diapositiva que
+    dice menos, que es justo lo que se le estaba pidiendo al modelo y no hacía. Si ni la primera
+    frase cabe, se corta por la última palabra entera y se cierra con puntos suspensivos: eso ya
+    es un cuerpo mal escrito y no hay forma de salvarlo bien.
+    """
+    if plan.body is None:
+        return None
+    cuerpo = plan.body.strip()
+    if not cuerpo:
+        return None
+    if len(cuerpo) <= _BODY_MAX:
+        return cuerpo
+    # El punto más tardío que deja el texto dentro del tope. Se mira un carácter más allá para
+    # que una frase que acaba JUSTO en el tope cuente como que cabe.
+    corte = max(cuerpo.rfind(c, 0, _BODY_MAX + 1) for c in ".!?")
+    if corte > 0:
+        return cuerpo[: corte + 1]
+    return cuerpo[:_BODY_MAX].rsplit(" ", 1)[0].rstrip(",;:") + "..."
+
+
 def _cifra(plan: _SlidePlan) -> str | None:
     """La cifra, solo si cabe y si la diapositiva es de ese papel.
 
-    Es la segunda red, y hace falta aunque el plan ya tenga el tope. Lo que llega aquí lo escribió
-    un modelo, y una diapositiva que no se puede montar tiraba la PRESENTACIÓN ENTERA con un 500:
-    una lámina perdiendo su número es un mal menor comparado con eso. Sin cifra, el frontend la
-    compone como una afirmación, que es la caída que ya estaba prevista.
+    Lo que llega aquí lo escribió un modelo, y el plan ya no pone topes: los pone este montaje,
+    donde lo que falla es UNA lámina. Una diapositiva que no se puede montar se llevaba la
+    PRESENTACIÓN ENTERA con un 500, y perder un número es un mal menor comparado con eso. Sin
+    cifra, el frontend la compone como una afirmación, que es la caída que ya estaba prevista.
     """
     if plan.papel != "dato" or not plan.cifra:
         return None
@@ -309,12 +371,13 @@ async def generate_deck(
                 except Exception:  # noqa: BLE001 (la imagen es un extra; sin ella la slide sigue)
                     illustration = None
 
+            titulo, cuerpo = _titulo_y_cuerpo(plan)
             try:
                 slides.append(
                     GeneratedSlide(
                         papel=plan.papel,
-                        title=plan.title,
-                        body=plan.body,
+                        title=titulo,
+                        body=cuerpo,
                         bullets=plan.bullets[:6],
                         cifra=_cifra(plan),
                         comparacion=_comparacion(plan),
