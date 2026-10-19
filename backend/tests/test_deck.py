@@ -193,3 +193,73 @@ def test_la_comparacion_recorta_a_cuatro_puntos_por_lado() -> None:
 def test_una_comparacion_declarada_sin_lados_no_rompe_nada() -> None:
     plan = deck._SlidePlan(papel="comparacion", title="x", comparacion=None)
     assert deck._comparacion(plan) is None
+
+
+def test_el_plan_no_admite_cifras_que_el_contrato_rechaza() -> None:
+    """Un 500 en producción, y de los tontos: el plan aceptaba cualquier cifra y el contrato
+    público la limita a 16 caracteres, sin nada que recortara en medio. El modelo escribió algo
+    como «un 15,3 por ciento más» y la presentación ENTERA se cayó al montarse.
+
+    Que los dos topes coincidan no es cosmético: con el tope en el plan, pydantic le devuelve el
+    error al modelo y este lo corrige; sin él, el error aparece después, donde ya no hay a quién
+    preguntarle.
+    """
+    from multimodal_presenter.schemas.transform import GeneratedSlide
+
+    del_contrato = [
+        m for m in GeneratedSlide.model_fields["cifra"].metadata if hasattr(m, "max_length")
+    ]
+    del_plan = [
+        m for m in deck._SlidePlan.model_fields["cifra"].metadata if hasattr(m, "max_length")
+    ]
+    assert del_plan, "el plan no limita la cifra: el desajuste que costó el 500"
+    assert del_plan[0].max_length <= del_contrato[0].max_length
+
+
+def test_una_cifra_demasiado_larga_no_tumba_la_presentacion() -> None:
+    """Segunda red. Lo que llega aquí lo escribió un modelo, y una lámina que no se puede montar
+    no puede llevarse por delante las otras trece."""
+    plan = deck._SlidePlan.model_construct(
+        papel="dato", title="x", cifra="un 15,3 por ciento más", bullets=[]
+    )
+    assert deck._cifra(plan) is None
+
+
+def test_la_cifra_no_sobrevive_fuera_de_una_diapositiva_de_dato() -> None:
+    plan = deck._SlidePlan(papel="afirmacion", title="x", cifra="80 km")
+    assert deck._cifra(plan) is None
+
+
+def test_una_lamina_que_no_valida_no_se_lleva_la_presentacion(monkeypatch, input_text: str) -> None:
+    """La red de seguridad del montaje.
+
+    Lo que llega al montaje lo escribió un modelo, y hasta ahora una sola lámina inválida
+    respondía 500 y dejaba al participante sin presentación. Aquí se fuerza ese fallo (una cifra
+    imposible, más larga de lo que el contrato admite) y se comprueba que las demás llegan.
+    """
+    import asyncio
+
+    from multimodal_presenter.config import Settings
+    from multimodal_presenter.pipeline.extraction import prepare_input
+
+    payload = {
+        "hilo": "lo que defiende",
+        "slides": [
+            {"papel": "afirmacion", "title": "Primera"},
+            {"papel": "dato", "title": "La mala", "cifra": "80 km"},
+            {"papel": "afirmacion", "title": "Tercera"},
+        ],
+    }
+    # Devuelve algo que el contrato público NO acepta, saltándose el tope del plan.
+    monkeypatch.setattr(deck, "_cifra", lambda plan: "x" * 40 if plan.papel == "dato" else None)
+
+    resultado = asyncio.run(
+        deck.generate_deck(
+            TestModel(custom_output_text=json.dumps(payload)),
+            Settings(openai_api_key="", logfire_token=""),
+            prepare_input(text=input_text),
+        )
+    )
+
+    assert [s.title for s in resultado.slides] == ["Primera", "Tercera"]
+    assert resultado.hilo == "lo que defiende"
