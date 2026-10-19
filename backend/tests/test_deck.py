@@ -1,7 +1,5 @@
 """Tests de la presentación generada en diapositivas (/deck), con Sonnet e imagen mockeados."""
 
-import json
-
 import pytest
 from fastapi.testclient import TestClient
 from pydantic_ai.models.test import TestModel
@@ -38,7 +36,7 @@ def _deck_model(input_text: str) -> TestModel:
             },
         ]
     }
-    return TestModel(custom_output_text=json.dumps(payload))
+    return TestModel(custom_output_args=payload)
 
 
 def test_deck_mix_trazabilidad_y_imagen(monkeypatch, input_text: str) -> None:
@@ -142,7 +140,7 @@ def test_deck_sobre_audio_lleva_el_momento_de_la_cita(wav_bytes: bytes) -> None:
         update={"google_api_key": None, "ideogram_api_key": None, "openai_api_key": None}
     )
     resultado = asyncio.run(
-        deck.generate_deck(TestModel(custom_output_text=json.dumps(payload)), ajustes, extraction)
+        deck.generate_deck(TestModel(custom_output_args=payload), ajustes, extraction)
     )
 
     anclada, sintesis = resultado.slides
@@ -195,25 +193,52 @@ def test_una_comparacion_declarada_sin_lados_no_rompe_nada() -> None:
     assert deck._comparacion(plan) is None
 
 
-def test_el_plan_no_admite_cifras_que_el_contrato_rechaza() -> None:
-    """Un 500 en producción, y de los tontos: el plan aceptaba cualquier cifra y el contrato
-    público la limita a 16 caracteres, sin nada que recortara en medio. El modelo escribió algo
-    como «un 15,3 por ciento más» y la presentación ENTERA se cayó al montarse.
+def test_el_plan_no_pone_topes_de_valor_a_ninguna_lamina() -> None:
+    """El plan describe la FORMA de la respuesta, nunca cuánto cabe en cada campo.
 
-    Que los dos topes coincidan no es cosmético: con el tope en el plan, pydantic le devuelve el
-    error al modelo y este lo corrige; sin él, el error aparece después, donde ya no hay a quién
-    preguntarle.
+    Esto invierte la regla que yo mismo fijé aquí antes, y la inversión la pagó producción. El
+    razonamiento viejo era bueno a medias: con el tope en el plan, pydantic le devuelve el error
+    al modelo y este lo corrige. La mitad que no vi es que el modelo devuelve el deck ENTERO de
+    una vez, así que un cuerpo de 70 palabras no invalidaba su lámina, invalidaba las catorce; y
+    cuando el reintento volvía a pasarse, saltaba «Exceeded maximum output retries» y /deck
+    respondía 500 sin decir por qué.
+
+    Los topes siguen existiendo: los aplica el montaje, lámina a lámina, recortando o
+    descartando una sola. Que este test mire el esquema y no el comportamiento es a propósito:
+    un `max_length` puesto aquí de buena fe es justo la regresión que nadie ve venir.
     """
-    from multimodal_presenter.schemas.transform import GeneratedSlide
+    acotados = [
+        nombre
+        for nombre, campo in deck._SlidePlan.model_fields.items()
+        if any(hasattr(m, "max_length") or hasattr(m, "min_length") for m in campo.metadata)
+    ]
+    assert not acotados, f"el plan acota {acotados}: un campo que se pasa rechaza el deck entero"
 
-    del_contrato = [
-        m for m in GeneratedSlide.model_fields["cifra"].metadata if hasattr(m, "max_length")
-    ]
-    del_plan = [
-        m for m in deck._SlidePlan.model_fields["cifra"].metadata if hasattr(m, "max_length")
-    ]
-    assert del_plan, "el plan no limita la cifra: el desajuste que costó el 500"
-    assert del_plan[0].max_length <= del_contrato[0].max_length
+
+def test_un_cuerpo_largo_se_recorta_por_la_ultima_frase_que_cabe() -> None:
+    """Y no por el carácter 280, que se leería como un fallo de la aplicación."""
+    frase = "Los duendes rojos laten sobre la tormenta. "
+    plan = deck._SlidePlan(title="x", body=frase * 10)
+    cuerpo = deck._cuerpo(plan)
+    assert cuerpo is not None
+    assert len(cuerpo) <= deck._BODY_MAX
+    assert cuerpo.endswith(".")
+    assert cuerpo == (frase * 6).strip()  # seis frases caben en 280; la séptima no
+
+
+def test_un_cuerpo_sin_un_solo_punto_se_corta_por_palabra_entera() -> None:
+    plan = deck._SlidePlan(title="x", body="palabra " * 60)
+    cuerpo = deck._cuerpo(plan)
+    assert cuerpo is not None
+    assert len(cuerpo) <= deck._BODY_MAX + 3  # los puntos suspensivos que avisan del corte
+    assert cuerpo.endswith("palabra...")
+
+
+def test_un_cuerpo_que_cabe_no_se_toca() -> None:
+    plan = deck._SlidePlan(title="x", body="  Corta y sana.  ")
+    assert deck._cuerpo(plan) == "Corta y sana."
+    assert deck._cuerpo(deck._SlidePlan(title="x", body="   ")) is None
+    assert deck._cuerpo(deck._SlidePlan(title="x", body=None)) is None
 
 
 def test_una_cifra_demasiado_larga_no_tumba_la_presentacion() -> None:
@@ -255,7 +280,7 @@ def test_una_lamina_que_no_valida_no_se_lleva_la_presentacion(monkeypatch, input
 
     resultado = asyncio.run(
         deck.generate_deck(
-            TestModel(custom_output_text=json.dumps(payload)),
+            TestModel(custom_output_args=payload),
             Settings(openai_api_key="", logfire_token=""),
             prepare_input(text=input_text),
         )
@@ -306,3 +331,111 @@ def test_un_grafico_ya_correcto_se_queda_como_esta() -> None:
     salida = deck._evidencia(plan)
     assert salida is not None and salida.content_type == "chart"
     assert salida.chart_type == "bar"
+
+
+def test_una_lamina_con_cuerpo_largo_no_tumba_la_presentacion(input_text: str) -> None:
+    """El fallo de producción, tal como ocurrió, desde la petición.
+
+    El plan acotaba el cuerpo a 280 caracteres. Como el modelo devuelve el deck entero de una
+    vez, una lámina de 70 palabras invalidaba la respuesta COMPLETA; pydantic se la devolvía
+    para que la corrigiera, el modelo volvía a pasarse y a la segunda saltaba
+    «Exceeded maximum output retries». /deck respondía 500 y el participante se quedaba sin
+    presentación, con un registro que no nombraba la causa.
+    """
+    app.dependency_overrides[get_settings] = lambda: Settings(openai_api_key="", logfire_token="")
+    largo = "Los duendes rojos laten sobre la tormenta y se apagan en milisegundos. " * 7
+    assert len(largo) > deck._BODY_MAX
+    payload = {
+        "hilo": "un hilo",
+        "slides": [
+            {"papel": "afirmacion", "title": "Corta", "body": "Cabe de sobra.", "synthesis": True},
+            {"papel": "afirmacion", "title": "Pasada", "body": largo, "synthesis": True},
+        ],
+    }
+    app.dependency_overrides[get_model] = lambda: TestModel(custom_output_args=payload)
+
+    r = TestClient(app).post("/deck", data={"text": input_text})
+
+    assert r.status_code == 200
+    slides = r.json()["slides"]
+    assert [s["title"] for s in slides] == ["Corta", "Pasada"]
+    assert len(slides[1]["body"]) <= deck._BODY_MAX
+    assert slides[1]["body"].endswith(".")
+
+
+def test_el_esquema_del_plan_lo_acepta_cada_proveedor_del_fallback() -> None:
+    """El plan viaja como definición de herramienta, y cada proveedor lo reescribe a su gusto.
+
+    Gemini es el estricto de los dos, y es el fallback: si rechaza el esquema o se come un campo
+    al transformarlo, nadie se entera hasta el día que Anthropic se cae, que es el único día en
+    que el fallback importa. `evidencia` es el campo en riesgo porque es una unión discriminada,
+    la construcción que peor se lleva con los esquemas de función.
+
+    No toca la red: `customize_request_parameters` transforma el esquema en local, y las claves
+    son falsas a propósito para que esto corra en un CI sin secretos.
+    """
+    import json
+
+    from pydantic_ai.models import ModelRequestParameters
+    from pydantic_ai.models.anthropic import AnthropicModel
+    from pydantic_ai.models.google import GoogleModel
+    from pydantic_ai.providers.anthropic import AnthropicProvider
+    from pydantic_ai.providers.google import GoogleProvider
+    from pydantic_ai.tools import ToolDefinition
+
+    esquema = deck._DeckPlan.model_json_schema()
+    modelos = {
+        "anthropic": AnthropicModel(
+            "claude-sonnet-5", provider=AnthropicProvider(api_key="sk-ant-falsa")
+        ),
+        "google": GoogleModel("gemini-3.1-pro-preview", provider=GoogleProvider(api_key="falsa")),
+    }
+
+    for nombre, modelo in modelos.items():
+        params = ModelRequestParameters(
+            output_tools=[
+                ToolDefinition(name="final_result", parameters_json_schema=dict(esquema))
+            ],
+            allow_text_output=False,
+        )
+        transformado = json.dumps(
+            [
+                t.parameters_json_schema
+                for t in modelo.customize_request_parameters(params).output_tools
+            ]
+        )
+        for campo in ("hilo", "papel", "cifra", "comparacion", "evidencia"):
+            assert campo in transformado, f"{nombre} se come `{campo}` al transformar el esquema"
+
+
+def test_un_dato_sin_titulo_no_pierde_su_cifra() -> None:
+    """El caso que se vio con el PDF de los duendes, y que yo mismo provoqué.
+
+    El prompt le prohíbe repetir la cifra en el título (porque repetirla gastaba la lámina), y
+    el modelo tomó el camino seguro: dejó el título en blanco. El contrato exige título, así que
+    la lámina se descartaba entera y con ella el número, que era todo lo que tenía.
+    """
+    plan = deck._SlidePlan(
+        papel="dato",
+        title="",
+        cifra="50 a 90 km",
+        body="Ahí ocurre el duende rojo: más alto que cualquier avión. Y por eso casi nadie lo ve.",
+    )
+    titulo, cuerpo = deck._titulo_y_cuerpo(plan)
+    assert titulo == "Ahí ocurre el duende rojo: más alto que cualquier avión."
+    assert cuerpo == "Y por eso casi nadie lo ve."  # la frase ascendida sale del cuerpo
+
+
+def test_un_titulo_escrito_se_respeta_tal_cual() -> None:
+    plan = deck._SlidePlan(title="  Lo que el número sostiene  ", body="La glosa.")
+    assert deck._titulo_y_cuerpo(plan) == ("Lo que el número sostiene", "La glosa.")
+
+
+def test_un_cuerpo_de_una_sola_frase_asciende_entero_y_deja_el_cuerpo_vacio() -> None:
+    plan = deck._SlidePlan(title="", body="Una sola idea y punto.")
+    assert deck._titulo_y_cuerpo(plan) == ("Una sola idea y punto.", None)
+
+
+def test_una_lamina_sin_titulo_ni_cuerpo_no_se_puede_salvar() -> None:
+    """Y debe descartarse: no hay de dónde sacar un título, y una lámina en blanco es peor."""
+    assert deck._titulo_y_cuerpo(deck._SlidePlan(title="", body=None)) == ("", None)
