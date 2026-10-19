@@ -5,6 +5,7 @@ import { CornersIn, CornersOut, Sparkle } from "@phosphor-icons/react";
 import { useSlideKeys } from "@/hooks/useSlideKeys";
 import { slideLayout } from "@/lib/deckLayout";
 import type { CitedRegion, GeneratedDeck, GroundingStatus, SourceReference } from "@/lib/types";
+import { ContentRenderer } from "./ContentRenderer";
 import { GeneratedFigure } from "./GeneratedFigure";
 import { SlideNav } from "./SlideNav";
 import { isAnchored } from "@/lib/grounding";
@@ -151,7 +152,7 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
               className={`min-h-0 flex-1 ${
                 layout === "media"
                   ? "slide-media"
-                  : layout === "enunciado" || layout === "cita" || layout === "dato"
+                  : layout === "enunciado" || layout === "cita" || layout === "dato" || layout === "evidencia"
                     ? "flex flex-col justify-center"
                     : ""
               }`}
@@ -194,7 +195,7 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
                 ) : null}
 
                 {/* No todo es viñetas: `body` es una frase/idea central; los bullets, enumeraciones. */}
-                {slide.body && layout !== "dato" && layout !== "cita" ? (
+                {slide.body && layout !== "dato" && layout !== "cita" && layout !== "evidencia" ? (
                   <p
                     className={`font-serif ${
                       layout === "enunciado"
@@ -225,6 +226,22 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
                   </div>
                 ) : null}
 
+                {/* La evidencia, con el MISMO renderizador que el contenido del documento. No
+                    hay un sistema de dibujo paralelo para las diapositivas, y el gráfico ya
+                    llegó corregido por la regla de isomorfismo del backend: lo que se ve aquí
+                    es tan comprobable como el contenido verificado. */}
+                {layout === "evidencia" && slide.evidencia ? (
+                  <div className="slide-evidencia">
+                    <ContentRenderer content={slide.evidencia} />
+                    {/* El cuerpo baja a pie de la evidencia y en pequeño: la evidencia ya
+                        habla, y un párrafo del mismo tamaño al lado compite con ella en vez de
+                        rematarla. Aquí dice lo que el gráfico no puede decir solo. */}
+                    {slide.body ? (
+                      <p className="slide-evidencia-pie text-foreground-secondary">{slide.body}</p>
+                    ) : null}
+                  </div>
+                ) : null}
+
                 {slide.bullets.length > 0 && layout !== "comparacion" && layout !== "dato" ? (
                   <ul className="slide-bullets font-serif text-foreground">
                     {slide.bullets.map((b, i) => (
@@ -245,6 +262,7 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
                   illustration={slide.illustration}
                   className="min-w-0"
                   maxHeightClass="slide-figure"
+                  discreto
                 />
               ) : null}
             </div>

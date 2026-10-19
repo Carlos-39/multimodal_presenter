@@ -263,3 +263,46 @@ def test_una_lamina_que_no_valida_no_se_lleva_la_presentacion(monkeypatch, input
 
     assert [s.title for s in resultado.slides] == ["Primera", "Tercera"]
     assert resultado.hilo == "lo que defiende"
+
+
+# ── La evidencia pasa por la MISMA regla que el contenido del documento ──
+
+
+def _grafico(tipo: str, valores: list[float]) -> dict:
+    return {
+        "content_type": "chart",
+        "chart_type": tipo,
+        "data": {"categories": ["a", "b"], "series": [{"name": "s", "values": valores}]},
+    }
+
+
+def test_sin_evidencia_no_hay_evidencia() -> None:
+    assert deck._evidencia(deck._SlidePlan(title="x")) is None
+
+
+def test_la_evidencia_pasa_por_la_regla_de_isomorfismo() -> None:
+    """Esto es lo que hace COMPROBABLE una presentación generada, y no solo bonita.
+
+    Un gráfico que el modelo propone cruza el mismo filtro determinista que el contenido del
+    documento. Si el tipo no representa esos datos se corrige solo; si ninguno los representa, se
+    degrada a tabla. Es la diferencia con las herramientas que generan presentaciones dibujando
+    imágenes: allí la evidencia es un dibujo y no hay con qué contrastarlo.
+    """
+    from multimodal_presenter.schemas.presentation import ChartContent
+
+    # Una tarta con un valor negativo no es representable como tarta.
+    plan = deck._SlidePlan.model_validate({"title": "x", "evidencia": _grafico("pie", [-1, 2])})
+    salida = deck._evidencia(plan)
+
+    assert salida is not None
+    if isinstance(salida, ChartContent):
+        assert salida.chart_type != "pie", "se corrigió a un tipo que sí representa los datos"
+    else:
+        assert salida.content_type == "table", "o se degradó a tabla, que también es honesto"
+
+
+def test_un_grafico_ya_correcto_se_queda_como_esta() -> None:
+    plan = deck._SlidePlan.model_validate({"title": "x", "evidencia": _grafico("bar", [1, 2])})
+    salida = deck._evidencia(plan)
+    assert salida is not None and salida.content_type == "chart"
+    assert salida.chart_type == "bar"

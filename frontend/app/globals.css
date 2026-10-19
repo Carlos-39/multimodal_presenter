@@ -310,6 +310,41 @@ body {
   padding-top: clamp(0.5rem, 1.2cqw, 1rem);
 }
 
+/* La evidencia dentro de una diapositiva.
+   El renderizador es el mismo que el del documento, pero el sitio no: allí un gráfico convive con
+   párrafos a 16 px y aquí es lo único que hay, en un lienzo que puede estar proyectado. Así que
+   se le da aire por arriba (la afirmación respira) y un tamaño de letra que escala con el lienzo,
+   igual que el resto de la lámina, para que una tabla no salga en letra de documento sobre una
+   pared. */
+.slide-evidencia {
+  margin-top: clamp(1rem, 3cqw, 2.25rem);
+}
+
+/* `zoom` y no un tamaño de letra, y la razón importa.
+   El gráfico, la tabla y la línea de tiempo están escritos para vivir en un documento: fijan sus
+   tamaños en píxeles, incluida la altura del gráfico y la letra de sus ejes. Heredar un
+   `font-size` no les llega. Y reescribirlos en unidades relativas cambiaría también cómo se ven
+   en el documento, que es justo lo que no se toca.
+   `zoom` amplía el subárbol entero, participa en el flujo (a diferencia de `transform: scale`,
+   que dejaría un hueco del tamaño viejo) y respeta lo que el componente ya decidió. Son pasos y
+   no una fórmula continua para que el resultado sea predecible en cada tamaño de lienzo. */
+@container slide-stage (min-width: 700px) {
+  .slide-evidencia {
+    zoom: 1.2;
+  }
+}
+@container slide-stage (min-width: 980px) {
+  .slide-evidencia {
+    zoom: 1.45;
+  }
+}
+.slide-evidencia-pie {
+  margin-top: clamp(0.75rem, 2cqw, 1.5rem);
+  font-size: clamp(0.75rem, 1.25cqw, 1.125rem);
+  line-height: 1.5;
+  max-width: 60ch;
+}
+
 /* Dato: una cifra que se lee desde el fondo de la sala, y su glosa al lado.
    El tamaño va en unidades del lienzo como todo lo demás, así que la cifra ocupa lo mismo
    proyectada que en una ventana pequeña. Se apila en angosto porque un número grande y un texto
