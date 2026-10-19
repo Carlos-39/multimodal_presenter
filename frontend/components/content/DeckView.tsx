@@ -245,6 +245,7 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
                   illustration={slide.illustration}
                   className="min-w-0"
                   maxHeightClass="slide-figure"
+                  discreto
                 />
               ) : null}
             </div>

@@ -36,6 +36,14 @@ from .validation import ground_quote
 #: al montarse. Hay un test que comprueba justo eso.
 _CIFRA_MAX = 16
 
+#: Lo que cabe en el cuerpo de una lámina, en caracteres. Unas 35 palabras en español.
+#:
+#: Es un tope DURO y vive en el plan, no solo en el prompt, porque la indicación blanda no
+#: bastó: pedí «2 o 3 frases» y llegaron párrafos de 70 palabras. Con el tope aquí, pydantic
+#: le devuelve el error al modelo y este parte la lámina en dos, que es lo que había que
+#: hacer desde el principio. Un párrafo en una diapositiva deja de ser una diapositiva.
+_BODY_MAX = 280
+
 _DECK_SYSTEM = (
     "Genera una PRESENTACIÓN EN DIAPOSITIVAS a partir del documento que recibes. Es una síntesis "
     "nueva pensada para leerse como slides, no un resumen corrido. Si al terminar se parece al "
@@ -53,9 +61,11 @@ _DECK_SYSTEM = (
     "- `cierre`: SOLO la última. Qué se lleva quien la vio, en `title`. También admite imagen "
     "evocadora.\n"
     "- `dato`: UNA cifra que importe, en `cifra` tal como se lee («80 km», «15,3 %», «99"
-    " estudiantes»), y en `body` una o dos frases con qué significa o contra qué se compara. Sin "
-    "viñetas. La cifra sale del documento, así que ESTA SIEMPRE VA ANCLADA: copia en "
-    "`source_quote` la frase exacta donde aparece.\n"
+    " estudiantes»), y en `body` una frase con qué significa o contra qué se compara. Sin "
+    "viñetas. EL TÍTULO NO REPITE LA CIFRA: la cifra ya se ve enorme debajo, y decirla dos veces "
+    "gasta la lámina. Mal: «A 50-90 km de altura, donde empieza el espectáculo». Bien: «Más alto "
+    "que cualquier avión, y por eso casi nadie los ve». La cifra sale del documento, así que ESTA "
+    "SIEMPRE VA ANCLADA: copia en `source_quote` la frase exacta donde aparece.\n"
     "- `comparacion`: dos cosas que el lector confunde o que el documento contrapone. Llena "
     "`comparacion` con los dos lados, cada uno con su `titulo` y de dos a cuatro `puntos` cortos "
     "y PARALELOS (si el primero habla de altura, el primero del otro lado también). En `title`, "
@@ -72,9 +82,10 @@ _DECK_SYSTEM = (
     "- El `title` es la afirmación: una frase que dice algo que podría discutirse, no un rótulo "
     "de índice. Mal: «El mecanismo: de un rayo al resplandor». Bien: «El resplandor no lo "
     "enciende el rayo, sino el hueco que el rayo deja».\n"
-    "- El `body` es el porqué, y es lo normal: 2 o 3 frases que hacen que la afirmación se "
-    "sostenga sola, con los nexos escritos («porque», «así que», «y eso deja»). Quien lea la "
-    "diapositiva sin el documento al lado tiene que entenderla entera.\n"
+    "- El `body` sostiene la afirmación, y es CORTO: 35 palabras como mucho, una o dos frases. "
+    "Esto es un tope duro, no una sugerencia. Un párrafo en una diapositiva deja de ser una "
+    "diapositiva y vuelve a ser el documento, que es justo lo que esto no quiere ser. Si no cabe "
+    "en 35 palabras, es que hay dos ideas: parte la lámina en dos.\n"
     "- UNA idea por diapositiva. Si hay dos ideas separables, son DOS diapositivas.\n"
     "\n"
     "LAS VIÑETAS SON LA EXCEPCIÓN, no el formato por defecto. Úsalas SOLO para enumeraciones de "
@@ -118,7 +129,7 @@ class _ComparacionPlan(BaseModel):
 class _SlidePlan(BaseModel):
     papel: PapelDeSlide = "afirmacion"
     title: str = Field(min_length=1)
-    body: str | None = None
+    body: str | None = Field(default=None, max_length=_BODY_MAX)
     bullets: list[str] = Field(default_factory=list)
     #: El mismo tope que el contrato público, y esa es toda la gracia: aquí pydantic puede
     #: devolverle el error al modelo para que lo corrija. Sin el tope, el plan aceptaba «un 15,3
