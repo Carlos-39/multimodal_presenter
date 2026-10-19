@@ -212,6 +212,35 @@ class IllustrationsResponse(_Strict):
     illustrations: list[IllustrationItem] = Field(default_factory=list)
 
 
+PapelDeSlide = Literal["apertura", "afirmacion", "dato", "comparacion", "cita", "figura", "cierre"]
+"""Qué hace una diapositiva, y por tanto qué forma tiene.
+
+Antes no existía: una diapositiva traía título, cuerpo, viñetas e imagen, y la composición se
+deducía de cuál de esos campos venía lleno. Con ese vocabulario solo podía salir una cosa, prosa
+en cajas, y por eso la presentación parecía el documento transformado otra vez en vez de una
+presentación. Un deck de verdad varía: abre planteando algo, enseña una cifra sola, pone dos cosas
+una al lado de la otra, deja hablar al documento, cierra.
+
+`dato` y `cita` además OBLIGAN el anclaje, y eso no es decorativo: una cifra sacada del documento
+y una frase textual son justo lo que tiene que poder comprobarse. El rediseño sube, por
+construcción, la parte de la presentación que se puede verificar contra la fuente.
+"""
+
+
+class LadoDeComparacion(_Strict):
+    """Una de las dos columnas de una diapositiva `comparacion`."""
+
+    titulo: str = Field(min_length=1)
+    puntos: list[str] = Field(default_factory=list, max_length=4)
+
+
+class Comparacion(_Strict):
+    """Dos cosas que el lector confunde, puestas una al lado de la otra."""
+
+    izquierda: LadoDeComparacion
+    derecha: LadoDeComparacion
+
+
 class GeneratedSlide(_Strict):
     """Una diapositiva de la presentación GENERADA (síntesis propia desde la fuente).
 
@@ -221,6 +250,15 @@ class GeneratedSlide(_Strict):
     del 5h con su etiqueta obligatoria.
     """
 
+    papel: PapelDeSlide = "afirmacion"
+    cifra: str | None = Field(
+        default=None,
+        max_length=16,
+        description="Solo `dato`: la cifra tal como se muestra, con su unidad. Ej: «80 km».",
+    )
+    """Corta a propósito. Una diapositiva `dato` existe para que se vea UN número desde el fondo
+    de la sala; si cupiera una frase, dejaría de ser un dato y sería una afirmación."""
+    comparacion: Comparacion | None = None
     title: str = Field(min_length=1)
     body: str | None = None  # frase/idea central (no todo tiene que ser viñetas)
     bullets: list[str] = Field(default_factory=list)
@@ -241,6 +279,17 @@ class GeneratedSlide(_Strict):
 class GeneratedDeck(_Strict):
     """Presentación en diapositivas generada (guion propio, desde la fuente). Artefacto on-demand,
     separado del contrato de `Presentation`."""
+
+    hilo: str | None = Field(
+        default=None,
+        description="En una frase, qué defiende la presentación entera.",
+    )
+    """Lo que convierte catorce láminas sueltas en algo que va a alguna parte.
+
+    Se le pide al modelo ANTES de escribir ninguna diapositiva, y por eso está aquí y no en una:
+    es la decisión de la que cuelgan las demás. Opcional porque las presentaciones guardadas antes
+    de esto no lo tienen, y una biblioteca que deje de abrirse por un campo nuevo no vale lo que
+    cuesta."""
 
     slides: list[GeneratedSlide] = Field(min_length=1)
 
