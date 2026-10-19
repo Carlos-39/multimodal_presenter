@@ -363,6 +363,26 @@ def test_una_lamina_con_cuerpo_largo_no_tumba_la_presentacion(input_text: str) -
     assert slides[1]["body"].endswith(".")
 
 
+def test_si_el_modelo_falla_el_deck_responde_un_error_con_nombre(input_text: str) -> None:
+    """Un 502 con mensaje, no un 500 pelado.
+
+    Lo que convirtió el fallo anterior en dos días de conjeturas no fue el fallo: fue que el
+    registro guardaba una traza de pydantic y ni una palabra sobre qué fase ni qué fuente.
+    """
+    app.dependency_overrides[get_settings] = lambda: Settings(openai_api_key="", logfire_token="")
+
+    class _Roto(TestModel):
+        async def request(self, *args, **kwargs):  # noqa: ANN002, ANN003, ANN201
+            raise RuntimeError("el proveedor dijo no")
+
+    app.dependency_overrides[get_model] = lambda: _Roto()
+
+    r = TestClient(app).post("/deck", data={"text": input_text})
+
+    assert r.status_code == 502
+    assert r.json()["detail"] == "No se pudo generar la presentación."
+
+
 def test_el_esquema_del_plan_lo_acepta_cada_proveedor_del_fallback() -> None:
     """El plan viaja como definición de herramienta, y cada proveedor lo reescribe a su gusto.
 
