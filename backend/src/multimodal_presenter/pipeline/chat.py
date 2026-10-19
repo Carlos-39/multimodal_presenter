@@ -14,7 +14,7 @@ se fabrica una fuente (mismo espíritu que `not_found` en 5c).
 from collections.abc import AsyncIterator
 
 import logfire
-from pydantic_ai import Agent, BinaryContent, CachePoint, PromptedOutput
+from pydantic_ai import Agent, BinaryContent, CachePoint, PromptedOutput, ToolOutput
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.models import Model
 
@@ -66,7 +66,22 @@ sección indicada, todas respondibles desde el documento. Nada de preguntas gen�
 trata?"). Devuelve solo las preguntas.\
 """
 
-chat_agent = Agent(output_type=PromptedOutput(ChatAnswer), system_prompt=_CHAT_PROMPT)
+#: El chat responde rellenando los argumentos de una herramienta, no escribiendo JSON dentro de
+#: texto libre, y ese cambio ataca una causa concreta medida en producción.
+#:
+#: Con `PromptedOutput` el modelo tiene que acordarse de envolver su respuesta en un JSON válido, y
+#: en las preguntas ESCRITAS fallaba casi siempre: «Invalid JSON: expected value». Las sugeridas no
+#: fallaban nunca. La diferencia entre unas y otras es que las escritas son cortas y a menudo
+#: ambiguas (cuatro, diez, diecinueve caracteres), y ante una pregunta así el modelo tiende a
+#: contestar conversando, que es exactamente salirse del sobre. Cada una costaba dos llamadas,
+#: porque el reintento sin streaming la salvaba.
+#:
+#: Con una herramienta no hay sobre del que salirse: el esquema lo impone la API. Comprobado que el
+#: streaming de texto parcial se mantiene idéntico, que es lo único que se podía perder.
+#:
+#: El resto de agentes sigue con `PromptedOutput` a propósito: ninguno ha dado este fallo, y
+#: cambiarlos todos a la vez en vísperas de las sesiones es mover lo que funciona.
+chat_agent = Agent(output_type=ToolOutput(ChatAnswer), system_prompt=_CHAT_PROMPT)
 suggestions_agent = Agent(
     output_type=PromptedOutput(SuggestionsResponse), system_prompt=_SUGGESTIONS_PROMPT
 )

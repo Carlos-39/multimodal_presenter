@@ -260,3 +260,48 @@ def test_real_model_text() -> None:
     )
     assert isinstance(result.presentation, Presentation)
     assert len(result.presentation.sections) >= 1
+
+
+# ─────────────────────────────────────────────────────────────
+# Chat: una pregunta corta y ambigua contra el proveedor real
+# ─────────────────────────────────────────────────────────────
+@pytest.mark.integration
+@_needs_key
+def test_chat_responde_una_pregunta_corta_sin_salirse_del_esquema() -> None:
+    """La pregunta corta era la que rompía el chat en producción.
+
+    Con el esquema pedido como texto, el modelo contestaba conversando en vez de rellenar el
+    sobre, y la validación moría en mitad del streaming: «Invalid JSON: expected value». Pasaba
+    en casi todas las preguntas escritas y en ninguna sugerida, que son largas y específicas.
+
+    Lo que comprueba este test, y no puede comprobar ningún mock, es que con el proveedor REAL la
+    salida por herramienta aguanta ese caso. La prueba de que aguantó es que hubo eventos de
+    texto: si el streaming hubiera reventado, el reintento sin streaming habría salvado el turno
+    pero habría llegado entero de golpe, sin un solo parcial.
+    """
+    import asyncio
+
+    from multimodal_presenter.pipeline.chat import chat_stream
+    from multimodal_presenter.pipeline.extraction import prepare_input
+
+    async def recoger():
+        extraccion = prepare_input(
+            text="Los duendes rojos ocurren por encima de las tormentas, a unos 80 km de altura."
+        )
+        return [
+            evento
+            async for evento in chat_stream(
+                build_model(get_settings()),
+                extraction=extraccion,
+                history=[],
+                question="¿y eso?",
+            )
+        ]
+
+    eventos = asyncio.run(recoger())
+
+    assert eventos, "el chat no emitió nada"
+    assert eventos[-1].type == "done", "el turno no llegó a terminar"
+    assert [e for e in eventos if e.type == "text"], (
+        "no hubo texto en vivo: el streaming falló y lo salvó el reintento"
+    )
