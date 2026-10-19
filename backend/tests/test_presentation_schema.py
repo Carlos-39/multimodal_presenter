@@ -2,7 +2,7 @@
 
 La mitad importante de esta suite son los tests de RECHAZO: demuestran que el
 contrato hace estructuralmente imposible desalinear el tipo declarado y el contenido
-real — el bug del PoC anterior. El test que falla pesa tanto como el que pasa.
+real: el bug del PoC anterior. El test que falla pesa tanto como el que pasa.
 """
 
 import pytest
@@ -16,7 +16,7 @@ from multimodal_presenter.schemas import (
 )
 
 # ─────────────────────────────────────────────────────────────
-# Fixtures / helpers — bloques válidos reutilizables
+# Fixtures / helpers: bloques válidos reutilizables
 # ─────────────────────────────────────────────────────────────
 VALID_SOURCE = {"document_id": "doc-1", "quote": "un fragmento textual del documento"}
 
@@ -31,7 +31,7 @@ def _section(content: dict, role: str = "core") -> dict:
 
 
 # ─────────────────────────────────────────────────────────────
-# ACEPTACIÓN — presentaciones bien formadas validan
+# ACEPTACIÓN: presentaciones bien formadas validan
 # ─────────────────────────────────────────────────────────────
 def test_valid_presentation_with_all_content_types_roundtrips() -> None:
     data = {
@@ -70,7 +70,7 @@ def test_valid_presentation_with_all_content_types_roundtrips() -> None:
     pres = Presentation.model_validate(data)
 
     assert len(pres.sections) == 4
-    # El tipo se lee del contenido — fuente única de verdad, sin campo suelto.
+    # El tipo se lee del contenido: fuente única de verdad, sin campo suelto.
     assert pres.sections[0].content.content_type == "text"
     assert pres.sections[3].content.chart_type is ChartType.BAR
     assert pres.sections[0].role is SectionRole.CORE
@@ -90,7 +90,7 @@ def test_source_reference_with_valid_offsets_accepted() -> None:
 
 
 # ─────────────────────────────────────────────────────────────
-# RECHAZO — el hueco content_type↔content está cerrado
+# RECHAZO: el hueco content_type↔content está cerrado
 # ─────────────────────────────────────────────────────────────
 def test_chart_type_with_string_content_is_rejected() -> None:
     """El bug histórico: declarar chart pero dar un string como contenido."""
@@ -155,7 +155,7 @@ def test_table_row_width_must_match_columns() -> None:
 
 
 # ─────────────────────────────────────────────────────────────
-# RECHAZO — campos obligatorios del contrato
+# RECHAZO: campos obligatorios del contrato
 # ─────────────────────────────────────────────────────────────
 def test_section_without_source_is_rejected() -> None:
     """Cada sección debe ser trazable a su fuente (Punto 4)."""

@@ -6,8 +6,8 @@ import { Espera } from "@/components/shell/Espera";
  * (`role="status"`).
  *
  * El contador y el reloj se reparten el trabajo: el contador dice que AVANZA, el reloj dice que
- * sigue VIVA. Hasta que llega la primera sección no hay contador que valga —esos segundos son
- * ciegos— y es justo donde el reloj es lo único que hay.
+ * sigue VIVA. Hasta que llega la primera sección no hay contador que valga (esos segundos son
+ * ciegos) y es justo donde el reloj es lo único que hay.
  */
 export function StreamingStatus({ count }: { count: number }) {
   return (

@@ -2,7 +2,7 @@
 --
 -- La biblioteca enseñaba el título, el tipo de fuente y la fecha, y nada de lo único que
 -- distingue a este sistema: cuántas de sus secciones quedaron ancladas al documento. Eso vive en
--- el payload, y el listado NO puede leer el payload — un deck con ilustraciones son megas por
+-- el payload, y el listado NO puede leer el payload, un deck con ilustraciones son megas por
 -- fila, y la lista solo necesita dos enteros.
 --
 -- Así que los dos enteros se guardan al guardar. Se calculan una vez, no en cada listado.

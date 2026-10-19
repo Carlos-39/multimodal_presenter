@@ -29,7 +29,7 @@ import { AuthForm } from "./AuthForm";
  * Cuenta y biblioteca en un solo cajón.
  *
  * Sin sesión muestra el acceso; con sesión, lo guardado. Están juntos porque son la misma pregunta
- * vista desde dos momentos —«¿quién eres?» y «¿qué guardaste?»— y separarlos obligaría a quien
+ * vista desde dos momentos («¿quién eres?» y «¿qué guardaste?») y separarlos obligaría a quien
  * entra a buscar dónde está lo suyo.
  *
  * **Entrar es opcional.** Todo lo demás de la aplicación funciona sin cuenta: las sesiones de
@@ -195,7 +195,7 @@ function Biblioteca({
         <>
           {/* Solo las últimas cuatro. Un cajón no es un sitio para buscar: con la lista entera
               había que desplazarse dentro de un panel estrecho para encontrar algo, y la
-              biblioteca de verdad —donde sí se puede buscar— quedaba sin motivo para existir. */}
+              biblioteca de verdad (donde sí se puede buscar) quedaba sin motivo para existir. */}
           <ul className="flex flex-col gap-1.5">
             {lista.slice(0, ULTIMAS).map((p) => (
               <Fila key={p.id} presentacion={p} onAbrir={onAbrir} onBorrar={onBorrar} />

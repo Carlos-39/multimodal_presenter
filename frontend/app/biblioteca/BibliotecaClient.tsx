@@ -30,7 +30,7 @@ import { ThemeToggle } from "@/components/shell/ThemeToggle";
  *
  * Es una ruta y no una vista dentro del armazón porque el núcleo fijo existe para servir a UN
  * documento: aquí no hay nivel de detalle que ajustar, ni fuente que abrir, ni chat, ni nada que
- * generar. Enseñar el armazón con casi todo apagado es peor que una página limpia — el mismo
+ * generar. Enseñar el armazón con casi todo apagado es peor que una página limpia, el mismo
  * criterio por el que el «cómo se construyó» también es una ruta.
  *
  * **Sin cuenta no se echa a nadie:** se ofrece entrar, aquí mismo, con el formulario de siempre.
@@ -330,7 +330,7 @@ function Tarjeta({
 
       {/*
         * Lo que se enciende al pasar por encima es el BORDE, no el relleno: un relleno tapa, un
-        * borde señala. Y en acento, que cambia con el tema — el blanco del botón de la portada
+        * borde señala. Y en acento, que cambia con el tema, el blanco del botón de la portada
         * aquí daba un manchón en oscuro y nada en claro.
         *
         * Alto fijo (`h-52`): las tarjetas tienen que medir lo mismo aunque un título ocupe dos

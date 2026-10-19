@@ -118,7 +118,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   // Solo audio: lo que oyó la fase de percepción (ver StreamEvent "transcript").
   const [transcript, setTranscript] = useState<string | null>(null);
 
-  // Cuenta: OPCIONAL. Sin ella todo sigue funcionando igual — las sesiones de evaluación del
+  // Cuenta: OPCIONAL. Sin ella todo sigue funcionando igual, las sesiones de evaluación del
   // Hito 8 corren sin login. Entrar añade guardar y volver, nada más.
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [cuentaAbierta, setCuentaAbierta] = useState(false);
@@ -150,7 +150,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
 
   // Presentación actual (título + secciones completas) y narración (Hito 5g Parte 3). La narración
   // es independiente del toggle resumen/detallado y de la sección activa; solo se reinicia con un
-  // documento nuevo (lo hace `resetForRun`, desde el manejador de transformación — no en efecto).
+  // documento nuevo (lo hace `resetForRun`, desde el manejador de transformación, no en efecto).
   const presentation = useMemo(() => ({ title, sections }), [title, sections]);
   // Mismo reparto que el chat: el hook avisa del mp3 que acaba de generar y aquí se decide si hay
   // dónde guardarlo. Sin cuenta nadie escucha y la narración funciona igual que antes.
@@ -167,7 +167,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   // El reloj reparte TODO el tiempo de la sesión en tramos, sin huecos ni solapes. La presentación
   // generada es un tramo PROPIO: en esa vista el nivel de detalle no filtra nada (tiene sus propias
   // diapositivas), así que sumar ese tiempo a "resumen" o "detallado" sería atribuirlo a un modo
-  // que no estaba actuando — y el reparto resumen/detallado es una medida central de la RQ3.
+  // que no estaba actuando: y el reparto resumen/detallado es una medida central de la RQ3.
   const modeBucketRef = useRef<ModeBucket>(DEFAULT_DETAIL_LEVEL);
   const sourceOpenedAtRef = useRef<number | null>(null); // cuándo se abrió el panel de fuente
 
@@ -217,7 +217,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
 
   // PUNTO ÚNICO para la vista de slides, por lo mismo que el deck: también se cierra desde otros
   // sitios (al abrir la presentación generada, o con un documento nuevo), y un espejo que no pasara
-  // por aquí se desincronizaría del estado — el toggle acabaría invirtiendo el valor equivocado.
+  // por aquí se desincronizaría del estado, el toggle acabaría invirtiendo el valor equivocado.
   const slidesVisibleRef = useRef(false);
   const setSlidesVisible = useCallback((abierto: boolean) => {
     if (slidesVisibleRef.current === abierto) return;
@@ -451,7 +451,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
    *
    * Pasa por `resetForRun` igual que una transformación nueva, en vez de asignar campo por campo.
    * Si se restaurara por un camino propio, cada estado que alguien añada después habría que
-   * acordarse de limpiarlo también aquí — y lo que se olvide quedaría del documento anterior.
+   * acordarse de limpiarlo también aquí, y lo que se olvide quedaría del documento anterior.
    */
   async function restaurar(id: string) {
     const g = await abrirPresentacion(id);
@@ -484,8 +484,8 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
     chat.restaurar(g.chat);
 
     // Los artefactos generados NO se descargan aquí: el deck puede pesar megas y el mp3 puede que
-    // nadie lo escuche. Se deja dicho que existen —con eso el botón ofrece abrir en vez de
-    // generar— y se traen al pulsar.
+    // nadie lo escuche. Se deja dicho que existen (con eso el botón ofrece abrir en vez de
+    // generar) y se traen al pulsar.
     setDeckGuardado(g.tiene_deck);
     if (g.tiene_narracion) {
       narration.restaurar(urlDeLaNarracion(g.id), g.payload.presentation);
@@ -548,7 +548,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
     //
     // El AUDIO es el único caso que no puede lanzarlo aquí: el modelo del adelanto no admite
     // audio como entrada. Se dispara más abajo, al llegar la transcripción de la fase de
-    // percepción — que además es justo el momento en que hay algo que resumir. Para el usuario
+    // percepción: que además es justo el momento en que hay algo que resumir. Para el usuario
     // la diferencia es que el adelanto del audio tarda un poco más, no que no exista.
     setSummaryStatus("loading");
     if (sk !== "audio") {
@@ -665,14 +665,14 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   // Prefetch de preguntas sugeridas de la sección activa: se piden en segundo plano y se cachean
   // → cuando el usuario mira el chat, ya están (instantáneas).
   //
-  // Antes solo ocurría en modo detallado, y la idea era razonable —preguntar es profundizar— pero
+  // Antes solo ocurría en modo detallado, y la idea era razonable (preguntar es profundizar) pero
   // no resiste la prueba: quien lee en resumen es justamente quien más necesita que le ofrezcan
   // por dónde seguir, y en el móvil el chat está a un toque desde cualquier modo. Dejarlas fuera
   // del resumen las escondía de quien iba a usarlas.
   //
   // La condición que sustituye al modo es el CHAT ABIERTO, y no es un apaño para abaratar: las
   // preguntas sugeridas solo se ven dentro del chat, así que pedirlas para quien no lo ha abierto
-  // era gastar en algo que nadie iba a mirar — y eso ya pasaba antes, en detallado. Medido: con
+  // era gastar en algo que nadie iba a mirar, y eso ya pasaba antes, en detallado. Medido: con
   // el chat cerrado, desplazarse por el documento disparaba una llamada al modelo por cada
   // sección por la que se pasaba.
   //
@@ -691,8 +691,8 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
     void quienSoy().then(setUsuario);
   }, []);
 
-  // Llegada desde la biblioteca. Una sola vez por id: si fallara —la borraste en otra pestaña, se
-  // te venció la sesión— se queda el área de trabajo vacía, que es un estado honesto, en vez de
+  // Llegada desde la biblioteca. Una sola vez por id: si fallara (la borraste en otra pestaña, se
+  // te venció la sesión) se queda el área de trabajo vacía, que es un estado honesto, en vez de
   // reintentar en bucle contra algo que ya no está.
   // El ref se actualiza en un efecto y no en el render: la regla de pureza del proyecto prohíbe
   // tocar un ref mientras se renderiza.
@@ -723,7 +723,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   }, []);
 
   // Ordinal (1-based) de una sección en la lista visible. Se reporta la POSICIÓN, no el id
-  // (que lo genera el modelo y podría describir el contenido) — privacidad, Hito 8.
+  // (que lo genera el modelo y podría describir el contenido), privacidad, Hito 8.
   function ordinalOf(id: string | null): number | null {
     if (!id) return null;
     const i = visible.findIndex((s) => s.id === id);
@@ -787,7 +787,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
                 <Books size={14} aria-hidden />
                 {/* Mientras la cabecera va apretada queda solo el libro. El icono y el nombre
                     dicen lo mismo, y de los dos el que se puede quitar sin que nadie se pierda es
-                    la palabra — el nombre sigue ahí para quien lo necesite, en el `aria-label`. */}
+                    la palabra: el nombre sigue ahí para quien lo necesite, en el `aria-label`. */}
                 <span className="hidden xl:inline">Biblioteca</span>
               </Link>
               {avisoBiblioteca ? (
@@ -929,7 +929,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
     </AppShell>
 
     {/* El CAJÓN de cuenta: esto sí es una capa superpuesta, porque un cajón se desliza sobre el
-        contenido y lo devuelve al cerrarse. El botón que lo abre NO vive aquí — está en la fila de
+        contenido y lo devuelve al cerrarse. El botón que lo abre NO vive aquí, está en la fila de
         controles de la cabecera, donde el `flex` le reserva sitio. Cuando flotaba también él, en
         ventanas estrechas se montaba encima de «Chat». */}
     {cuentaAbierta ? (
@@ -951,7 +951,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
               setUsuario(u);
               // Al ENTRAR se aterriza en la biblioteca, no de vuelta en el área de trabajo: lo
               // primero que quiere ver quien acaba de identificarse es lo suyo. Solo al pasar de
-              // fuera a dentro — cerrar sesión deja donde estabas, que es lo correcto.
+              // fuera a dentro: cerrar sesión deja donde estabas, que es lo correcto.
               if (u) router.push("/biblioteca");
             }}
             onAbrir={(id) => void restaurar(id)}

@@ -1,11 +1,11 @@
-"""Representación intermedia de un audio percibido — `AudioEvidence` (Fase 0).
+"""Representación intermedia de un audio percibido, `AudioEvidence` (Fase 0).
 
 El motor de estructuración (Claude Sonnet) NO admite audio como modalidad de entrada en su
 API. Para no romper el principio rector (nunca aplanar la fuente antes de que un modelo la
 interprete), el audio no se transcribe con un STT y se trata como texto: se delega la
 percepción a un modelo con entrada acústica nativa, que produce ESTA representación
 estructurada. Incluye, además del contenido verbal, hablantes, énfasis, pausas, eventos no
-verbales y condiciones acústicas — información que una transcripción plana descarta.
+verbales y condiciones acústicas: información que una transcripción plana descarta.
 
 **Este NO es parte del contrato público backend↔frontend.** Es una representación interna
 entre la Fase 0 (percepción) y la Fase 2 (estructuración). Lo que llega al frontend sigue
@@ -13,7 +13,7 @@ siendo la `Presentation` del Hito 1; del audio solo viaja el `source_kind="audio
 segundo aproximado de la cita (`SectionGrounding.start_s`).
 
 Disciplina de tipos: igual que el contrato del Hito 1, los rasgos categóricos son
-**conjuntos cerrados** (`Literal`), no texto libre — un `delivery` como string abierto
+**conjuntos cerrados** (`Literal`), no texto libre, un `delivery` como string abierto
 dejaría al análisis posterior comparando sinónimos del modelo.
 
 Honestidad: `confidence` existe para que el anotador pueda declarar duda en vez de
@@ -33,7 +33,7 @@ class _Strict(BaseModel):
 
 
 # ─────────────────────────────────────────────────────────────
-# Enums — conjuntos cerrados (misma disciplina del Hito 1)
+# Enums: conjuntos cerrados (misma disciplina del Hito 1)
 # ─────────────────────────────────────────────────────────────
 Confidence = Literal["alta", "media", "baja"]
 """Confianza del anotador en lo que afirma. `baja` es una respuesta legítima y esperada."""
@@ -141,8 +141,8 @@ class AudioEvidence(_Strict):
         """Segundo aproximado del segmento que contiene `quote`, o None.
 
         **Localiza, no verifica.** El estado de grounding del audio sigue siendo
-        `unverified`: la cita se busca contra la transcripción del modelo de percepción —
-        un derivado aplanado de la señal— no contra el audio. Sirve para que el reproductor
+        `unverified`: la cita se busca contra la transcripción del modelo de percepción,
+        un derivado aplanado de la señal: no contra el audio. Sirve para que el reproductor
         salte al momento, igual que `page` lleva a la página en PDF.
         """
         for segment in self.segments:

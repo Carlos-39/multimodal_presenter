@@ -36,8 +36,8 @@ export default function IndiceMakingOf() {
       </p>
 
       {/* El árbol primero y la lista después, que es el mismo progressive disclosure que aplica
-          la aplicación: aquí está la forma entera de un vistazo —cinco actos, catorce capítulos,
-          cuál es más largo— y abajo cada uno con lo que concluye. Es lo único que se mueve solo en
+          la aplicación: aquí está la forma entera de un vistazo (cinco actos, catorce capítulos,
+          cuál es más largo) y abajo cada uno con lo que concluye. Es lo único que se mueve solo en
           esta página: se dibuja una vez al llegar y se acabó. */}
       <div className="mt-10 rounded-xl border border-border bg-surface/60 px-5 py-4 sm:px-6">
         <Indice variante="portada" />
@@ -105,8 +105,8 @@ function Seccion({ acto }: { acto: Acto }) {
                  * era un enlace sin ninguna marca: solo se enteraba quien ya lo sospechaba, y en
                  * una pantalla táctil no se entera nadie.
                  *
-                 * En reposo ya hay dos señales: el filo a la izquierda —la misma rama del árbol
-                 * de arriba— y el ángulo a la derecha. Al pasar por encima las dos se encienden en
+                 * En reposo ya hay dos señales: el filo a la izquierda (la misma rama del árbol
+                 * de arriba) y el ángulo a la derecha. Al pasar por encima las dos se encienden en
                  * acento y el título se subraya, que es lo que confirma lo que ya se intuía.
                  */
                 <Link

@@ -8,7 +8,7 @@ trataría distinto según la fuente fuese texto plano o la capa de texto de un P
 Las claves se escriben con su código Unicode, no con el carácter. Son signos invisibles o
 indistinguibles a simple vista (espacio duro, espacio de ancho cero, guion largo frente a guion
 normal): escritos tal cual, nadie puede revisar esta tabla ni detectar si una edición los
-convirtió en un espacio corriente — que es exactamente lo que pasó una vez al mover el archivo.
+convirtió en un espacio corriente: que es exactamente lo que pasó una vez al mover el archivo.
 """
 
 # Un modelo fiel a veces cita con comillas tipográficas, espacios duros o guiones distintos a los

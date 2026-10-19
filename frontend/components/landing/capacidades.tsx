@@ -202,8 +202,8 @@ function LaminaAudio() {
  * Las dos piezas que esta capacidad promete, las dos a la vista.
  *
  * Antes era una caja 16:9 con dos barras y unos puntos debajo, y no se leía como una diapositiva:
- * le faltaba todo lo que hace que una diapositiva parezca una diapositiva —que haya más detrás,
- * que lleve su número— y faltaba entera la mitad de la narración, que está en el título de la
+ * le faltaba todo lo que hace que una diapositiva parezca una diapositiva (que haya más detrás,
+ * que lleve su número) y faltaba entera la mitad de la narración, que está en el título de la
  * capacidad y no aparecía por ningún lado.
  *
  * Ahora hay una pila asomando, el número de lámina, y debajo la banda de audio con su onda y su

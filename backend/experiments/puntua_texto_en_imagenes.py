@@ -36,7 +36,7 @@ juez = Agent(
         "Examinas una ilustración generada por IA. La regla del sistema es que la imagen NO debe "
         "contener NINGÚN texto escrito: ni palabras, ni etiquetas, ni títulos, ni leyendas. "
         "La regla es más estricta que 'sin texto': la imagen debe entenderse SOLA, así que "
-        "tampoco puede llevar marcas que remitan a una leyenda que no existe — numeración de "
+        "tampoco puede llevar marcas que remitan a una leyenda que no existe, numeración de "
         "pasos como (1) (2) (3), letras clave, o líneas guía que apuntan a un hueco. Cuenta esas "
         "marcas igual que el texto. Las flechas de dirección, los símbolos de carga (+, -) y los "
         "colores NO cuentan: se entienden sin clave. Sé literal: transcribe lo que de verdad se ve."

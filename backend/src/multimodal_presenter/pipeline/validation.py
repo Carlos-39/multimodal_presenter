@@ -1,4 +1,4 @@
-"""Fase 3 — Validación posterior.
+"""Fase 3: Validación posterior.
 
 Nivel barato (determinista): grounding de fuentes, adaptado al tipo de fuente.
 - Texto: verifica que `source.quote` exista en el documento (substring) → `verified` con
@@ -189,7 +189,7 @@ class SectionIdDeduper:
     **Por qué se CORRIGE y no se rechaza.** Rechazar en el contrato obligaría a reintentar toda
     la generación por un id repetido, y si el modelo insiste el usuario se queda sin nada. Es el
     mismo criterio que la regla de isomorfismo (Hito 5a): lo determinista se corrige en código,
-    de forma reproducible, en vez de tumbar el resultado. El renombrado se traza en Logfire —se
+    de forma reproducible, en vez de tumbar el resultado. El renombrado se traza en Logfire, se
     corrige, no se esconde.
 
     Es stateful a propósito: el mismo objeto recorre toda la presentación, y en streaming vive
@@ -269,7 +269,7 @@ def _charts_summary(charts: list[Section]) -> str:
 async def verify_semantic_coherence(
     presentation: Presentation, extraction: ExtractionResult, model: Model
 ) -> SemanticCoherenceReport:
-    """Fase 3 (nivel LLM) — coherencia semántica de los gráficos contra la fuente.
+    """Fase 3 (nivel LLM): coherencia semántica de los gráficos contra la fuente.
 
     Segunda pasada de LLM (Punto 3). Enfocada en gráficos para el Hito 5a. Es una llamada
     adicional al modelo; queda trazada en Logfire (instrumentación global de PydanticAI).

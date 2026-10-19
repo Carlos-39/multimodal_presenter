@@ -21,7 +21,7 @@ import { politicaDeSeguridad } from "@/lib/csp";
  *
  * Y una advertencia que está en esa misma documentación y conviene respetar: esto «no debe confiar
  * en módulos compartidos ni en variables globales». Nada de lo que se haga aquí guarda estado
- * entre peticiones — por eso el contador de intentos no está aquí, sino en el login.
+ * entre peticiones: por eso el contador de intentos no está aquí, sino en el login.
  */
 export function proxy(request: NextRequest) {
   const ruta = request.nextUrl.pathname;

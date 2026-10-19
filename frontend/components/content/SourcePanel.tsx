@@ -18,7 +18,7 @@ import { urlDelDocumento } from "@/lib/documentForm";
 /**
  * Panel de documento fuente (atribución interactiva, Punto 4 · Hito 5c). Lo comparten la
  * transformación (fuente de una sección) y el chat (Hito 6): recibe un `SourceReference` + su
- * estado de grounding, no una `Section` — así ambos usan el MISMO panel, no un esquema paralelo.
+ * estado de grounding, no una `Section`, así ambos usan el MISMO panel, no un esquema paralelo.
  *
  * Es una de las COLUMNAS OPCIONALES de la Escala 2 (Hito 5e): `Workspace` decide su ancho y su
  * emplazamiento (columna u overlay), así que llena el espacio que le den (`w-full h-full`).
@@ -66,7 +66,7 @@ export function SourcePanel({
   // de ese orden de carga era frágil para los tres tipos de fuente.
   // Con `File` se crea un object URL como siempre; en una presentación RESTAURADA no hay archivo
   // y se apunta al endpoint que sirve el documento guardado. Sin esto, lo guardado se podría leer
-  // pero no VERIFICAR — y poder verificar es lo que este proyecto promete.
+  // pero no VERIFICAR: y poder verificar es lo que este proyecto promete.
   const fuente = useMemo(() => urlDelDocumento(original), [original]);
   const fileUrl = fuente?.url ?? null;
   // Se revoca la URL ANTERIOR cuando cambia el documento, NO al cerrar el panel: cerrar y
@@ -103,7 +103,7 @@ export function SourcePanel({
       {/* La clave REMONTA el contenido al cambiar de fuente activa (otra sección o una respuesta
           del chat). Es necesario para el PDF: su página se fija por el fragmento `#page=N` del
           `src` del <iframe>, y los navegadores NO re-navegan un iframe cuando solo cambia el
-          hash — remontarlo lo fuerza a cargar en la página correcta. Robusto ante clics rápidos
+          hash: remontarlo lo fuerza a cargar en la página correcta. Robusto ante clics rápidos
           (React reconcilia al último key) y uniforme para texto, PDF, imagen y audio.
 
           El PREFIJO no es decorativo. Este bloque y el de "explicar imagen" son hermanos, y los
@@ -219,8 +219,8 @@ function PdfSource({
   //
   // - "Abrir en pestaña nueva": lo natural en escritorio.
   // - "Descargar": la salida fiable donde la anterior no lo es. Abrir una URL `blob:` en una
-  //   pestaña nueva depende del navegador —algunos lo bloquean y en móvil es justo donde menos
-  //   se puede confiar—, que es precisamente el escenario para el que se creó este enlace en el
+  //   pestaña nueva depende del navegador (algunos lo bloquean y en móvil es justo donde menos
+  //   se puede confiar), que es precisamente el escenario para el que se creó este enlace en el
   //   5f. El atributo `download` no depende de que exista un visor.
   //
   // Se AÑADE la descarga en vez de reemplazar el enlace: lo que ya funciona en escritorio sigue

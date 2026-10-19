@@ -1,7 +1,7 @@
 -- El título pasa a la PRESENTACIÓN.
 --
 -- Estaba en `propiedad`, que es por (usuario, documento). Como el id de documento es
--- direccionable por contenido, dos presentaciones del mismo texto comparten documento — y por
+-- direccionable por contenido, dos presentaciones del mismo texto comparten documento, y por
 -- tanto compartían título: la segunda se guardaba con el nombre de la primera. Se vio al probar
 -- contra el backend real, guardando "Duendes rojos" y "Ciclo del agua" del mismo texto.
 --

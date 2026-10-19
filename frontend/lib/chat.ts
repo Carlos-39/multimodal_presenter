@@ -4,7 +4,7 @@ import type { ChatStreamEvent, ChatTurn, OriginalSource, Section } from "./types
 
 /**
  * Llama a POST /api/chat/stream y entrega cada evento SSE a `onEvent`.
- * Envía el documento original (texto y/o archivo) en cada turno — el chat RELEE el documento
+ * Envía el documento original (texto y/o archivo) en cada turno, el chat RELEE el documento
  * (Hito 6); el backend lo cachea (prompt caching) para no reprocesarlo. Lanza si el HTTP no es OK.
  */
 export async function streamChat(

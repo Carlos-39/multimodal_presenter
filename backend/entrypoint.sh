@@ -7,7 +7,7 @@
 # problema de permisos regalando todos los permisos.
 #
 # Así que: si arrancamos como root, se ajusta el dueño del volumen y se baja a `app` para servir.
-# Si ya arrancamos sin privilegios —en una plataforma que lo imponga—, no hay nada que ajustar y se
+# Si ya arrancamos sin privilegios (en una plataforma que lo imponga), no hay nada que ajustar y se
 # sigue igual. El contenedor funciona en los dos casos sin cambiarle nada.
 #
 # `exec` en los dos caminos: sin él, este script se queda de padre y se come la señal de apagado,

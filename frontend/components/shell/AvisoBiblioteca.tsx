@@ -13,7 +13,7 @@ import { X } from "@phosphor-icons/react";
  *
  * **No se cierra sola.** Un aviso con temporizador obliga a leer deprisa, y quien use un lector de
  * pantalla o lea despacio lo pierde. Se va al cerrarlo, al pulsar fuera o al irse a la biblioteca
- * — y no vuelve nunca.
+ *, y no vuelve nunca.
  *
  * `role="status"` y no `alert`: informa, no interrumpe, así que no roba el foco.
  */

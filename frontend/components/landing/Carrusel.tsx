@@ -11,7 +11,7 @@ import { Baraja } from "./Baraja";
  *
  * **Avanza solo, pero se calla en cuanto alguien participa**, con las mismas reglas que el héroe
  * y el párrafo del problema: ver `useAvanceSolo`. Lo que esta pieza gana al compartirlas es la
- * cuarta, que antes no tenía — no empieza a girar hasta estar en pantalla, así que ya no te
+ * cuarta, que antes no tenía: no empieza a girar hasta estar en pantalla, así que ya no te
  * encuentras una tarjeta a mitad de ciclo al llegar.
  *
  * **La lámina entra por el lado del que vienes**, y tarda lo mismo la pases tú o la pase el
@@ -100,7 +100,7 @@ export function Carrusel() {
           </div>
 
           {/* La baraja en lugar del panel único: así se ve que hay cinco y cuáles son, que es lo
-              que unos puntos no pueden decir. El comportamiento no cambia — sigue siendo el mismo
+              que unos puntos no pueden decir. El comportamiento no cambia, sigue siendo el mismo
               `useAvanceSolo` con sus flechas, sus puntos y su cuenta. */}
           <Baraja indice={indice} />
         </div>

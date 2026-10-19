@@ -132,8 +132,8 @@ class PresentacionCompleta(_Strict):
     presentación ya está en pantalla y su conversación todavía no, y ese instante se ve."""
 
     tiene_deck: bool = False
-    """Si hay diapositivas guardadas. El deck NO viaja aquí —con ilustraciones pesa megas, y
-    abrir una presentación tiene que ser inmediato—, pero saber que existe es lo que deja que el
+    """Si hay diapositivas guardadas. El deck NO viaja aquí (con ilustraciones pesa megas, y
+    abrir una presentación tiene que ser inmediato), pero saber que existe es lo que deja que el
     botón diga «Abrir presentación» en vez de ofrecer generarla otra vez."""
 
     tiene_narracion: bool = False

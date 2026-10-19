@@ -137,7 +137,7 @@ def test_yo_sin_sesion_responde_que_no_hay_nadie(client: TestClient) -> None:
     """`null` y no 401: no tener cuenta es el estado NORMAL de esta aplicación, no un error.
 
     Con 401, cada carga sin sesión pintaba dos errores rojos en la consola del navegador por algo
-    que funcionaba como debía — y un error que no lo es enseña a ignorar los que sí lo son.
+    que funcionaba como debía: y un error que no lo es enseña a ignorar los que sí lo son.
     """
     respuesta = client.get("/auth/yo")
     assert respuesta.status_code == 200
@@ -285,7 +285,7 @@ def test_cambiar_una_mayuscula_no_estrena_contador(client: TestClient) -> None:
 def test_con_el_registro_cerrado_no_se_crean_cuentas_pero_si_se_entra(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Son tres cosas distintas —registro, login y modo invitado— y se deciden por separado."""
+    """Son tres cosas distintas (registro, login y modo invitado) y se deciden por separado."""
     from multimodal_presenter.config import get_settings
 
     client.post("/auth/registro", json=CREDENCIALES)  # con el registro aún abierto

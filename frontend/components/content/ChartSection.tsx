@@ -82,10 +82,10 @@ const LEGEND = {
 
 /**
  * Render de gráficos con Recharts. Renderiza lo que llega: el TIPO ya viene decidido por la regla
- * determinista de isomorfismo del backend (Hito 5a); aquí solo se cuida la lectura — números en
+ * determinista de isomorfismo del backend (Hito 5a); aquí solo se cuida la lectura, números en
  * español, valores a la vista cuando caben, y nada que compita con los datos.
  */
-// SSR-safe: false en el servidor, true en el cliente — sin setState en un efecto.
+// SSR-safe: false en el servidor, true en el cliente, sin setState en un efecto.
 const subscribe = () => () => {};
 
 export function ChartSection({ content }: { content: ChartContent }) {

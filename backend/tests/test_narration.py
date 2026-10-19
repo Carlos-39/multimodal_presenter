@@ -31,7 +31,7 @@ def test_narracion_genera_y_devuelve_mp3(monkeypatch, mock_presentation: dict) -
     app.dependency_overrides[get_model] = lambda: TestModel(custom_output_text="Guion narrado.")
     calls = {"tts": 0}
 
-    async def fake_synth(settings, script):  # noqa: ANN001, ARG001
+    async def fake_synth(settings, script):  # noqa: ANN001 (ARG001)
         calls["tts"] += 1
         return _FAKE_MP3
 
@@ -50,7 +50,7 @@ def test_narracion_usa_cache_en_segunda_peticion(monkeypatch, mock_presentation:
     app.dependency_overrides[get_model] = lambda: TestModel(custom_output_text="Guion narrado.")
     calls = {"tts": 0}
 
-    async def fake_synth(settings, script):  # noqa: ANN001, ARG001
+    async def fake_synth(settings, script):  # noqa: ANN001 (ARG001)
         calls["tts"] += 1
         return _FAKE_MP3
 

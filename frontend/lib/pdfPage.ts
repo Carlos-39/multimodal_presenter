@@ -5,7 +5,7 @@
  * otro que mide, cualquier desacuerdo sobre el recorte o la rotación de la página aparecería como
  * un recuadro descuadrado, que es justo lo que esta pieza promete que no pasa.
  *
- * El archivo viaja en la petición, igual que en el chat, el deck y la narración — el backend no
+ * El archivo viaja en la petición, igual que en el chat, el deck y la narración, el backend no
  * guarda documentos. Por eso se memoriza: abrir y cerrar la misma fuente, o volver a ella desde
  * otra sección de la misma página, no vuelve a subir el PDF ni a dibujar nada.
  */

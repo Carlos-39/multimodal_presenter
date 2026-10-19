@@ -1,4 +1,4 @@
-"""Telemetría de comportamiento (Hito 8) — capa observacional, NO el contrato de datos.
+"""Telemetría de comportamiento (Hito 8), capa observacional, NO el contrato de datos.
 
 Este schema vive aparte a propósito: NO importa ni referencia `Presentation`/`Section`/
 `GroundingReport`. La telemetría observa la interacción, no modifica el pipeline.

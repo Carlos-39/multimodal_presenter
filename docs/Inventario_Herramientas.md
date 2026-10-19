@@ -29,11 +29,11 @@
 
 ## Details
 
-### CATEGORÍA 1 — PARSEO Y EXTRACCIÓN DE DOCUMENTOS MULTIMODALES
+### CATEGORÍA 1 ( PARSEO Y EXTRACCIÓN DE DOCUMENTOS MULTIMODALES
 
-**anydoc (Firecrawl) — VERIFICACIÓN PRIORITARIA ✅ REAL Y VIGENTE**
+**anydoc (Firecrawl) ) VERIFICACIÓN PRIORITARIA ✅ REAL Y VIGENTE**
 - Qué hace: librería open source en Rust (con bindings Node.js y Python) que convierte 14 formatos (Word, PowerPoint, Excel, OpenDocument, RTF, EPUB, CSV, PDF) a GitHub-Flavored Markdown limpio "en milisegundos" (mediana ~4,7 ms vs 1129 ms de LibreOffice en su benchmark). Detección de formato por contenido, no por extensión. Publicado como Agent Skill para Claude Code/Codex/Cursor.
-- Encaje en tu stack: excelente como pre-procesador rápido en tu backend Python para documentos de texto (Word, PPT, Excel). ⚠️ Su soporte de PDF es solo para PDFs con texto embebido — NO hace OCR de escaneados (para eso usa la Parse API hospedada de Firecrawl con sus modelos OCR).
+- Encaje en tu stack: excelente como pre-procesador rápido en tu backend Python para documentos de texto (Word, PPT, Excel). ⚠️ Su soporte de PDF es solo para PDFs con texto embebido, NO hace OCR de escaneados (para eso usa la Parse API hospedada de Firecrawl con sus modelos OCR).
 - Precio: open source gratuito. La Parse API hospedada de Firecrawl es de pago.
 - Vigencia: VIGENTE (release inicial agosto 2026). ⚠️ Existen varios homónimos comerciales SIN relación: "AnyDocsAI.com", "AnyDoc Online" (anydoc.online), "AnythingMD", "AnyDocTranslator". El producto real que probablemente escuchaste es el de Firecrawl (**github.com/firecrawl/anydoc**).
 
@@ -79,19 +79,19 @@
 - Precio: open source MIT; pagas la API del modelo de visión que uses (no tiene precio por página propio).
 - Vigencia: VIGENTE (~12,3k estrellas, activo).
 
-**APIs cloud (Document AI gestionado)** — todas confirmadas ACTIVAS a septiembre 2026:
+**APIs cloud (Document AI gestionado)**, todas confirmadas ACTIVAS a septiembre 2026:
 - **Azure AI Document Intelligence** (antes Form Recognizer, ahora v4.0 GA): capa gratuita F0 de 500 páginas/mes. Read/OCR ~$1,50/1000 pág, Layout ~$10/1000 pág. ⚠️ Cifras vía fuentes secundarias (Azure Retail Prices API); la tabla oficial se renderiza dinámicamente.
-- **Google Document AI**: OCR ~$1,50/1000 (baja a $0,60 >5M/mes), Form Parser $30/1000 ($20 >1M), Layout Parser $10/1000. Sin capa gratuita mensual recurrente — solo el crédito único de $300 de nuevo cliente GCP.
-- **Amazon Textract**: Detect Document Text (OCR) $1,50/1000, Tables $15/1000, Forms $50/1000 (⚠️ una fuente secundaria sitúa Forms en $15/1000 — reconfirma). Free Tier de 3 meses: 1.000 pág/mes OCR, pero solo 100 pág/mes en Forms/Tables.
+- **Google Document AI**: OCR ~$1,50/1000 (baja a $0,60 >5M/mes), Form Parser $30/1000 ($20 >1M), Layout Parser $10/1000. Sin capa gratuita mensual recurrente ( solo el crédito único de $300 de nuevo cliente GCP.
+- **Amazon Textract**: Detect Document Text (OCR) $1,50/1000, Tables $15/1000, Forms $50/1000 (⚠️ una fuente secundaria sitúa Forms en $15/1000 ) reconfirma). Free Tier de 3 meses: 1.000 pág/mes OCR, pero solo 100 pág/mes en Forms/Tables.
 - **Reducto (reducto.ai)**: ACTIVO. El 1 de septiembre de 2026 lanzó el modelo **r-1**, cuya nota de prensa (PR Newswire) describe "reducing errors by up to 20%... bringing the all-in cost down to 1¢ per page", posicionado como "up to 6× less" que pipelines multi-herramienta (los modelos agénticos previos costaban entre 3 y 6 céntimos/página, según MarkTechPost, 7-sep-2026). El 20% de reducción de error se mide contra su propio pipeline anterior, y es hosted-only (sin pesos abiertos). Tarifas Standard: r-1 Parse $10/1000, Extract $20/1000, Classify $7,50/1000, Edit $60/1000. Capa gratuita: $150 / 15.000 créditos. Growth/Enterprise por ventas.
 
-### CATEGORÍA 2 — GATEWAYS Y ORQUESTACIÓN DE MODELOS
+### CATEGORÍA 2 ( GATEWAYS Y ORQUESTACIÓN DE MODELOS
 
-**OmniRoute (diegosouzapw) — VERIFICACIÓN PRIORITARIA ✅ REAL Y VIGENTE**
+**OmniRoute (diegosouzapw) ) VERIFICACIÓN PRIORITARIA ✅ REAL Y VIGENTE**
 - Qué hace: gateway LLM open source (MIT), local-first, que unifica cientos de proveedores tras un endpoint OpenAI-compatible en `localhost:20128`. Auto-fallback en 4 tiers (suscripción → API key → barato → gratis), compresión de tokens (RTK+Caveman), servidor MCP integrado, claves cifradas AES-256-GCM en disco local, cero telemetría cloud.
 - Encaje: útil sobre todo para tus **herramientas de coding** (Claude Code, Cursor, Cline, Copilot) y para evitar rate limits/vendor lock-in. Para tu backend de producción con PydanticAI es menos directo que un gateway gestionado, porque la robustez (failover, upgrades, acceso remoto seguro) depende enteramente de tu configuración y operación.
 - Precio: gratis, open source MIT, self-host (npm/Docker/Electron/Termux).
-- Vigencia: VIGENTE y muy activo (crecimiento rápido). ⚠️ **Advertencia crítica**: sus propios términos listan ~15 proveedores cuyos TOS prohíben acceso vía proxy; los "tokens gratis" no son todos legalmente usables. ⚠️ Homónimos: hay un "OmniRoute" distinto en SourceForge y menciones genéricas; el real es **diegosouzapw/OmniRoute** (omniroute.online). Las cifras de nº de proveedores (160→338) y estrellas varían mucho entre versiones/fuentes — tómalas como orientativas.
+- Vigencia: VIGENTE y muy activo (crecimiento rápido). ⚠️ **Advertencia crítica**: sus propios términos listan ~15 proveedores cuyos TOS prohíben acceso vía proxy; los "tokens gratis" no son todos legalmente usables. ⚠️ Homónimos: hay un "OmniRoute" distinto en SourceForge y menciones genéricas; el real es **diegosouzapw/OmniRoute** (omniroute.online). Las cifras de nº de proveedores (160→338) y estrellas varían mucho entre versiones/fuentes, tómalas como orientativas.
 
 **OpenRouter**
 - Qué hace: agregador hosted, un solo API key para 300+ modelos (Claude, GPT, Gemini, Llama, DeepSeek, etc.) tras endpoint OpenAI-compatible.
@@ -118,10 +118,10 @@
 |---|---|---|---|---|
 | OpenRouter | Hosted | Sin markup + 5,5% compra créditos | ~40–150 ms | Prototipar, máxima variedad de modelos, cero infra |
 | LiteLLM | Self-host OSS | Cero | ~8–20 ms | Control total en Python, sin vendor lock-in |
-| Portkey | Gateway + observabilidad | — | <1–20 ms | Caché semántico, guardrails, PII |
-| OmniRoute | Local-first OSS | Cero | — | Herramientas de coding, evitar rate limits |
+| Portkey | Gateway + observabilidad | ( | <1–20 ms | Caché semántico, guardrails, PII |
+| OmniRoute | Local-first OSS | Cero | ) | Herramientas de coding, evitar rate limits |
 
-### CATEGORÍA 3 — RAG Y GraphRAG
+### CATEGORÍA 3: RAG Y GraphRAG
 
 **Bases de datos vectoriales**
 - **pgvector** (Postgres): la opción por defecto para RAG en producción en 2026 hasta ~10–50M vectores. Coste incremental casi cero si ya usas Postgres. Recomendación de arranque. Hybrid search vía `pg_trgm`/full-text + vector RRF.
@@ -139,16 +139,16 @@
 - **Neo4j**: la base de grafos subyacente más común para todos los anteriores.
 
 **Evaluación RAG (más allá de Ragas/DeepEval que ya conoces)**
-- **TruLens** (open source, TruEra): pionero del "RAG Triad" (context relevance, groundedness, answer relevance) con LLM-as-judge, sin necesidad de ground truth — se puede correr sobre tráfico de producción. Instrumentación OpenTelemetry, así que puedes atar métricas a spans concretos (retrieval, generación, tool use). En benchmarks de terceros (AIMultiple, marzo 2026) quedó primero frente a W&B Weave, RAGAS, DeepEval y UpTrain en varias métricas de ranking.
+- **TruLens** (open source, TruEra): pionero del "RAG Triad" (context relevance, groundedness, answer relevance) con LLM-as-judge, sin necesidad de ground truth, se puede correr sobre tráfico de producción. Instrumentación OpenTelemetry, así que puedes atar métricas a spans concretos (retrieval, generación, tool use). En benchmarks de terceros (AIMultiple, marzo 2026) quedó primero frente a W&B Weave, RAGAS, DeepEval y UpTrain en varias métricas de ranking.
 - **Arize Phoenix**: eval-first, plantillas RAG (context precision, faithfulness), **visualización UMAP de embeddings** (killer feature para detectar drift de recuperación). Source-available (Elastic License 2.0), self-host gratis.
 - Otros: Quotient, UpTrain, Laminar (Apache 2.0, OTel-native).
 
-### CATEGORÍA 4 — EVALUACIÓN Y OBSERVABILIDAD LLM
+### CATEGORÍA 4 ( EVALUACIÓN Y OBSERVABILIDAD LLM
 
-**Pydantic Logfire — LA MÁS RELEVANTE PARA TI**
+**Pydantic Logfire ) LA MÁS RELEVANTE PARA TI**
 - Qué hace: plataforma de observabilidad AI-native construida sobre OpenTelemetry, del equipo de Pydantic. Traza **toda la app** (no solo llamadas LLM): HTTP, DB, vector search, lógica de negocio, en timelines unificados. Paneles de conversación, token tracking, cost monitoring, tool call inspection. Expone datos vía SQL (Postgres-compatible), lo que permite que tu propio agente de coding consulte producción. Integra con `pydantic-evals`.
 - Encaje: **PERFECTO**. Es del mismo equipo que PydanticAI y se integra nativamente; ideal para FastAPI + PydanticAI (renderiza cada request de FastAPI como spans anidados). Instrumentación en dos líneas (`pip install logfire`, `logfire.configure()`).
-- Precio: Personal gratis (10M records/mes, 1 seat, 3 proyectos, 30 días retención); Team $49/mes (5 seats, +$25/seat extra); Growth $249/mes; luego $2/M records con price cap opcional. Según su propia comparación, a escala media (5 usuarios, 50M spans) sería 8× más barato que Arize, 27× que Langfuse y 40× que LangSmith — trátalo como cifra del vendedor, pero el modelo por-records (no per-seat/per-trace) sí escala mejor. SDK MIT, servidor closed source.
+- Precio: Personal gratis (10M records/mes, 1 seat, 3 proyectos, 30 días retención); Team $49/mes (5 seats, +$25/seat extra); Growth $249/mes; luego $2/M records con price cap opcional. Según su propia comparación, a escala media (5 usuarios, 50M spans) sería 8× más barato que Arize, 27× que Langfuse y 40× que LangSmith, trátalo como cifra del vendedor, pero el modelo por-records (no per-seat/per-trace) sí escala mejor. SDK MIT, servidor closed source.
 - Vigencia: MUY VIGENTE.
 
 **Langfuse**
@@ -159,12 +159,12 @@
 
 **Otros**: LangSmith (mejor si usas LangChain/LangGraph; per-seat $39 + traces, self-host enterprise-only, Developer gratis con 1 seat/5k traces), Helicone (proxy OSS Apache 2.0, logging con cambio de una línea de base-URL), W&B Weave, Braintrust (eval-first, free hasta 5 usuarios, Pro $249/mes), Opik (Comet), Traceloop/OpenLLMetry. **Arize** anunció ser adquirida por **Dynatrace**: comunicado del 13-ago-2026 por "$915 million... approximately $815 million in cash as well as replacement equity awards"; los fundadores Jason Lopatecki y Aparna Dhinakaran se incorporan al cierre, previsto "later this quarter or early in Dynatrace's third quarter". Aún sin cerrar.
 
-### CATEGORÍA 5 — GENERACIÓN DE UI ASISTIDA POR IA (complementarias a v0.app)
+### CATEGORÍA 5 ( GENERACIÓN DE UI ASISTIDA POR IA (complementarias a v0.app)
 
-**Thesys C1 — GENERATIVE UI AS A SERVICE (muy relevante)**
+**Thesys C1 ) GENERATIVE UI AS A SERVICE (muy relevante)**
 - Qué hace: API middleware que transforma respuestas del LLM en componentes UI interactivos en vez de texto, con streaming en tiempo real. Endpoint OpenAI-compatible + C1 React SDK que reemplaza al renderizador de markdown. Retries/fallback de proveedores internos. Themeable (dark mode incluido).
 - Encaje: **MUY directo** con tu caso. Es literalmente "Generative UI as a service" para React/Next.js, y encaja con tu pipeline JSON tipado → componentes. Puedes darle reglas de sistema tipo "render financial data as dashboard charts".
-- Precio: producto comercial hospedado (NO open source; no hay repo que clonar). Tiene playground gratuito (chat.thesys.dev). El precio detallado no está publicado abiertamente — hay que registrarse en console.thesys.dev / contactar a Thesys para tarifas concretas.
+- Precio: producto comercial hospedado (NO open source; no hay repo que clonar). Tiene playground gratuito (chat.thesys.dev). El precio detallado no está publicado abiertamente, hay que registrarse en console.thesys.dev / contactar a Thesys para tarifas concretas.
 - Vigencia: VIGENTE (GA desde abril 2025, fundada en San Francisco en 2024 por Rabi Shankar Guha y Parikshit Deshmukh; más de 300 equipos usándolo).
 
 **Vercel AI SDK**
@@ -174,7 +174,7 @@
 - Vigencia: SDK VIGENTE; la variante RSC específica está pausada.
 
 **CopilotKit + AG-UI**
-- Qué hace: SDK full-stack para apps agénticas y Generative UI (React/Angular/mobile/Slack/Teams). Creadores del protocolo **AG-UI** (adoptado por Google, LangChain, AWS, Microsoft, Mastra y **PydanticAI**). Soporta patrones controlled/declarative/open-ended, incluyendo **Open-JSON-UI** — directamente relevante a tu "componentes generados a partir de JSON tipado".
+- Qué hace: SDK full-stack para apps agénticas y Generative UI (React/Angular/mobile/Slack/Teams). Creadores del protocolo **AG-UI** (adoptado por Google, LangChain, AWS, Microsoft, Mastra y **PydanticAI**). Soporta patrones controlled/declarative/open-ended, incluyendo **Open-JSON-UI**, directamente relevante a tu "componentes generados a partir de JSON tipado".
 - Encaje: **MUY bueno**, especialmente porque AG-UI ya está adoptado por PydanticAI. Ideal para conectar tu backend agéntico con UI generativa tipada por JSON de forma estándar y bidireccional.
 - Precio: open source (core) + planes de pago (Intelligence/self-hosting).
 - Vigencia: MUY VIGENTE.
@@ -184,12 +184,12 @@
 - **Magic Patterns**: generador de prototipos UI con IA; integrado con 21st.dev.
 - **Subframe**: herramienta de diseño AI que compone componentes React/Tailwind en canvas y exporta código limpio.
 - **Bolt.new, Lovable**: generadores de apps full-stack por prompt (útiles para prototipar rápido, no específicos de Generative UI tipada).
-- **shadcn/ui**: base de componentes copy-paste (no dependencia) sobre Radix + Tailwind, estándar del ecosistema — el sustrato sobre el que trabajan casi todos los anteriores.
+- **shadcn/ui**: base de componentes copy-paste (no dependencia) sobre Radix + Tailwind, estándar del ecosistema ( el sustrato sobre el que trabajan casi todos los anteriores.
 
-### CATEGORÍA 6 — PRODUCTIVIDAD GENERAL PARA DESARROLLO CON IA (uso personal)
+### CATEGORÍA 6 ) PRODUCTIVIDAD GENERAL PARA DESARROLLO CON IA (uso personal)
 
 **Gestión de prompts**
-- **PromptLayer**: plataforma de prompt management para equipos (versionado, evals, observabilidad, tracing). Editor visual sin redeploy — permite que expertos de dominio iteren sin tocar código.
+- **PromptLayer**: plataforma de prompt management para equipos (versionado, evals, observabilidad, tracing). Editor visual sin redeploy, permite que expertos de dominio iteren sin tocar código.
 - **Agenta**: LLMOps open source MIT, self-hostable; playground de comparación lado a lado, versionado Git-like (variants/branches + environments), evals (LLM-as-judge + humana), observabilidad.
 - **Latitude**: open source, con PromptL (lenguaje con variables/condicionales/loops), agentes autónomos, human-in-the-loop, self-host o cloud.
 - Otros: Helicone (observabilidad + prompts, Apache 2.0), Pezzo, PromptHub, Humanloop.
@@ -201,11 +201,11 @@
 
 **TOP 5 RECOMENDADAS PARA EMPEZAR YA** (priorizando capa gratuita generosa + encaje con FastAPI/PydanticAI/Next.js):
 
-1. **Pydantic Logfire** (observabilidad) — instálalo PRIMERO. Es del mismo equipo que PydanticAI, integración nativa, 10M records/mes gratis. Te dará visibilidad de todo el pipeline (FastAPI + PydanticAI + vector search + llamadas al LLM) desde el día uno, y consultable por SQL. Es la pieza con mejor ROI para tu stack específico.
-2. **Docling** (parseo) — MIT, corre local, Python nativo, `DoclingDocument` tipado (Pydantic v2), maneja tablas/layout complejos. Complétalo con **anydoc de Firecrawl** para Office rápido y **Mistral OCR** ($1–2/1000 pág en Batch) o **Reducto r-1** (1¢/página) para escaneados.
-3. **OpenRouter o LiteLLM** (gateway) — OpenRouter para prototipar tu comparación de modelos multimodales sin infra; migra a LiteLLM si quieres self-host sin markup en Python. (OmniRoute mejor para tus herramientas de coding, no para el backend de producción.)
-4. **pgvector + Qdrant** (RAG) — arranca con pgvector (casi cero coste), migra a Qdrant si necesitas filtrado/rendimiento. Para tu comparación GraphRAG usa **LightRAG** como baseline económico y **Microsoft GraphRAG** solo para las preguntas globales que crucen documentos. Añade **TruLens** (RAG Triad) y **Arize Phoenix** (UMAP de drift) a tu Ragas/DeepEval.
-5. **Vercel AI SDK + Thesys C1** (Generative UI) — el AI SDK para el patrón vigente de Generative UI en tu Next.js (evita la variante RSC pausada); Thesys C1 si quieres delegar la generación de UI a un servicio. Evalúa fuerte **CopilotKit/AG-UI** porque el protocolo AG-UI ya está adoptado por PydanticAI y soporta Open-JSON-UI (tu caso exacto de JSON tipado → componentes).
+1. **Pydantic Logfire** (observabilidad), instálalo PRIMERO. Es del mismo equipo que PydanticAI, integración nativa, 10M records/mes gratis. Te dará visibilidad de todo el pipeline (FastAPI + PydanticAI + vector search + llamadas al LLM) desde el día uno, y consultable por SQL. Es la pieza con mejor ROI para tu stack específico.
+2. **Docling** (parseo): MIT, corre local, Python nativo, `DoclingDocument` tipado (Pydantic v2), maneja tablas/layout complejos. Complétalo con **anydoc de Firecrawl** para Office rápido y **Mistral OCR** ($1–2/1000 pág en Batch) o **Reducto r-1** (1¢/página) para escaneados.
+3. **OpenRouter o LiteLLM** (gateway), OpenRouter para prototipar tu comparación de modelos multimodales sin infra; migra a LiteLLM si quieres self-host sin markup en Python. (OmniRoute mejor para tus herramientas de coding, no para el backend de producción.)
+4. **pgvector + Qdrant** (RAG): arranca con pgvector (casi cero coste), migra a Qdrant si necesitas filtrado/rendimiento. Para tu comparación GraphRAG usa **LightRAG** como baseline económico y **Microsoft GraphRAG** solo para las preguntas globales que crucen documentos. Añade **TruLens** (RAG Triad) y **Arize Phoenix** (UMAP de drift) a tu Ragas/DeepEval.
+5. **Vercel AI SDK + Thesys C1** (Generative UI), el AI SDK para el patrón vigente de Generative UI en tu Next.js (evita la variante RSC pausada); Thesys C1 si quieres delegar la generación de UI a un servicio. Evalúa fuerte **CopilotKit/AG-UI** porque el protocolo AG-UI ya está adoptado por PydanticAI y soporta Open-JSON-UI (tu caso exacto de JSON tipado → componentes).
 
 **Umbrales/benchmarks que cambiarían estas recomendaciones:**
 - Si superas ~10–50M vectores o necesitas multi-tenancy: migra de pgvector a Qdrant/Milvus.
@@ -218,7 +218,7 @@
 - **Homónimos (crítico)**: "anydoc" y "OmniRoute" tienen múltiples productos con nombres casi idénticos. Verifica que usas **github.com/firecrawl/anydoc** y **diegosouzapw/OmniRoute** (omniroute.online) respectivamente, no los clones comerciales.
 - **OmniRoute y TOS**: sus propios términos indican que ~15 proveedores prohíben acceso vía proxy; no todos los "tokens gratis" son legalmente usables. No lo pongas en el camino crítico de producción sin evaluar tu configuración de failover.
 - **Precios cloud Document AI**: las cifras exactas de Azure (Read/Layout) y Amazon Textract (Forms/Tables) provienen en parte de fuentes secundarias porque las tablas oficiales se renderizan dinámicamente. Hay discrepancia sobre Amazon Textract Forms ($50 vs $15/1000). Reconfírmalas en vivo en el portal correspondiente antes de presupuestar.
-- **Thesys C1**: no publica precios abiertamente; hay que contactar/registrarse para tarifas. Es hosted, no self-hostable — dependes de su disponibilidad (aunque tienen fallback interno de proveedores).
+- **Thesys C1**: no publica precios abiertamente; hay que contactar/registrarse para tarifas. Es hosted, no self-hostable, dependes de su disponibilidad (aunque tienen fallback interno de proveedores).
 - **Vercel AI SDK RSC pausado**: no construyas sobre la variante RSC específica; usa el patrón vigente de Generative UI del SDK (tool calls + message parts).
 - **Marker**: licencia restrictiva (GPL-3.0 + RAIL-M) que limita uso comercial por encima de cierto umbral de ingresos.
 - **Movimientos de mercado**: Arize en proceso de adquisición por Dynatrace ($915M, aún sin cerrar); Langfuse adquirida por ClickHouse (enero 2026, sin cambios de licencia previstos). No afecta su uso hoy, pero vigila cambios de licencia/precio a medio plazo.

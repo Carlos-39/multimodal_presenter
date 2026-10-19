@@ -39,7 +39,7 @@ export function Armazon({ children }: { children: React.ReactNode }) {
           </aside>
           {/* `key` por ruta: al cambiar de capítulo el cajón vuelve a nacer cerrado. Es la forma
               de React de reiniciar estado cuando cambia una entrada, y evita el efecto que lo
-              cerraba a mano — fijar estado dentro de un efecto encadena renders. */}
+              cerraba a mano: fijar estado dentro de un efecto encadena renders. */}
           <Cajon key={ruta} slug={capitulo.slug} acto={capitulo.acto} />
         </>
       ) : null}

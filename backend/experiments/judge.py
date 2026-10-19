@@ -1,7 +1,7 @@
 """Juez de calidad (Hito 7 dry run). Juez = Haiku 4.5 (Anthropic).
 
 LIMITACIÓN HONESTA (declarar en el informe): el juez es de la MISMA familia que el generador
-(Sonnet), distinta generación/tamaño — no es el ideal cross-vendor (Gemini quedó bloqueado por
+(Sonnet), distinta generación/tamaño, no es el ideal cross-vendor (Gemini quedó bloqueado por
 acceso). Temperatura 0 y rúbrica fija para reducir varianza.
 """
 
@@ -21,7 +21,7 @@ def apply_unanswerable_gate(
 
     La auditoría del dataset encontró que la categoría premiaba el FALLO de recuperación:
     `lightrag_graph` sacaba 1.0 abstenéndose ("No se encuentra") tras recuperar CERO páginas
-    (`retrieved_pages == []`) — el mismo modo de fallo catastrófico que le da ~0.3 en el resto.
+    (`retrieved_pages == []`): el mismo modo de fallo catastrófico que le da ~0.3 en el resto.
     "No recuperé nada, luego no está" NO puede puntuar igual que "recuperé y verifiqué la ausencia".
 
     Regla: en `unanswerable`, la abstención solo cuenta si hubo contexto que inspeccionar.

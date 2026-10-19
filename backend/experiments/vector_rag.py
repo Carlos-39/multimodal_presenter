@@ -1,4 +1,4 @@
-"""Condición 2 — RAG vectorial multimodal por página (Hito 7).
+"""Condición 2: RAG vectorial multimodal por página (Hito 7).
 
 Cada página se embebe como IMAGEN con Voyage `voyage-multimodal-3.5` (nada de texto aplanado).
 En consulta, se embebe la pregunta y se recuperan las top-k páginas por similitud coseno (NumPy;

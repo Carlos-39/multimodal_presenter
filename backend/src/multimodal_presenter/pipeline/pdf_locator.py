@@ -1,4 +1,4 @@
-"""Localizador de regiones en PDF — dónde está, físicamente, una cita ya generada.
+"""Localizador de regiones en PDF: dónde está, físicamente, una cita ya generada.
 
 Sube el PDF de **fidelidad de página** (Hito 5c: "te llevo a la página 7") a **fidelidad de
 región** ("está AQUÍ, en este recuadro"). Es el cuarto nivel del mismo esquema honesto que ya
@@ -17,7 +17,7 @@ capa de texto NO cambia el estado de grounding: sigue siendo `unverified`. Lo qu
 poder señalar dónde mirar, no una afirmación de que el contenido quedó verificado.
 
 **Alcance declarado, no limitación oculta:** solo PDFs con capa de texto nativa. Los escaneados
-(sin texto extraíble) degradan a `calidad: "page"` — exactamente el comportamiento de hoy. No
+(sin texto extraíble) degradan a `calidad: "page"`, exactamente el comportamiento de hoy. No
 se hace OCR: es una decisión de alcance consciente.
 """
 
@@ -48,7 +48,7 @@ Calidad = Literal["exact", "approximate", "page"]
 
 # Umbral del peldaño difuso. La investigación daba 85-90 y se toma el extremo CONSERVADOR: en
 # este proyecto un recuadro equivocado es peor que ningún recuadro, porque señalaría con
-# confianza un sitio que no es — justo la sobre-afirmación que eliminó el Hito 8A.1. Una cita
+# confianza un sitio que no es: justo la sobre-afirmación que eliminó el Hito 8A.1. Una cita
 # fiel con diferencias menores puntúa 93-100; una paráfrasis real baja de 85, así que 90 separa
 # bien los dos casos sin quedarse corto.
 UMBRAL_DIFUSO = 90.0
@@ -88,7 +88,7 @@ class Region:
     """Un recuadro, en coordenadas NORMALIZADAS 0-1 sobre la página tal como se ve.
 
     Origen arriba-izquierda y página **ya rotada**: el frontend solo multiplica por el tamaño de
-    su contenedor y posiciona en porcentaje. Nunca calcula escalas ni aplica rotaciones — todo
+    su contenedor y posiciona en porcentaje. Nunca calcula escalas ni aplica rotaciones, todo
     eso se resolvió aquí, con el mismo motor que dibuja la página.
     """
 
@@ -123,7 +123,7 @@ def _normalizar(texto: str) -> tuple[str, list[int]]:
     """Normaliza el texto y devuelve (texto normalizado, mapa índice_normalizado → original).
 
     El mapa es lo que permite que la escalera entera trabaje sobre una cadena cómoda y aun así
-    sepa a qué carácter —y por tanto a qué caja— corresponde cada posición. Sin él habría que
+    sepa a qué carácter (y por tanto a qué caja) corresponde cada posición. Sin él habría que
     elegir entre comparar texto sucio o perder la geometría.
 
     Tres normalizaciones, y ninguna toca la semántica:
@@ -219,8 +219,8 @@ def _agrupar_en_lineas(
     avanza en vertical y cada carácter parecía un renglón nuevo (se midió: 78 recuadros en vez
     de 2).
 
-    El corte no es "altura parecida" —eso fundiría la última línea de una columna con la primera
-    de la siguiente, que comparten altura— sino "la pluma saltó": cambió de renglón, o retrocedió
+    El corte no es "altura parecida" (eso fundiría la última línea de una columna con la primera
+    de la siguiente, que comparten altura) sino "la pluma saltó": cambió de renglón, o retrocedió
     a la izquierda. Un salto de columna hace las dos cosas, así que queda cortado igual.
     """
     if not cajas:
@@ -347,7 +347,7 @@ class PdfLocator:
             if sum(r.area for r in regiones) > MAX_FRACCION_AREA:
                 return Localizacion.solo_pagina()
             return Localizacion(calidad=calidad, regiones=regiones, pagina=pagina)
-        except Exception:  # noqa: BLE001 — un PDF roto degrada, no tumba la generación
+        except Exception:  # noqa: BLE001 (un PDF roto degrada, no tumba la generación)
             return Localizacion.solo_pagina()
 
     @staticmethod
@@ -416,7 +416,7 @@ def abrir_localizador(source_kind: str, binario: bytes | None) -> Iterator[PdfLo
         return
     try:
         localizador = PdfLocator(binario)
-    except Exception:  # noqa: BLE001 — un PDF que no abre degrada a fidelidad de página
+    except Exception:  # noqa: BLE001 (un PDF que no abre degrada a fidelidad de página)
         yield None
         return
     try:

@@ -1,7 +1,7 @@
 """Narración tipo audiolibro (Hito 5g Parte 3).
 
 Dos pasos, bajo demanda y cacheados por documento:
-1. GUION (Sonnet): una síntesis hablada del contenido, con su propio hilo narrativo — NO una
+1. GUION (Sonnet): una síntesis hablada del contenido, con su propio hilo narrativo, NO una
    transcripción del texto en pantalla. Narra los NÚCLEOS como columna vertebral y menciona que
    hay más detalle en modo detallado. Coherente con el Punto 2 (la redundancia texto+audio solo se
    permite en casos verificables, que no aplican aquí) y con "resumen primero, detalle a un clic".

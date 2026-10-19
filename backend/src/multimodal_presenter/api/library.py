@@ -81,7 +81,7 @@ async def guardar_endpoint(
         raise HTTPException(status_code=413, detail="La presentación es demasiado grande.")
     try:
         datos = PayloadGuardado.model_validate_json(crudo)
-    except Exception as exc:  # noqa: BLE001 — un payload inválido es error de quien llama
+    except Exception as exc:  # noqa: BLE001 (un payload inválido es error de quien llama)
         raise HTTPException(status_code=422, detail="La presentación no es válida.") from exc
 
     text_value, binario, media_type, nombre = await parse_document_inputs(text, file, settings)
@@ -198,7 +198,7 @@ async def guardar_chat_endpoint(
 
     `PUT` y no `POST` porque reemplaza: el cliente manda el historial completo y eso es lo que
     queda. Añadir turno a turno sería más barato, pero el historial podría derivar de la
-    conversación real —un reintento duplica, una petición perdida deja un hueco— y un historial
+    conversación real (un reintento duplica, una petición perdida deja un hueco) y un historial
     con huecos es peor que ninguno, porque parece completo.
     """
     async with conectar(settings) as conn:
@@ -214,7 +214,7 @@ async def guardar_chat_endpoint(
 # volver el deck es otro, no era suya.
 #
 # Cada uno tiene su endpoint en vez de uno genérico por `tipo`: uno habla JSON y el otro bytes,
-# y un endpoint que acepta ambos acaba decidiendo por el `Content-Type` qué validar — justo el
+# y un endpoint que acepta ambos acaba decidiendo por el `Content-Type` qué validar, justo el
 # tipo de rama en la que se cuela que algo entre sin comprobar.
 # ─────────────────────────────────────────────────────────────
 

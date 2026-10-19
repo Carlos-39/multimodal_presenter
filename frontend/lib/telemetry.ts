@@ -1,5 +1,5 @@
 /**
- * Telemetría de comportamiento (Hito 8, Parte A) — capa observacional del frontend.
+ * Telemetría de comportamiento (Hito 8, Parte A), capa observacional del frontend.
  *
  * Punto ÚNICO de la responsabilidad "telemetría": id de sesión, contador, buffer y envío en lote.
  * Es un módulo singleton a propósito (no un contexto/prop-drilling): la telemetría es un concern
@@ -16,7 +16,7 @@
  *
  * La primera versión vaciaba el buffer ANTES de saber si el envío había llegado, y el fallo del
  * `fetch` se descartaba en silencio. En las dos sesiones reales de la primera prueba se perdieron
- * 8 de 60 eventos —un 13 %—, y se vieron porque `seq` es un contador sin huecos: faltaban el 3,
+ * 8 de 60 eventos (un 13 %), y se vieron porque `seq` es un contador sin huecos: faltaban el 3,
  * el 8, el 9… Lotes enteros. Un móvil que cambia de aplicación o pierde cobertura un segundo
  * basta.
  *
@@ -27,7 +27,7 @@
  * 2. La cola se guarda en `sessionStorage`, así que sobrevive a una recarga: lo que no se pudo
  *    mandar antes de recargar se manda después.
  * 3. Se usa `fetch` con `keepalive` en vez de `sendBeacon`. `sendBeacon` también sobrevive al
- *    cierre, pero devuelve un booleano que solo dice «lo he encolado», nunca si llegó — y sin esa
+ *    cierre, pero devuelve un booleano que solo dice «lo he encolado», nunca si llegó, y sin esa
  *    respuesta no hay nada que reintentar. `keepalive` sobrevive igual y sí contesta.
  *
  * Reintentar puede duplicar un evento (la petición llegó, la respuesta se perdió). Es el lado
@@ -92,7 +92,7 @@ function randomId(): string {
   }
 }
 
-/** El facilitador puede fijar la etiqueta del participante por URL (`?p=P03`) — sin login. */
+/** El facilitador puede fijar la etiqueta del participante por URL (`?p=P03`), sin login. */
 function readParticipant(): string | null {
   try {
     const fromUrl = new URL(window.location.href).searchParams.get("p");
@@ -123,7 +123,7 @@ function ensureSession(): string {
     sessionId = id;
     // El contador vive junto al id, y por la MISMA razón: el id sobrevive a una recarga, así que
     // si `seq` volviera a 0 la sesión tendría dos eventos con seq 0, dos con seq 1… y el orden
-    // dentro de la sesión dejaría de ser inequívoco — justo lo que el contrato del backend pide
+    // dentro de la sesión dejaría de ser inequívoco, justo lo que el contrato del backend pide
     // de este campo ("contador monótono por sesión"). Pasa de verdad: una recarga en medio de la
     // prueba basta, y el análisis ordena por `seq`.
     seq = Number.parseInt(sessionStorage.getItem(SEQ_KEY) ?? "0", 10) || 0;
@@ -198,7 +198,7 @@ function confirmar(lote: RawEvent[]): void {
  * Envía un lote. Los eventos NO salen de la cola hasta que el servidor confirma.
  *
  * `forzar` manda aunque haya otro envío en curso: lo usan `pagehide` y la pestaña al ocultarse,
- * donde puede no haber otra oportunidad. Puede duplicar, y duplicar es barato — el exportador
+ * donde puede no haber otra oportunidad. Puede duplicar, y duplicar es barato, el exportador
  * descarta repetidos y perder un evento no se arregla luego.
  */
 export function flush(forzar = false): void {
@@ -219,7 +219,7 @@ export function flush(forzar = false): void {
     });
   } catch {
     // Navegador sin `fetch` utilizable: queda `sendBeacon`, que no confirma nada. Se da por
-    // entregado porque no hay forma de saberlo — es exactamente lo que hacía la versión anterior,
+    // entregado porque no hay forma de saberlo, es exactamente lo que hacía la versión anterior,
     // y aquí es el último recurso y no el camino normal.
     try {
       const blob = new Blob([body], { type: "application/json" });

@@ -8,14 +8,14 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
  * `value` puede no coincidir con ninguna opción (nada seleccionado).
  *
  * **El fondo de la opción activa se desliza en vez de saltar**, y al hacerlo se estira: el borde
- * que va delante llega primero y el de atrás lo alcanza. No es adorno — un salto no dice de dónde
+ * que va delante llega primero y el de atrás lo alcanza. No es adorno, un salto no dice de dónde
  * vienes, y aquí el gesto conecta las dos opciones. Mismo criterio que la lámina del carrusel, que
  * entra por el lado del que vienes.
  *
  * **La posición del pulgar se escribe en el DOM, no en estado de React.** Es un elemento puramente
  * visual: meterlo en estado forzaría un render por cada paso del estirón sin que cambie nada del
  * árbol. Y de paso respeta la regla de pureza del proyecto, que prohíbe `setState` síncrono en un
- * efecto — que es justo donde hay que medir.
+ * efecto: que es justo donde hay que medir.
  *
  * Sin librería de animación: el estirón son dos escrituras seguidas con una transición CSS encima.
  * `motion` serían 34 kB para lo único que no se puede hacer así, arrastrar el pulgar, y en un
@@ -28,7 +28,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
  * («Generar presentación», «Nueva»). Esto no se pulsa para que pase algo, se pulsa para mirar otra
  * cosa. Dejar el pulgar claro con el borde y la palabra en acento tiene además una ventaja de
  * contraste: durante el estirón, la caja cubre las DOS opciones, y sobre un relleno azul la opción
- * que se va quedaría medio segundo en gris sobre azul — ilegible justo cuando se la está mirando.
+ * que se va quedaría medio segundo en gris sobre azul, ilegible justo cuando se la está mirando.
  */
 interface SegmentedOption<T extends string> {
   value: T;
@@ -53,7 +53,7 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
   const recoger = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   /**
    * Hay un estirón a medias. Lo mira el `ResizeObserver` para no pisarlo: al activarse, el botón
-   * gana `font-medium` y **cambia de ancho**, lo que dispara el observador — que recolocaba el
+   * gana `font-medium` y **cambia de ancho**, lo que dispara el observador, que recolocaba el
    * pulgar al instante y se comía la animación entera.
    */
   const enVuelo = useRef(false);
@@ -113,7 +113,7 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
   }, [indice, colocar]);
 
   // El índice vive también en un ref para que el efecto de abajo NO dependa de él. Si dependiera,
-  // su limpieza correría en cada cambio de opción — y esa limpieza cancela el recogido que el
+  // su limpieza correría en cada cambio de opción, y esa limpieza cancela el recogido que el
   // efecto de layout acaba de programar, dejando el pulgar estirado para siempre.
   const indiceRef = useRef(indice);
   useEffect(() => {

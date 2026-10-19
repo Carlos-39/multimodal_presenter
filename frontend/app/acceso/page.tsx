@@ -5,7 +5,7 @@ import { AccesoClient } from "./AccesoClient";
 /**
  * `/acceso`: la única página que se ve sin haber pasado el portón.
  *
- * Tiene que quedar fuera de él por lo evidente —si no, no habría forma de pedir el código—, y por
+ * Tiene que quedar fuera de él por lo evidente (si no, no habría forma de pedir el código), y por
  * eso mismo no muestra nada: ni la portada, ni cuántas presentaciones hay, ni si el portón está
  * puesto siquiera. Lo único que dice es qué hace falta para entrar.
  */

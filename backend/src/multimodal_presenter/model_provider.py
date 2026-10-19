@@ -5,13 +5,13 @@ Dos roles, los dos cubiertos por una sola clave de Google (AI Studio):
 - **Estructuración (Fase 2):** primario Anthropic (`claude-sonnet-5`), fallback **Gemini
   directo**. Envueltos en un `FallbackModel`: si el primario falla al arrancar (error de API,
   rate limit, indisponibilidad), PydanticAI reintenta con el fallback. Antes se llegaba al
-  mismo Gemini a través de OpenRouter; ahora va directo — un intermediario menos, una clave
+  mismo Gemini a través de OpenRouter; ahora va directo, un intermediario menos, una clave
   menos, y el mismo modelo.
 - **Percepción de audio (Fase 0):** Gemini con entrada acústica nativa, APARTE del
-  `FallbackModel` y **sin fallback propio** — ver `build_perception_model`.
+  `FallbackModel` y **sin fallback propio** ( ver `build_perception_model`.
 
-Las claves se validan AQUÍ (en runtime), no al importar la app, para que el CI —que mockea
-el LLM inyectando un modelo de prueba— no necesite claves reales.
+Las claves se validan AQUÍ (en runtime), no al importar la app, para que el CI )que mockea
+el LLM inyectando un modelo de prueba, no necesite claves reales.
 """
 
 import truststore
@@ -69,7 +69,7 @@ def build_perception_model(settings: Settings) -> Model:
 
     **Sin fallback, deliberadamente.** Es el mismo criterio por el que se descartó estructurar
     el audio con Gemini (Opción B): si la anotación cayera en silencio a otra familia de
-    modelos, su calidad cambiaría sin que nadie lo note — y esa anotación es justo el
+    modelos, su calidad cambiaría sin que nadie lo note, y esa anotación es justo el
     instrumento que mide la mini-evaluación de esta pieza. Un error claro es más honesto que
     una degradación invisible. (Las alternativas con entrada de audio, además, aceptan menos
     formatos: la familia `gpt-4o-audio-preview` de OpenAI solo admite WAV y MP3.)

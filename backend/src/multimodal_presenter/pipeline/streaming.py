@@ -2,7 +2,7 @@
 
 Emite secciones COMPLETAS una por una (grano por Section) a medida que el LLM las termina,
 vía `agent.run_stream` + `stream_output()` (Ruta A: PydanticAI valida objetos parciales; el
-backend solo reenvía una sección cuando ya está completa — nunca JSON a medio construir).
+backend solo reenvía una sección cuando ya está completa, nunca JSON a medio construir).
 
 Cada sección pasa por la Fase 3 POR SECCIÓN (grounding + isomorfismo) antes de emitirse, así
 es indistinguible en forma de una del contrato no-streaming. El `GroundingReport` agregado y

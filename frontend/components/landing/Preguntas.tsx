@@ -5,7 +5,7 @@ import { CaretDown } from "@phosphor-icons/react/dist/ssr";
  *
  * Aquí es donde van los límites del sistema, y no en una sección propia: dicho al pasar en medio
  * de la portada frena a quien todavía no sabe qué es esto; dicho aquí lo contesta quien ya se lo
- * está preguntando. No se suaviza ninguno — lo que cambia es dónde se cuenta.
+ * está preguntando. No se suaviza ninguno, lo que cambia es dónde se cuenta.
  *
  * Son `<details>` nativos: funcionan con el teclado y con un lector de pantalla sin que haya que
  * construir nada, y abren aunque el JavaScript no llegue a cargar.
@@ -71,8 +71,8 @@ export function Preguntas() {
               </summary>
               {/* La respuesta sube desde detrás del renglón en vez de aparecer de golpe. Es el
                   único gesto que me traje del menú escalonado, y es CSS: así los `details` siguen
-                  siendo nativos —teclado, lector de pantalla, y abren aunque el JavaScript no
-                  cargue—, que es por lo que se eligieron. */}
+                  siendo nativos (teclado, lector de pantalla, y abren aunque el JavaScript no
+                  cargue), que es por lo que se eligieron. */}
               <div className="respuesta overflow-hidden">
                 <p className="ml-9 max-w-[64ch] pb-5 text-[0.9375rem] leading-[1.65] text-foreground-secondary">
                   {r}

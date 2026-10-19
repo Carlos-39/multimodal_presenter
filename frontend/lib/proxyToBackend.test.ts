@@ -18,7 +18,7 @@ describe("cabecerasHaciaElBackend", () => {
       peticion({ "content-type": "multipart/form-data; boundary=xyz", cookie: "mmp_sesion=abc123" }),
     );
     // Es el fondo del arreglo: sin esto, el backend ve una petición anónima y `document_id`
-    // —que exige cuenta y propiedad— responde 401 sobre una presentación que SÍ es tuya.
+    // (que exige cuenta y propiedad) responde 401 sobre una presentación que SÍ es tuya.
     expect(h.get("cookie")).toBe("mmp_sesion=abc123");
     expect(h.get("content-type")).toBe("multipart/form-data; boundary=xyz");
   });

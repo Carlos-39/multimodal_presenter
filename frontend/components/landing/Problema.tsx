@@ -70,8 +70,8 @@ export function Problema() {
             {AFIRMACIONES.map(({ texto, anclada }) => (
               <span key={texto}>
                 {/* Las ancladas se marcan con el resaltador, que es el vocabulario de la propia
-                    aplicación. La que no se pudo anclar lleva marca PROPIA —subrayado de puntos y
-                    etiqueta—, no la ausencia de la otra: «no estar resaltada» es una diferencia
+                    aplicación. La que no se pudo anclar lleva marca PROPIA (subrayado de puntos y
+                    etiqueta), no la ausencia de la otra: «no estar resaltada» es una diferencia
                     que se pierde de un vistazo, y es justo la que hay que ver. */}
                 <span
                   className={`rounded-[3px] transition-colors duration-500 ${

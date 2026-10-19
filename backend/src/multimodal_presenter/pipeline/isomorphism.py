@@ -1,7 +1,7 @@
-"""Isomorfismo estructural de gráficos (Punto 3 de Fase 2) — determinista, sin LLM.
+"""Isomorfismo estructural de gráficos (Punto 3 de Fase 2), determinista, sin LLM.
 
 Un gráfico cuya forma visual no corresponde a la estructura real de los datos enseña una
-relación falsa (interferencia estructural, Schnotz) — peor que no mostrar gráfico. Aquí:
+relación falsa (interferencia estructural, Schnotz), peor que no mostrar gráfico. Aquí:
 
 1. `admissible_chart_types(data)`: dada la FORMA real de los datos, qué tipos son
    estructuralmente válidos.

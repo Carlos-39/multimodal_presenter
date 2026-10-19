@@ -101,7 +101,7 @@ async def main() -> int:
             ],
             model=model,
         )
-    except Exception as exc:  # noqa: BLE001 — aquí el error literal del proveedor ES el dato
+    except Exception as exc:  # noqa: BLE001 (aquí el error literal del proveedor ES el dato)
         print(f"FALLÓ la ruta «{ruta}».\n")
         print(f"  Tipo:  {type(exc).__name__}")
         print(f"  Error: {exc}\n")
@@ -113,7 +113,7 @@ async def main() -> int:
         return 1
 
     evidence = result.output
-    # OJO: `usage` es una PROPIEDAD en pydantic-ai 2.46 (RunUsage), no un método — el mismo
+    # OJO: `usage` es una PROPIEDAD en pydantic-ai 2.46 (RunUsage), no un método, el mismo
     # detalle que ya estaba anotado en el arnés del 5f.
     usage = result.usage
     entrada = _usage_int(usage, "input_tokens", "request_tokens")

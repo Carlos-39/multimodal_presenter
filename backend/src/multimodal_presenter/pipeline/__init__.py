@@ -1,4 +1,4 @@
-"""Pipeline de transformación — las fases como pasos separados.
+"""Pipeline de transformación: las fases como pasos separados.
 
 Fase 0 (percepción de audio, solo si la fuente es audio) → Fase 1 (determinista) →
 Fase 2 (LLM) → Fase 3 (determinista + interfaz semántica).
@@ -68,7 +68,7 @@ async def transform(
                     notes=[note.model_dump() for note in chart_notes],
                 )
 
-            # Coherencia semántica (nivel LLM, enfocada en gráficos) — llamada adicional.
+            # Coherencia semántica (nivel LLM, enfocada en gráficos), llamada adicional.
             if semantic_enabled:
                 with logfire.span("fase3.semantica"):
                     semantic = await verify_semantic_coherence(

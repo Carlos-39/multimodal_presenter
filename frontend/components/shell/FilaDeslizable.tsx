@@ -100,7 +100,7 @@ export function FilaDeslizable({ onDeslizar, children }: FilaDeslizableProps) {
             if (trasera.current) trasera.current.dataset.activa = "true";
             // A partir de aquí los eventos son nuestros aunque el dedo se salga de la tarjeta.
             // Capturar es una comodidad, no un requisito: si el navegador dice que ese puntero ya
-            // no está activo, lanza — y perder el arrastre entero por eso sería absurdo.
+            // no está activo, lanza: y perder el arrastre entero por eso sería absurdo.
             try {
               e.currentTarget.setPointerCapture(e.pointerId);
             } catch {

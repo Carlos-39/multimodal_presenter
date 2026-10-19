@@ -60,7 +60,7 @@ def sin_cuentas_acumuladas():
 def sin_claves_reales(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch):
     """Vacía las claves de API en TODOS los tests que no sean de integración.
 
-    Por qué existe: el CI corre **sin ninguna clave** (decisión del Hito 0 — se validan en
+    Por qué existe: el CI corre **sin ninguna clave** (decisión del Hito 0, se validan en
     runtime al construir el modelo, no al importar, y los tests mockean el LLM), pero la
     máquina del autor sí las tiene en `backend/.env`. Esa asimetría deja pasar tests mal
     mockeados: pasan en local y **fallan en el CI**. Con esta fixture, correr la suite en

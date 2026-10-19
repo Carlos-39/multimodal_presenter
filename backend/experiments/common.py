@@ -176,7 +176,7 @@ def render_page_png(pdf_bytes: bytes, page_index: int, scale: float = 2.0) -> by
 
 
 def subset_pdf(pdf_bytes: bytes, pages_1based: list[int]) -> bytes:
-    """Extrae páginas (1-based) a un PDF nuevo — para enviar páginas NATIVAS al generador."""
+    """Extrae páginas (1-based) a un PDF nuevo, para enviar páginas NATIVAS al generador."""
     reader = PdfReader(io.BytesIO(pdf_bytes))
     writer = PdfWriter()
     for p in pages_1based:

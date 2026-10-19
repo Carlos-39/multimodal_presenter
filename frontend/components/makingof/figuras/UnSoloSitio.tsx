@@ -2,7 +2,7 @@
  * Ocho rutas, una sola puerta.
  *
  * **El dibujo existe para enseñar por qué el trabajo resultó ser pequeño.** Parecía que había que
- * tocar ocho endpoints para que una presentación restaurada —que no trae archivo— siguiera
+ * tocar ocho endpoints para que una presentación restaurada (que no trae archivo) siguiera
  * funcionando. Medirlo antes de construir mostró que los ocho ya entraban por el mismo sitio, así
  * que el cambio fue una función.
  *

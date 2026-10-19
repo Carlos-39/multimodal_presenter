@@ -1,6 +1,6 @@
 # Multimodal Presenter
 
-Prototipo de trabajo de grado (Ingeniería de Sistemas — Universidad del Valle).
+Prototipo de trabajo de grado (Ingeniería de Sistemas, Universidad del Valle).
 
 Aplicación que recibe información multimodal (texto, PDF, imagen y, a futuro, audio)
 y la transforma en **presentaciones estructuradas e interactivas**, con el objetivo
@@ -27,7 +27,7 @@ Construcción **por hitos** (ver `PROYECTO.md` §7 y `docs/Registro_de_Hitos.md`
 - **Audio como formato de ENTRADA ✅:** un audio se transforma en presentación igual que un PDF.
   Como el motor de estructuración no admite audio, una **fase de percepción** previa (Gemini) lo
   convierte en una representación estructurada con hablantes, énfasis, pausas y condiciones
-  acústicas — **no** una transcripción plana. El chat, el adelanto, las preguntas sugeridas y las
+  acústicas: **no** una transcripción plana. El chat, el adelanto, las preguntas sugeridas y las
   diapositivas funcionan también sobre audio.
 - **Verificado con el modelo real (Hito 5f):** el PDF multimodal nativo recupera datos de
   gráficos **rasterizados** que un extractor de texto pierde; el juez de coherencia semántica
@@ -45,7 +45,7 @@ multimodal_presenter/
 ├── PROYECTO.md            # Contexto maestro del sistema
 ├── docker-compose.yml     # La aplicación entera, igual que corre desplegada
 ├── docs/                  # Diseño, decisiones y Registro_de_Hitos.md (trazabilidad)
-├── backend/               # API Python (FastAPI + PydanticAI) — gestionada con uv
+├── backend/               # API Python (FastAPI + PydanticAI), gestionada con uv
 │   ├── Dockerfile         #   imagen de producción (sin privilegios, con volumen)
 │   ├── entrypoint.sh      #   ajusta el dueño del volumen y baja privilegios
 │   ├── src/multimodal_presenter/

@@ -8,7 +8,7 @@ import { X } from "@phosphor-icons/react";
  *
  * **Es la respuesta a una sola pregunta, repetida.** En escritorio, lo que no cabe en el contenido
  * vive en columnas: el carril de secciones a la izquierda, la fuente y el chat a la derecha. En un
- * teléfono no hay anchura para ninguna columna, así que todas se convierten en lo mismo — una hoja
+ * teléfono no hay anchura para ninguna columna, así que todas se convierten en lo mismo, una hoja
  * que sube, tapa lo justo y se va. Una idea repetida vale más que cuatro soluciones distintas, y
  * además se aprende una vez.
  *
@@ -16,7 +16,7 @@ import { X } from "@phosphor-icons/react";
  * detrás es lo que dice «esto está encima de aquello» sin tener que explicarlo, y es lo que hace
  * obvio que tocar fuera la cierra.
  *
- * Se cierra de tres maneras —fuera, la equis y Escape— porque en un móvil la gente prueba la que
+ * Se cierra de tres maneras (fuera, la equis y Escape) porque en un móvil la gente prueba la que
  * le sale primero, y una hoja de la que no se sabe salir es peor que no tenerla.
  */
 interface HojaProps {
@@ -59,7 +59,7 @@ export function Hoja({ abierta, onCerrar, titulo, children }: HojaProps) {
         tabIndex={-1}
         // Se apoya SOBRE la barra de abajo, no debajo de ella: la barra sigue visible y pulsable
         // con la hoja abierta, así que se salta de «Secciones» a «Generar» en un toque en vez de
-        // dos. Y es lo que hace honesto el resaltado de la barra — marcar el destino abierto no
+        // dos. Y es lo que hace honesto el resaltado de la barra, marcar el destino abierto no
         // sirve de nada si lo que lo marca está tapado.
         className="hoja-sube absolute inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] flex max-h-[75dvh] flex-col rounded-t-2xl border-t border-border bg-surface shadow-float outline-none"
       >

@@ -2,7 +2,7 @@ import type { Section } from "./types";
 
 /**
  * Nivel de detalle (Punto 11): control explícito del usuario, sin detección automática.
- * - `summary`: solo los núcleos (`core`) — contenido completo y autosuficiente (Punto 9).
+ * - `summary`: solo los núcleos (`core`), contenido completo y autosuficiente (Punto 9).
  * - `detailed`: núcleos + satélites (profundidad adicional).
  */
 export type DetailLevel = "summary" | "detailed";

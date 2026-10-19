@@ -17,7 +17,7 @@ import {
  *
  * La decisión (columna | overlay | oculto) es pura y vive en `lib/workspace.ts`; aquí solo se
  * observa el ancho y se pinta. El ancho SOLO cambia el layout al abrir/cerrar un panel o al
- * redimensionar la ventana — nunca al llegar una sección por streaming.
+ * redimensionar la ventana: nunca al llegar una sección por streaming.
  *
  * Cada columna se puede ensanchar o angostar arrastrando su borde izquierdo (o con las flechas,
  * con el borde enfocado). Los topes viven en `clampPanelWidth`: ni el panel ni el contenido

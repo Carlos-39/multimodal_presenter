@@ -1,4 +1,4 @@
-"""Generador del PDF sintético DISCRIMINANTE (Hito 5f, A1) — con verdad de referencia conocida.
+"""Generador del PDF sintético DISCRIMINANTE (Hito 5f, A1), con verdad de referencia conocida.
 
 La prueba de A1 necesita demostrar que el modelo LEE contenido visual que un extractor de texto
 perdería. Para asertarlo objetivamente, este PDF mezcla tres cosas cuya procedencia conocemos:

@@ -12,7 +12,7 @@
 FROM node:24-slim AS dependencias
 WORKDIR /app
 # `npm ci` y no `npm install`: instala exactamente lo que dice el candado, y falla si el candado
-# y el manifiesto no coinciden. En una imagen eso es lo que se quiere — que no «arregle» nada sola.
+# y el manifiesto no coinciden. En una imagen eso es lo que se quiere, que no «arregle» nada sola.
 #
 # Y por eso la imagen es `node:24`, la misma mayor que uso yo: con `node:22` viene npm 10, que
 # coloca dos paquetes anidados donde npm 11 los deja arriba, y `npm ci` se planta diciendo que el
@@ -28,7 +28,7 @@ COPY . .
 
 # **A dónde reenviar `/api/*` se decide AQUÍ, al compilar, y no al arrancar.** Next serializa los
 # `rewrites` en `routes-manifest.json` durante el build, así que la variable de ejecución llega
-# tarde: el contenedor seguía intentando `127.0.0.1:8000` —él mismo— y respondía 500 con la
+# tarde: el contenedor seguía intentando `127.0.0.1:8000` (él mismo) y respondía 500 con la
 # variable correcta puesta en el entorno. Costó encontrarlo aquí; en la plataforma habría costado
 # más, porque el síntoma no señala a la causa.
 #

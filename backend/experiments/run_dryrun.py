@@ -85,7 +85,7 @@ async def main() -> None:
     vector_available = True
     try:
         await vector.index(pdf)
-    except Exception as exc:  # noqa: BLE001 — HALLAZGO, no se oculta
+    except Exception as exc:  # noqa: BLE001 (HALLAZGO, no se oculta)
         vector_available = False
         print(
             f"  [BLOQUEADO] Voyage multimodal (vector_rag): {type(exc).__name__}: {str(exc)[:160]}"
@@ -137,7 +137,7 @@ async def main() -> None:
                 correctness, judge_usage = await judge_answer(
                     q.question, q.reference_answer, answer
                 )
-            except Exception as exc:  # noqa: BLE001 — un fallo es un HALLAZGO, se registra
+            except Exception as exc:  # noqa: BLE001 (un fallo es un HALLAZGO, se registra)
                 agg[cond]["errors"] += 1
                 print(f"  [ERROR] {cond} / {q.id}: {type(exc).__name__}: {exc}")
                 append_jsonl(

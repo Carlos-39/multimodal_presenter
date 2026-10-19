@@ -7,14 +7,14 @@ import { ChatCircleText, ListBullets, Sparkle } from "@phosphor-icons/react";
  *
  * **Sustituye al carril, no lo imita.** En escritorio hay un carril a la izquierda con las
  * secciones y lo que se puede generar; por debajo de 768 px ese carril estaba simplemente
- * apagado, y con él desaparecían la navegación por secciones y la narración — no escondidas:
+ * apagado, y con él desaparecían la navegación por secciones y la narración, no escondidas:
  * inexistentes. Aquí vuelven, con el mismo contenido y otra forma.
  *
  * Abajo y no arriba porque es donde llega el pulgar, y porque la cabecera ya tiene lo suyo: los
  * dos controles de VER, que son los que más se usan leyendo.
  *
  * Tres destinos y no cuatro. El documento no es un destino: es lo que hay detrás siempre, así que
- * no se le pone botón. Y la fuente tampoco, porque no se va a buscar — se llega a ella desde la
+ * no se le pone botón. Y la fuente tampoco, porque no se va a buscar, se llega a ella desde la
  * frase concreta que se quiere comprobar, que es justamente lo que este proyecto defiende.
  */
 export type DestinoMovil = "secciones" | "generar" | "chat";

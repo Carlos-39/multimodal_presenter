@@ -9,10 +9,10 @@ import { SlideNav } from "./SlideNav";
 
 /**
  * Vista de slides (Hito 5h Parte 2). Forma ALTERNATIVA de consumir el MISMO contenido ya generado
- * y verificado — NO genera nada nuevo. Una `Section` visible = una slide (respeta el toggle
+ * y verificado: NO genera nada nuevo. Una `Section` visible = una slide (respeta el toggle
  * resumen/detallado, que decide qué secciones son visibles). Reusa `SectionCard`, así el render y
  * la atribución de fuente son idénticos a la vista de scroll; la trazabilidad no se pierde por
- * cambiar de vista. (La composición interna multi-tipo —Escala 1 del 5e— queda como mejora futura.)
+ * cambiar de vista. (La composición interna multi-tipo (Escala 1 del 5e) queda como mejora futura.)
  *
  * La slide visible ES la sección activa de la app (no un índice propio): así el rail de secciones,
  * la vista de scroll y las slides apuntan siempre a lo mismo. Elegir una sección en el rail cambia

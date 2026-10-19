@@ -3,7 +3,7 @@
 Gemini pasó a primario tras medirlo contra Ideogram con los mismos prompts reales (0 de 6
 imágenes con palabras inventadas frente a 3 de 6, y más barato). Los otros dos siguen cableados
 como respaldo por una razón concreta: Gemini filtra por seguridad con más agresividad y puede
-rechazar un prompt que los otros aceptan — y una imagen peor es mejor que ninguna imagen.
+rechazar un prompt que los otros aceptan, y una imagen peor es mejor que ninguna imagen.
 
 Estos tests fijan el ORDEN y la degradación. No llaman a ningún proveedor real.
 """

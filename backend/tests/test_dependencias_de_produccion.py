@@ -6,7 +6,7 @@ entero porque la forma del error es la lección:
 El visor de página dibuja el PDF con `render_pagina`, que convierte el bitmap de pypdfium2 a PNG
 con `bitmap.to_pil()`. Eso necesita **Pillow**. Pillow no estaba declarada en ninguna parte: llegaba
 arrastrada por `matplotlib`, que es dependencia de DESARROLLO. Así que en mi máquina funcionaba, en
-el CI funcionaba —porque instala el grupo dev— y en la imagen de producción, que se instala con
+el CI funcionaba (porque instala el grupo dev) y en la imagen de producción, que se instala con
 `--no-dev`, el endpoint respondía 502 «No se pudo dibujar la página».
 
 Lo peor no es el fallo: es que era invisible para todas las comprobaciones que teníamos. Los 330
@@ -39,7 +39,7 @@ def test_pillow_esta_declarada_donde_se_usa() -> None:
 
     Si alguien la quita de aquí porque «no se importa en ningún sitio», el visor de página vuelve
     a responder 502 en el despliegue y los tests seguirán todos en verde. De ahí este centinela:
-    el uso es indirecto —a través de `to_pil()` de pypdfium2— y por eso no lo caza ningún análisis
+    el uso es indirecto (a través de `to_pil()` de pypdfium2) y por eso no lo caza ningún análisis
     de imports.
     """
     assert "pillow" in _dependencias_declaradas(), (
@@ -52,8 +52,8 @@ def test_el_grupo_de_desarrollo_no_sostiene_a_produccion() -> None:
     """Ninguna dependencia de producción puede estar SOLO en el grupo dev.
 
     Es la forma general del mismo fallo: algo que el código usa y que solo existe en la máquina
-    de quien desarrolla. Aquí se comprueba al revés de lo obvio —que los paquetes pesados de
-    desarrollo NO sean necesarios para servir—, porque son los que arrastran cosas sin querer.
+    de quien desarrolla. Aquí se comprueba al revés de lo obvio (que los paquetes pesados de
+    desarrollo NO sean necesarios para servir), porque son los que arrastran cosas sin querer.
     """
     datos = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
     dev = " ".join(datos["dependency-groups"]["dev"]).lower()
