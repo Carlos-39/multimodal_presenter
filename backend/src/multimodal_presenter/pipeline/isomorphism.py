@@ -110,41 +110,55 @@ def _degrade_to_table(chart: ChartContent) -> TableContent:
     return TableContent(columns=columns, rows=rows)
 
 
+def isomorfizar(content: object) -> tuple[object, tuple[str, str] | None]:
+    """La regla de isomorfismo sobre UN contenido, sin saber dónde vive.
+
+    Devuelve (contenido, (clase, detalle) o None). La clase es `corrected` o `degraded`.
+
+    Está separada de la sección porque la misma regla tiene que valer en dos sitios: el contenido
+    del documento y la evidencia de una diapositiva. Son la misma pregunta —¿este gráfico puede
+    representar estos datos?— y una segunda implementación sería una segunda verdad.
+
+    Y esa reutilización es lo que hace que la evidencia de una presentación sea COMPROBABLE y no
+    solo bonita: un gráfico generado pasa por el mismo filtro determinista que el contenido
+    verificado, o se degrada a tabla diciéndolo.
+    """
+    if not isinstance(content, ChartContent):
+        return content, None
+
+    admissible = admissible_chart_types(content.data)
+    if content.chart_type in admissible:
+        return content, None  # ya es isomorfo
+
+    best = _best_admissible(admissible, _is_ordered_axis(content.data.categories))
+    if best is None:
+        # Ningún gráfico válido → degradar a tabla, con nota visible.
+        return _degrade_to_table(content), (
+            "degraded",
+            "Los datos no admiten un gráfico fiable; se muestra como tabla.",
+        )
+
+    # Corrección determinista al mejor tipo admisible.
+    return content.model_copy(update={"chart_type": best}), (
+        "corrected",
+        f"Tipo de gráfico corregido de '{content.chart_type}' a '{best}' "
+        "según la forma de los datos.",
+    )
+
+
 def isomorphize_section(section: Section) -> tuple[Section, ChartNote | None]:
     """Aplica la regla de isomorfismo a UNA sección. Devuelve (sección, nota opcional).
 
     Determinista y por sección → reutilizable tanto en el pipeline completo como en streaming.
     """
-    content = section.content
-    if not isinstance(content, ChartContent):
+    corregido, nota = isomorfizar(section.content)
+    if nota is None:
         return section, None
-
-    admissible = admissible_chart_types(content.data)
-    ordered = _is_ordered_axis(content.data.categories)
-
-    if content.chart_type in admissible:
-        return section, None  # ya es isomorfo
-
-    best = _best_admissible(admissible, ordered)
-    if best is None:
-        # Ningún gráfico válido → degradar a tabla, con nota visible.
-        table = _degrade_to_table(content)
-        note = ChartNote(
-            section_id=section.id,
-            kind="degraded",
-            detail="Los datos no admiten un gráfico fiable; se muestra como tabla.",
-        )
-        return section.model_copy(update={"content": table}), note
-
-    # Corrección determinista al mejor tipo admisible.
-    corrected = content.model_copy(update={"chart_type": best})
-    note = ChartNote(
-        section_id=section.id,
-        kind="corrected",
-        detail=f"Tipo de gráfico corregido de '{content.chart_type}' a '{best}' "
-        "según la forma de los datos.",
+    clase, detalle = nota
+    return (
+        section.model_copy(update={"content": corregido}),
+        ChartNote(section_id=section.id, kind=clase, detail=detalle),
     )
-    return section.model_copy(update={"content": corrected}), note
 
 
 def enforce_isomorphism(presentation: Presentation) -> tuple[Presentation, list[ChartNote]]:

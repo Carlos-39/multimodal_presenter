@@ -21,12 +21,14 @@ from pydantic_ai.models import Model
 from ..config import Settings
 from ..schemas.transform import (
     Comparacion,
+    EvidenciaVisual,
     GeneratedDeck,
     GeneratedSlide,
     LadoDeComparacion,
     PapelDeSlide,
 )
 from .illustration import _generate_image, has_image_provider, leer_ilustracion
+from .isomorphism import isomorfizar
 from .models import ExtractionResult
 from .pdf_locator import abrir_localizador
 from .validation import ground_quote
@@ -35,6 +37,14 @@ from .validation import ground_quote
 #: que coincidir: si el plan admite más de lo que el contrato acepta, la diapositiva revienta
 #: al montarse. Hay un test que comprueba justo eso.
 _CIFRA_MAX = 16
+
+#: Lo que cabe en el cuerpo de una lámina, en caracteres. Unas 35 palabras en español.
+#:
+#: Es un tope DURO y vive en el plan, no solo en el prompt, porque la indicación blanda no
+#: bastó: pedí «2 o 3 frases» y llegaron párrafos de 70 palabras. Con el tope aquí, pydantic
+#: le devuelve el error al modelo y este parte la lámina en dos, que es lo que había que
+#: hacer desde el principio. Un párrafo en una diapositiva deja de ser una diapositiva.
+_BODY_MAX = 280
 
 _DECK_SYSTEM = (
     "Genera una PRESENTACIÓN EN DIAPOSITIVAS a partir del documento que recibes. Es una síntesis "
@@ -53,9 +63,11 @@ _DECK_SYSTEM = (
     "- `cierre`: SOLO la última. Qué se lleva quien la vio, en `title`. También admite imagen "
     "evocadora.\n"
     "- `dato`: UNA cifra que importe, en `cifra` tal como se lee («80 km», «15,3 %», «99"
-    " estudiantes»), y en `body` una o dos frases con qué significa o contra qué se compara. Sin "
-    "viñetas. La cifra sale del documento, así que ESTA SIEMPRE VA ANCLADA: copia en "
-    "`source_quote` la frase exacta donde aparece.\n"
+    " estudiantes»), y en `body` una frase con qué significa o contra qué se compara. Sin "
+    "viñetas. EL TÍTULO NO REPITE LA CIFRA: la cifra ya se ve enorme debajo, y decirla dos veces "
+    "gasta la lámina. Mal: «A 50-90 km de altura, donde empieza el espectáculo». Bien: «Más alto "
+    "que cualquier avión, y por eso casi nadie los ve». La cifra sale del documento, así que ESTA "
+    "SIEMPRE VA ANCLADA: copia en `source_quote` la frase exacta donde aparece.\n"
     "- `comparacion`: dos cosas que el lector confunde o que el documento contrapone. Llena "
     "`comparacion` con los dos lados, cada uno con su `titulo` y de dos a cuatro `puntos` cortos "
     "y PARALELOS (si el primero habla de altura, el primero del otro lado también). En `title`, "
@@ -72,9 +84,26 @@ _DECK_SYSTEM = (
     "- El `title` es la afirmación: una frase que dice algo que podría discutirse, no un rótulo "
     "de índice. Mal: «El mecanismo: de un rayo al resplandor». Bien: «El resplandor no lo "
     "enciende el rayo, sino el hueco que el rayo deja».\n"
-    "- El `body` es el porqué, y es lo normal: 2 o 3 frases que hacen que la afirmación se "
-    "sostenga sola, con los nexos escritos («porque», «así que», «y eso deja»). Quien lea la "
-    "diapositiva sin el documento al lado tiene que entenderla entera.\n"
+    "- El `body` sostiene la afirmación, y es CORTO: 35 palabras como mucho, una o dos frases. "
+    "Esto es un tope duro, no una sugerencia. Un párrafo en una diapositiva deja de ser una "
+    "diapositiva y vuelve a ser el documento, que es justo lo que esto no quiere ser. Si no cabe "
+    "en 35 palabras, es que hay dos ideas: parte la lámina en dos.\n"
+    "\n"
+    "LA EVIDENCIA. Esto es lo que separa una presentación de un documento troceado. La afirmación "
+    "va arriba y debajo va la EVIDENCIA que la sostiene, y la evidencia es VISUAL siempre que se "
+    "pueda. El texto es el ÚLTIMO recurso, no el primero. Mira de qué habla tu afirmación y "
+    "elige:\n"
+    "- De cuánto, o de una cantidad frente a otra: llena `evidencia` con un `chart`. Las "
+    "categorías y las series salen de cifras que están EN el documento; no inventes ni redondees "
+    "para que quede bonito.\n"
+    "- De cuándo, o de en qué orden pasaron las cosas: `evidencia` con un `timeline`.\n"
+    "- De varias cosas que comparten los mismos atributos: `evidencia` con un `table`.\n"
+    "- De qué aspecto tiene algo o de dónde está: una imagen, con `image_prompt`.\n"
+    "- De algo que el documento dice mejor de lo que tú lo dirías: papel `cita`.\n"
+    "- Si de verdad no encaja ninguna: entonces `body`, y corto.\n"
+    "Cuando pongas `evidencia`, el `body` baja a 15 palabras o desaparece: la evidencia ya habla, "
+    "y repetirla con palabras la anula. Y no pongas evidencia solo por ponerla: un gráfico de dos "
+    "barras inventadas es peor que una frase honesta.\n"
     "- UNA idea por diapositiva. Si hay dos ideas separables, son DOS diapositivas.\n"
     "\n"
     "LAS VIÑETAS SON LA EXCEPCIÓN, no el formato por defecto. Úsalas SOLO para enumeraciones de "
@@ -118,13 +147,14 @@ class _ComparacionPlan(BaseModel):
 class _SlidePlan(BaseModel):
     papel: PapelDeSlide = "afirmacion"
     title: str = Field(min_length=1)
-    body: str | None = None
+    body: str | None = Field(default=None, max_length=_BODY_MAX)
     bullets: list[str] = Field(default_factory=list)
     #: El mismo tope que el contrato público, y esa es toda la gracia: aquí pydantic puede
     #: devolverle el error al modelo para que lo corrija. Sin el tope, el plan aceptaba «un 15,3
     #: por ciento más» y reventaba después, al montar la diapositiva, con un 500 en producción.
     cifra: str | None = Field(default=None, max_length=_CIFRA_MAX)
     comparacion: _ComparacionPlan | None = None
+    evidencia: EvidenciaVisual | None = None
     source_quote: str | None = None
     source_page: int | None = None
     synthesis: bool = False
@@ -188,6 +218,26 @@ def _cifra(plan: _SlidePlan) -> str | None:
         return None
     cifra = plan.cifra.strip()
     return cifra if cifra and len(cifra) <= _CIFRA_MAX else None
+
+
+def _evidencia(plan: _SlidePlan) -> EvidenciaVisual | None:
+    """La evidencia de la lámina, pasada por la regla de isomorfismo.
+
+    Esta línea es la que hace que una presentación generada sea COMPROBABLE y no solo bonita. Un
+    gráfico que el modelo propone pasa por el mismo filtro determinista que el contenido del
+    documento: si el tipo no representa esos datos se corrige, y si ningún gráfico los representa
+    se degrada a tabla. Nunca se publica un gráfico que miente sobre su propia forma.
+
+    Es también lo que nos separa de las herramientas que generan presentaciones dibujando
+    imágenes: ahí la evidencia es un dibujo y no hay con qué comprobarlo.
+    """
+    if plan.evidencia is None:
+        return None
+    corregida, nota = isomorfizar(plan.evidencia)
+    if nota is not None:
+        clase, detalle = nota
+        logfire.info("deck: evidencia {clase}: {detalle}", clase=clase, detalle=detalle)
+    return corregida  # type: ignore[return-value]
 
 
 def _comparacion(plan: _SlidePlan) -> Comparacion | None:
@@ -268,6 +318,7 @@ async def generate_deck(
                         bullets=plan.bullets[:6],
                         cifra=_cifra(plan),
                         comparacion=_comparacion(plan),
+                        evidencia=_evidencia(plan),
                         source=source,
                         grounding=grounding,
                         start_s=start_s,

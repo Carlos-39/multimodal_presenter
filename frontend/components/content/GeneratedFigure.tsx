@@ -21,12 +21,22 @@ interface GeneratedFigureProps {
   className?: string;
   /** Alto máximo de la imagen dentro de su contenedor (clase de Tailwind). */
   maxHeightClass?: string;
+  /**
+   * La etiqueta debajo y en pequeño, en vez de como banda sobre la imagen.
+   *
+   * Para las diapositivas. Ahí la banda pesaba más que la propia ilustración y rompía la lámina:
+   * lo primero que se leía en una presentación era una advertencia. La etiqueta NO se esconde ni
+   * se convierte en un tooltip, que es lo que el proyecto no admite; cambia de sitio y de peso.
+   * Y el borde punteado se queda, que es la otra mitad de la señal y no cuesta nada.
+   */
+  discreto?: boolean;
 }
 
 export function GeneratedFigure({
   illustration,
   className = "",
   maxHeightClass = "max-h-80",
+  discreto = false,
 }: GeneratedFigureProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -34,10 +44,12 @@ export function GeneratedFigure({
     <figure
       className={`section-enter overflow-hidden rounded-md border border-dashed border-border-strong ${className}`}
     >
-      <figcaption className="flex items-center gap-1.5 border-b border-dashed border-border-strong bg-surface-sunken px-3 py-1.5 text-xs font-medium text-muted">
-        <Sparkle size={12} weight="fill" className="shrink-0" aria-hidden />
-        <span>{illustration.label}</span>
-      </figcaption>
+      {discreto ? null : (
+        <figcaption className="flex items-center gap-1.5 border-b border-dashed border-border-strong bg-surface-sunken px-3 py-1.5 text-xs font-medium text-muted">
+          <Sparkle size={12} weight="fill" className="shrink-0" aria-hidden />
+          <span>{illustration.label}</span>
+        </figcaption>
+      )}
 
       <button
         type="button"
@@ -67,10 +79,18 @@ export function GeneratedFigure({
           escrito, se puede leer en voz alta y se busca con Ctrl+F.
           Sobre el papel y no sobre el fondo de la aplicación, para que se lea como el pie de una
           figura y no como contenido del documento, que es lo que no es. */}
-      {illustration.clave ? (
-        <p className="border-t border-dashed border-border-strong bg-[var(--paper)] px-3 pb-2.5 pt-2 text-xs leading-5 text-[#46423b]">
-          {illustration.clave}
-        </p>
+      {illustration.clave || discreto ? (
+        <div className="border-t border-dashed border-border-strong bg-[var(--paper)] px-3 pb-2 pt-1.5">
+          {illustration.clave ? (
+            <p className="text-xs leading-5 text-[#46423b]">{illustration.clave}</p>
+          ) : null}
+          {discreto ? (
+            <p className="flex items-center gap-1 text-[0.6875rem] leading-4 text-[#6b665c]">
+              <Sparkle size={10} weight="fill" className="shrink-0" aria-hidden />
+              {illustration.label}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       {/* Vista ampliada: <dialog> nativo (foco atrapado, Esc cierra). Clic fuera de la imagen cierra. */}
