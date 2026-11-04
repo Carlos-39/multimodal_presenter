@@ -476,7 +476,9 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
     setActiveSectionId(g.payload.presentation.sections[0]?.id ?? null);
     setStatus("done");
     setSummaryStatus("idle");
-    setGuardando("idle");
+    // Viene de la biblioteca: ya está guardada. Con «idle» el botón decía «Guardar» y parecía
+    // que lo de pantalla se iba a perder.
+    setGuardando("guardada");
     setCuentaAbierta(false);
     // Después de `resetForRun`, que acaba de vaciar el chat. Vuelve la conversación tal como
     // quedó, con sus anclas, y desde aquí los turnos nuevos se siguen guardando en esta misma.

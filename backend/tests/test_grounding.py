@@ -73,6 +73,33 @@ def test_matching_robusto_no_inventa_anclaje(input_text: str) -> None:
     assert ancla.source is not None and ancla.source.char_start is None  # no se inventan offsets
 
 
+def test_cita_ancla_aunque_el_texto_pegado_traiga_cortes_de_linea() -> None:
+    """Texto copiado de un PDF: un corte de línea cada pocas palabras. El modelo cita la frase
+    unida con espacios, y antes eso dejaba TODAS las secciones en `not_found`."""
+    texto = (
+        "Dónde y cuándo se observan\n"
+        "Se han fotografiado en prácticamente todos los continentes excepto la\n"
+        "Antártida, siempre asociados a tormentas eléctricas muy intensas.\n"
+    )
+    cita = "todos los continentes excepto la Antártida, siempre asociados"
+    ancla = ground_quote(cita, None, prepare_input(text=texto))
+
+    assert ancla.status == "verified"
+    assert ancla.source is not None
+    # El rango vuelve al texto ORIGINAL, con el corte dentro: el resaltado cae en su sitio.
+    tramo = texto[ancla.source.char_start : ancla.source.char_end]
+    assert tramo == "todos los continentes excepto la\nAntártida, siempre asociados"
+
+
+def test_tolerar_cortes_no_inventa_anclaje() -> None:
+    """Igualar saltos de línea con espacios no vuelve anclable una frase con otras palabras."""
+    texto = "Se han fotografiado en todos los continentes excepto la\nAntártida."
+    ancla = ground_quote(
+        "todos los continentes salvo la Antártida", None, prepare_input(text=texto)
+    )
+    assert ancla.status == "not_found"
+
+
 def test_binary_grounding_is_unverified(pdf_bytes: bytes, mock_presentation: dict) -> None:
     extraction = prepare_input(binary=pdf_bytes, media_type="application/pdf")
     presentation = Presentation.model_validate(mock_presentation)

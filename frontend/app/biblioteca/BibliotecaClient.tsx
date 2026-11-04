@@ -379,7 +379,11 @@ function Tarjeta({
           ) : null}
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <span className="tabular">{fechaRelativa(creada_en)}</span>
-            <Anclaje secciones={presentacion.secciones} verificadas={presentacion.verificadas} />
+            <Anclaje
+              secciones={presentacion.secciones}
+              verificadas={presentacion.verificadas}
+              comprobable={source_kind === "text"}
+            />
           </div>
         </div>
       </Link>
@@ -400,15 +404,29 @@ function Tarjeta({
  * Verde cuando estan todas; ambar cuando falta alguna, que es el mismo color con el que la
  * aplicacion dice que no pudo verificar algo. Y si el dato no esta -presentaciones guardadas antes
  * de que esto existiera- no se ensena nada: inventarlo seria peor que callarlo.
+ *
+ * Solo el texto se comprueba letra por letra. Un PDF, una imagen o un audio nunca llegan a
+ * `verified` (localizar no es verificar), asi que ahi el «0 de N» en ambar parecia un fallo
+ * total. Se dice lo mismo que el encabezado del espacio de trabajo: anclaje pendiente.
  */
 function Anclaje({
   secciones,
   verificadas,
+  comprobable,
 }: {
   secciones: number | null;
   verificadas: number | null;
+  comprobable: boolean;
 }) {
-  if (secciones === null || verificadas === null || secciones === 0) return null;
+  if (secciones === null || secciones === 0) return null;
+  if (!comprobable) {
+    return (
+      <span className="text-muted" title="Fuente no textual: la cita se localiza, no se verifica">
+        <span className="tabular">{secciones}</span> secciones, anclaje pendiente
+      </span>
+    );
+  }
+  if (verificadas === null) return null;
   const todas = verificadas === secciones;
   return (
     <span className="inline-flex items-center gap-1.5" title="Secciones ancladas al documento">

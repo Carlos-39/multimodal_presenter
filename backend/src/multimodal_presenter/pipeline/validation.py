@@ -49,12 +49,43 @@ class QuoteAnchor:
     region: CitedRegion | None = None
 
 
-def _find_quote(text: str, quote: str) -> int:
-    """Índice de `quote` en `text`: exacto primero; si falla, sobre la forma canónica (1:1)."""
+def _sin_cortes(texto: str) -> tuple[str, list[int]]:
+    """Colapsa cada tramo de espacios en blanco a un solo espacio, recordando de dónde sale cada
+    carácter del resultado en el texto original."""
+    salida: list[str] = []
+    origen: list[int] = []
+    for i, c in enumerate(texto):
+        if c.isspace():
+            if salida and salida[-1] == " ":
+                continue
+            c = " "
+        salida.append(c)
+        origen.append(i)
+    return "".join(salida), origen
+
+
+def _find_quote(text: str, quote: str) -> tuple[int, int] | None:
+    """Rango `[inicio, fin)` de `quote` en `text`, o None.
+
+    Exacto primero; si falla, sobre la forma canónica (1:1); y si también falla, sin distinguir
+    un salto de línea de un espacio. Lo último es lo que pasa al pegar texto copiado de un PDF:
+    trae un corte de línea cada pocas palabras y el modelo cita la frase unida, así que ninguna
+    cita coincidía y la sección quedaba sin fuente aunque las palabras fueran las mismas. El
+    rango se devuelve sobre el texto ORIGINAL, con los cortes dentro.
+    """
     idx = text.find(quote)
     if idx != -1:
-        return idx
-    return text.translate(CANON_MAP).find(quote.translate(CANON_MAP))
+        return idx, idx + len(quote)
+    canon = text.translate(CANON_MAP)
+    idx = canon.find(quote.translate(CANON_MAP))
+    if idx != -1:
+        return idx, idx + len(quote)
+    plano, origen = _sin_cortes(canon)
+    cita, _ = _sin_cortes(quote.translate(CANON_MAP).strip())
+    idx = plano.find(cita) if cita else -1
+    if idx == -1:
+        return None
+    return origen[idx], origen[idx + len(cita) - 1] + 1
 
 
 def ground_section(
@@ -66,9 +97,9 @@ def ground_section(
     """
     if extraction.source_kind == "text":
         assert extraction.text is not None
-        idx = _find_quote(extraction.text, section.source.quote)
-        if idx != -1:
-            start, end = idx, idx + len(section.source.quote)
+        rango = _find_quote(extraction.text, section.source.quote)
+        if rango is not None:
+            start, end = rango
             new_source = section.source.model_copy(
                 update={
                     "document_id": extraction.document_id,
@@ -137,13 +168,13 @@ def ground_quote(
 
     if extraction.source_kind == "text":
         assert extraction.text is not None
-        idx = _find_quote(extraction.text, quote)
-        if idx != -1:
+        rango = _find_quote(extraction.text, quote)
+        if rango is not None:
             source = SourceReference(
                 document_id=extraction.document_id,
                 quote=quote,
-                char_start=idx,
-                char_end=idx + len(quote),
+                char_start=rango[0],
+                char_end=rango[1],
             )
             return QuoteAnchor(source=source, status="verified")
         return QuoteAnchor(
