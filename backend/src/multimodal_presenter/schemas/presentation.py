@@ -21,7 +21,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class _Strict(BaseModel):
@@ -106,6 +106,20 @@ class TableContent(_Strict):
     content_type: Literal["table"] = "table"
     columns: list[str] = Field(min_length=1)
     rows: list[list[str | int | float]]
+
+    @field_validator("rows", mode="before")
+    @classmethod
+    def _celda_vacia_es_texto_vacio(cls, rows: object) -> object:
+        """Una celda vacía llega como `null`. Pasa con tablas reales (la de variantes del paper
+        del Transformer deja huecos), y rechazarla tumbaba la validación de la presentación
+        entera a mitad del stream: un hueco en una tabla costaba las secciones que faltaban.
+        Vacía se queda, pero como texto vacío, que es lo que la tabla ya sabe pintar."""
+        if not isinstance(rows, list):
+            return rows
+        return [
+            [("" if celda is None else celda) for celda in fila] if isinstance(fila, list) else fila
+            for fila in rows
+        ]
 
     @model_validator(mode="after")
     def _check_row_widths(self) -> TableContent:
