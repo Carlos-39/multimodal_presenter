@@ -88,7 +88,9 @@ export function SourcePanel({
   return (
     <aside className="section-enter flex h-full w-full flex-col bg-surface">
       <header className="flex items-center justify-between border-b border-border py-2 pl-4 pr-2">
-        <h2 className="text-[0.8125rem] font-medium text-foreground">Documento fuente</h2>
+        <h2 className="text-[0.8125rem] font-medium text-foreground">
+          {sourceKind === "audio" ? "Grabación fuente" : sourceKind === "image" ? "Imagen fuente" : "Documento fuente"}
+        </h2>
         <button
           type="button"
           onClick={onClose}

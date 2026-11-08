@@ -5,6 +5,8 @@ contrato hace estructuralmente imposible desalinear el tipo declarado y el conte
 real: el bug del PoC anterior. El test que falla pesa tanto como el que pasa.
 """
 
+import json
+
 import pytest
 from pydantic import ValidationError
 
@@ -151,6 +153,31 @@ def test_table_row_width_must_match_columns() -> None:
                     "rows": [["solo-una-celda"]],  # faltan celdas
                 }
             )
+        )
+
+
+def test_celda_vacia_de_una_tabla_no_tumba_la_presentacion() -> None:
+    """Una tabla con huecos (la de variantes del paper del Transformer) llegaba con `null` en
+    las celdas vacías y la presentación entera fallaba a mitad del stream. Se aceptan como texto
+    vacío. Se valida por JSON porque es el camino del streaming."""
+    seccion = _section(
+        {
+            "content_type": "table",
+            "columns": ["modelo", "N", "BLEU"],
+            "rows": [["base", 6, 25.8], ["(A)", None, 24.9]],
+        }
+    )
+    pres = Presentation.model_validate_json(
+        json.dumps({"title": "Attention Is All You Need", "sections": [seccion]})
+    )
+    assert pres.sections[0].content.rows == [["base", 6, 25.8], ["(A)", "", 24.9]]
+
+
+def test_tabla_con_celda_vacia_sigue_exigiendo_el_ancho() -> None:
+    """Aceptar el hueco no relaja el resto: una fila corta sigue siendo un error."""
+    with pytest.raises(ValidationError):
+        Section.model_validate(
+            _section({"content_type": "table", "columns": ["a", "b"], "rows": [[None]]})
         )
 
 

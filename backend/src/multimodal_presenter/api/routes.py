@@ -333,7 +333,13 @@ async def transform_stream_endpoint(
             # uvicorn registraba «200 OK», el navegador enseñaba «se interrumpió» y en los
             # registros del servidor no quedaba absolutamente nada que mirar. Pasó en producción.
             logfire.exception("transformación: el stream murió a mitad")
-            err = StreamError(message="La generación se interrumpió.")
+            # Dice que está A MEDIAS, no solo que falló. Cuando el stream muere ya hay
+            # secciones en pantalla, y media presentación se lee exactamente igual que una
+            # presentación corta: sin esta frase, el participante se lleva un documento
+            # truncado creyendo que eso era todo.
+            err = StreamError(
+                message="La generación se interrumpió a medias: lo que hay está incompleto."
+            )
             yield f"data: {err.model_dump_json()}\n\n"
 
     return StreamingResponse(event_source(), media_type="text/event-stream")

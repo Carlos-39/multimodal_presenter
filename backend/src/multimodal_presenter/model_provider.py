@@ -21,6 +21,7 @@ from pydantic_ai.models.fallback import FallbackModel
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.providers.anthropic import AnthropicProvider
 from pydantic_ai.providers.google import GoogleProvider
+from pydantic_ai.settings import ModelSettings
 
 from .config import Settings
 
@@ -29,6 +30,27 @@ from .config import Settings
 # tiene y las llamadas a las APIs fallan con CERTIFICATE_VERIFY_FAILED; el almacén del
 # sistema sí la incluye. Debe inyectarse antes de crear los clientes HTTP de los modelos.
 truststore.inject_into_ssl()
+
+
+#: Techo de tokens de SALIDA por llamada.
+#:
+#: Hay que ponerlo a mano porque el defecto de pydantic-ai son 4096, y ese número mordió en
+#: producción: estructurar un PDF de dos páginas gasta unos 3400, y el modelo PIENSA antes de
+#: escribir (medido: 655 tokens de pensamiento), que sale del mismo presupuesto. O sea un margen
+#: del orden del 12%, y por tanto una moneda al aire en cada transformación: el mismo documento
+#: pasaba dos veces y a la tercera el JSON llegaba cortado a mitad de una cadena.
+#:
+#: Y cortado no hay vuelta atrás: `run_stream()` no admite reintentos de validación, así que el
+#: stream muere con la presentación a medias.
+#:
+#: Subirlo no cuesta dinero. Se paga por token GENERADO, no por el techo, así que esto no
+#: encarece ninguna llamada que ya funcionaba: solo deja de truncar las que se pasaban. Lo que
+#: acota el gasto de verdad es el prompt, que limita cuántas secciones pedir.
+_MAX_TOKENS_SALIDA = 16384
+
+#: Lo mismo para el adelanto inicial, que es un párrafo. No necesita margen, pero sí necesita
+#: ser EXPLÍCITO: el defecto invisible de la librería es justo lo que costó el fallo de arriba.
+_MAX_TOKENS_ADELANTO = 2048
 
 
 def build_model(settings: Settings) -> Model:
@@ -47,6 +69,7 @@ def build_model(settings: Settings) -> Model:
     primary = AnthropicModel(
         settings.anthropic_model,
         provider=AnthropicProvider(api_key=settings.anthropic_api_key),
+        settings=ModelSettings(max_tokens=_MAX_TOKENS_SALIDA),
     )
 
     if not settings.google_api_key:
@@ -55,6 +78,7 @@ def build_model(settings: Settings) -> Model:
     fallback = GoogleModel(
         settings.google_model,
         provider=GoogleProvider(api_key=settings.google_api_key),
+        settings=ModelSettings(max_tokens=_MAX_TOKENS_SALIDA),
     )
     return FallbackModel(primary, fallback)
 
@@ -86,6 +110,7 @@ def build_perception_model(settings: Settings) -> Model:
     return GoogleModel(
         settings.google_perception_model,
         provider=GoogleProvider(api_key=settings.google_api_key),
+        settings=ModelSettings(max_tokens=_MAX_TOKENS_SALIDA),
     )
 
 
@@ -100,4 +125,5 @@ def build_summary_model(settings: Settings) -> Model:
     return AnthropicModel(
         settings.anthropic_summary_model,
         provider=AnthropicProvider(api_key=settings.anthropic_api_key),
+        settings=ModelSettings(max_tokens=_MAX_TOKENS_ADELANTO),
     )

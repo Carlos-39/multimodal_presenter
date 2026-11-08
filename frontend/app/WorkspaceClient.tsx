@@ -476,7 +476,9 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
     setActiveSectionId(g.payload.presentation.sections[0]?.id ?? null);
     setStatus("done");
     setSummaryStatus("idle");
-    setGuardando("idle");
+    // Viene de la biblioteca: ya está guardada. Con «idle» el botón decía «Guardar» y parecía
+    // que lo de pantalla se iba a perder.
+    setGuardando("guardada");
     setCuentaAbierta(false);
     // Después de `resetForRun`, que acaba de vaciar el chat. Vuelve la conversación tal como
     // quedó, con sus anclas, y desde aquí los turnos nuevos se siguen guardando en esta misma.
@@ -614,7 +616,10 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
           setStatus("error");
         }
       } else {
-        setError("La generación se interrumpió.");
+        // A medias: ya había secciones en pantalla, así que lo de debajo es un trozo de
+        // presentación, no el resultado. Decirlo importa tanto como el error: sin esa frase,
+        // media presentación se lee igual que una presentación corta.
+        setError("La generación se interrumpió a medias: lo de abajo está incompleto.");
         setStatus("error");
       }
     }
@@ -743,6 +748,11 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   }
 
   const hasContent = sections.length > 0;
+  // Reintentar es volver a transformar EL MISMO documento, que sigue en `original` porque el
+  // formulario tampoco suelta el archivo. No se hace solo: una transformación se paga entera, y
+  // decidir pagarla otra vez es del participante. Lo que faltaba era que alguien se lo dijera.
+  const puedeReintentar =
+    original !== null && (original.text !== null || original.file !== null);
   const streaming = status === "streaming";
 
   // Elegir una sección en el rail siempre lleva a ella. Con la presentación generada abierta (que
@@ -900,8 +910,17 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
               {streaming ? <StreamingStatus count={sections.length} /> : null}
 
               {status === "error" ? (
-                <div className="rounded-md border border-warning/40 px-4 py-3 text-sm text-warning">
-                  {error}
+                <div className="space-y-3 rounded-md border border-warning/40 px-4 py-3 text-sm text-warning">
+                  <p>{error}</p>
+                  {puedeReintentar ? (
+                    <button
+                      type="button"
+                      onClick={() => handleTransform(original!.text, original!.file)}
+                      className="rounded-md border border-warning/50 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-warning/10 active:scale-[0.98]"
+                    >
+                      Reintentar
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
             </div>
