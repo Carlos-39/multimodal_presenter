@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     # Primario: Anthropic (OBLIGATORIO para ejecutar el pipeline):
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-sonnet-5"
-    # Modelo liviano para el adelanto/resumen inicial (Hito 5g): rápido y barato, corre en
+    # Modelo liviano para el adelanto/resumen inicial: rápido y barato, corre en
     # paralelo a la estructuración (Sonnet) para dar un preview mientras el pipeline trabaja.
     anthropic_summary_model: str = "claude-haiku-4-5-20251001"
     #
@@ -50,11 +50,10 @@ class Settings(BaseSettings):
     #    (no una transcripción plana). Sin esta clave, /transform con audio da un 503 claro;
     #    el texto, el PDF y la imagen funcionan igual sin ella.
     #
-    # La percepción NO tiene fallback a propósito. Es el mismo criterio por el que se descartó
-    # estructurar el audio con Gemini: si la anotación cayera en silencio a otra familia de
-    # modelos, su calidad cambiaría sin que nadie lo note, y esa anotación es justo el
-    # instrumento que mide la mini-evaluación. Un error claro es más honesto que una
-    # degradación invisible.
+    # La percepción NO tiene fallback, deliberadamente. Es el mismo criterio por el que se
+    # descartó estructurar el audio con Gemini: si la anotación cayera en silencio a otra familia
+    # de modelos, su calidad cambiaría sin que nadie lo note. Un error claro es más honesto que
+    # una degradación invisible.
     google_api_key: str | None = None
     google_model: str = "gemini-3.1-pro-preview"  # fallback de estructuración (calidad Pro)
     google_perception_model: str = "gemini-3.8-flash"  # percepción de audio (Fase 0)
@@ -63,16 +62,16 @@ class Settings(BaseSettings):
     # el desarrollo para NO gastar esa llamada extra en documentos con gráficos.
     semantic_verification_enabled: bool = True
 
-    # Narración TTS (Hito 5g Parte 3): OpenAI tts-1. Sin ella, /narration responde 503 y el
+    # Narración TTS: OpenAI tts-1. Sin ella, /narration responde 503 y el
     # frontend lo muestra (nunca en silencio).
     openai_api_key: str | None = None
     openai_tts_model: str = "tts-1"
     openai_tts_voice: str = "nova"
     # Entrada por voz en el chat: transcripción audio→texto (misma clave OpenAI).
     openai_transcribe_model: str = "gpt-4o-mini-transcribe"
-    # Generación de imágenes (ilustraciones 5h + deck 5j). La imagen debe entenderse SOLA: sin
+    # Generación de imágenes (ilustraciones + deck). La imagen debe entenderse SOLA: sin
     # texto y sin marcas que remitan a una leyenda que no existe (ver `illustration.py`).
-    # PRIMARIO: Gemini. Pasó a serlo tras medirlo contra Ideogram con los mismos prompts: 0 de 6
+    # PRIMARIO: Gemini. Se eligió tras medirlo contra Ideogram con los mismos prompts: 0 de 6
     # imágenes con palabras inventadas frente a 3 de 6, y más barato. Respaldos: Ideogram y
     # OpenAI, que siguen cableados porque Gemini puede rechazar un prompt por filtros de
     # seguridad y una imagen peor es mejor que ninguna.
@@ -84,7 +83,7 @@ class Settings(BaseSettings):
     openai_image_model: str = "gpt-image-1"
     openai_image_quality: str = "high"  # fallback; "medium"/"low" para abaratar
 
-    # Entrada multimodal (Hito 4): tope de tamaño de archivo subido, en MB.
+    # Entrada multimodal: tope de tamaño de archivo subido, en MB.
     max_upload_mb: int = 20
     # Tope de DURACIÓN para entradas de audio. Los modelos de audio pierden fiabilidad en
     # grabaciones largas, así que el prototipo se acota explícitamente: si se excede, el
@@ -95,24 +94,24 @@ class Settings(BaseSettings):
     logfire_token: str | None = None
     logfire_service_name: str = "multimodal-presenter-backend"
 
-    # Telemetría de comportamiento (Hito 8). Se anexa a JSONL para análisis posterior.
+    # Telemetría de comportamiento. Se anexa a JSONL para análisis posterior.
     # `telemetry_dir` vacío → carpeta por defecto fuera de OneDrive (LOCALAPPDATA en Windows).
     # Apágala con TELEMETRY_ENABLED=false (sigue registrando en Logfire si hay token).
     telemetry_enabled: bool = True
     telemetry_dir: str | None = None
-    # Token para bajarse los JSONL desde el despliegue. **Sin él, ese endpoint no existe**: no
+    # Token para bajarse los JSONL desde el despliegue. Sin él, ese endpoint no existe: no
     # responde 403 ni pide nada, devuelve 404 como cualquier ruta inventada. Una puerta que anuncia
     # que está cerrada es una invitación a probar la llave.
     #
     # Lo que sale por ahí son metadatos anónimos (el schema corta cualquier string de más de 40
-    # caracteres), así que no es la base: es lo que hace falta a diario durante las sesiones, y por
-    # eso vale la pena exponerlo. La base se respalda por otro camino (scripts/respaldar_base.py).
+    # caracteres), así que no es la base: es lo que hace falta mirar a diario, y por eso vale
+    # la pena exponerlo. La base se respalda por otro camino (scripts/respaldar_base.py).
     telemetria_token: str | None = None
 
-    # Cuentas. El registro viene CERRADO: en una URL pública, dejar crear cuentas a cualquiera no
-    # aporta nada a este proyecto (las sesiones de evaluación corren sin cuenta) y sí añade una
-    # puerta que vigilar. Se abre con REGISTRO_ABIERTO=true, que es lo que hace falta en local.
-    # Entrar NO depende de esto: cerrar el registro no cierra el login.
+    # Cuentas. El alta de cuentas viene CERRADA: en una URL pública, dejar crear cuentas a
+    # cualquiera no aporta nada (la aplicación funciona sin cuenta) y sí añade una puerta que
+    # vigilar. Se abre con REGISTRO_ABIERTO=true, que es lo que hace falta en local.
+    # Entrar NO depende de esto: cerrar el alta no cierra el login.
     registro_abierto: bool = False
     # Cuántos proxies de confianza hay DELANTE de la aplicación. Decide de dónde se saca la
     # dirección de quien llama para los topes de uso (ver `api/limites.ip_del_cliente`).
@@ -122,12 +121,12 @@ class Settings(BaseSettings):
 
     # Topes de uso por hora y por DIRECCIÓN, para lo que cuesta dinero. 0 = sin tope.
     #
-    # Conviene decir qué son y qué no son. **Mientras `proxies_confiables` sea 0, no son por
-    # dirección: son globales**, porque el backend ve siempre la misma (la del frontend, que es
-    # quien le reenvía todo). Por eso los números son holgados: tienen que dejar pasar una sesión
-    # entera sin estorbar aunque se estén repartiendo entre varios.
+    # Conviene decir qué son y qué no son. Mientras `proxies_confiables` sea 0, no son por
+    # dirección: son globales, porque el backend ve siempre la misma (la del frontend, que es
+    # quien le reenvía todo). Por eso los números son holgados: tienen que dejar pasar un uso
+    # normal sin estorbar aunque se estén repartiendo entre varios.
     #
-    # Y no son el control principal del gasto. El que de verdad acota la pérdida máxima es el tope
+    # Y no son el control principal del gasto. El que acota la pérdida máxima es el tope
     # mensual en la consola del proveedor; esto es la capa que evita que un barrido tonto queme la
     # tarde. Veinte transformaciones son muchas más de las que hace nadie en una hora, y ciento
     # veinte preguntas también.

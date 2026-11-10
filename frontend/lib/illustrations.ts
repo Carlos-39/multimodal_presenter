@@ -1,7 +1,7 @@
 import type { GeneratedIllustration, Section } from "./types";
 
 /**
- * Ilustraciones de apoyo generadas (Hito 5h Parte 1). Se piden tras la transformación, SOLO para
+ * Ilustraciones de apoyo generadas. Se piden tras la transformación, SOLO para
  * documentos de fuente texto (condición 1: un texto no trae imágenes propias). El backend decide
  * qué secciones califican (rúbrica) y genera la imagen; aquí solo se transporta el resultado.
  * Es un extra no crítico: si falla, no se muestra ilustración (no rompe la presentación).

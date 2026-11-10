@@ -4,11 +4,8 @@ import { __resetForTest, flush, initTelemetry, track } from "./telemetry";
 /**
  * El tracker toca APIs del navegador (window, sessionStorage, fetch…). Los tests del repo corren
  * en Node, así que se stubbean esos globals a mano (sin traer jsdom). Se verifica la tubería:
- * sobre del evento, reuso del id de sesión, participante por URL, y, sobre todo, que un evento
- * no se da por entregado hasta que el servidor lo dice.
- *
- * Ese último grupo no es teórico: en la primera prueba real se perdieron 8 de 60 eventos porque
- * la cola se vaciaba antes de saber si el envío había llegado.
+ * sobre del evento, reuso del id de sesión, etiqueta de sesión por URL, y, sobre todo, que un
+ * evento no se da por entregado hasta que el servidor lo dice.
  */
 
 function fakeSessionStorage(): Storage {
@@ -90,7 +87,7 @@ describe("telemetry tracker", () => {
     expect(events[0].session_id).toBe(events[1].session_id);
   });
 
-  it("initTelemetry lee el participante de la URL (?p=) y emite session_start", () => {
+  it("initTelemetry lee la etiqueta de sesión de la URL (?p=) y emite session_start", () => {
     initTelemetry();
     flush();
     const events = loteDe(0);
@@ -127,9 +124,8 @@ describe("telemetry tracker", () => {
 });
 
 /**
- * El grupo que paga la deuda: 8 de 60 eventos perdidos en la primera prueba real, en lotes
- * enteros, porque la cola se vaciaba antes de la confirmación y el fallo se descartaba en
- * silencio. `seq` es un contador sin huecos, así que las ausencias se vieron contándolas.
+ * Si la cola se vaciara antes de la confirmación y el fallo se descartara en silencio, se
+ * perderían lotes enteros. `seq` es un contador sin huecos, así que las ausencias se notan.
  */
 describe("ningún evento se da por entregado sin confirmación", () => {
   it("un envío que falla deja los eventos en la cola, y el siguiente los reintenta", async () => {

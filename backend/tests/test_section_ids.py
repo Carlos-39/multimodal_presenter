@@ -5,7 +5,7 @@ vez: el join del grounding (`SectionGrounding.section_id` → `Section.id`) qued
 frontend puede PERDER una sección, porque React usa el id como `key` de la lista.
 
 Se corrige de forma determinista en vez de rechazar la generación entera (mismo criterio que la
-regla de isomorfismo del 5a). Estos tests fijan ese comportamiento.
+regla de isomorfismo de gráficos). Estos tests fijan ese comportamiento.
 """
 
 import asyncio
@@ -84,7 +84,7 @@ def test_no_colisiona_con_un_id_que_ya_parecia_renombrado() -> None:
 
 
 def test_es_determinista() -> None:
-    """Misma entrada → misma salida siempre (Punto 1.5: consistencia entre generaciones)."""
+    """Misma entrada → misma salida siempre (consistencia entre generaciones)."""
     entradas = ["a", "b", "a", "a", "b"]
     corridas = [
         [SectionIdDeduper().ensure_unique(_seccion(i, "q"))[0].id for i in entradas]

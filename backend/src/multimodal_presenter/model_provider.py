@@ -2,16 +2,16 @@
 
 Dos roles, los dos cubiertos por una sola clave de Google (AI Studio):
 
-- **Estructuración (Fase 2):** primario Anthropic (`claude-sonnet-5`), fallback **Gemini
-  directo**. Envueltos en un `FallbackModel`: si el primario falla al arrancar (error de API,
+- Estructuración (Fase 2): primario Anthropic (`claude-sonnet-5`), fallback Gemini
+  directo. Envueltos en un `FallbackModel`: si el primario falla al arrancar (error de API,
   rate limit, indisponibilidad), PydanticAI reintenta con el fallback. Antes se llegaba al
   mismo Gemini a través de OpenRouter; ahora va directo, un intermediario menos, una clave
   menos, y el mismo modelo.
-- **Percepción de audio (Fase 0):** Gemini con entrada acústica nativa, APARTE del
-  `FallbackModel` y **sin fallback propio** ( ver `build_perception_model`.
+- Percepción de audio (Fase 0): Gemini con entrada acústica nativa, APARTE del
+  `FallbackModel` y sin fallback propio (ver `build_perception_model`).
 
-Las claves se validan AQUÍ (en runtime), no al importar la app, para que el CI )que mockea
-el LLM inyectando un modelo de prueba, no necesite claves reales.
+Las claves se validan AQUÍ (en runtime), no al importar la app, para que el CI (que mockea
+el LLM inyectando un modelo de prueba) no necesite claves reales.
 """
 
 import truststore
@@ -45,7 +45,7 @@ truststore.inject_into_ssl()
 #:
 #: Subirlo no cuesta dinero. Se paga por token GENERADO, no por el techo, así que esto no
 #: encarece ninguna llamada que ya funcionaba: solo deja de truncar las que se pasaban. Lo que
-#: acota el gasto de verdad es el prompt, que limita cuántas secciones pedir.
+#: acota el gasto es el prompt, que limita cuántas secciones pedir.
 _MAX_TOKENS_SALIDA = 16384
 
 #: Lo mismo para el adelanto inicial, que es un párrafo. No necesita margen, pero sí necesita
@@ -88,14 +88,13 @@ def build_perception_model(settings: Settings) -> Model:
 
     Es un paso NUEVO y ANTERIOR al pipeline, no un reemplazo de nada: no entra en el
     `FallbackModel` de la estructuración, que sigue siendo el único que decide la Fase 2. Se
-    construye aparte a propósito, para que un problema de acceso a Gemini en la percepción no
+    construye aparte para que un problema de acceso a Gemini en la percepción no
     pueda afectar al motor principal.
 
-    **Sin fallback, deliberadamente.** Es el mismo criterio por el que se descartó estructurar
-    el audio con Gemini (Opción B): si la anotación cayera en silencio a otra familia de
-    modelos, su calidad cambiaría sin que nadie lo note, y esa anotación es justo el
-    instrumento que mide la mini-evaluación de esta pieza. Un error claro es más honesto que
-    una degradación invisible. (Las alternativas con entrada de audio, además, aceptan menos
+    Sin fallback, deliberadamente. Es el mismo criterio por el que se descartó estructurar
+    el audio con Gemini: si la anotación cayera en silencio a otra familia de modelos, su
+    calidad cambiaría sin que nadie lo note. Un error claro es más honesto que una degradación
+    invisible. (Las alternativas con entrada de audio, además, aceptan menos
     formatos: la familia `gpt-4o-audio-preview` de OpenAI solo admite WAV y MP3.)
 
     Sin clave lanza: el endpoint lo traduce a un 503 con mensaje claro (mismo patrón que la
@@ -115,7 +114,7 @@ def build_perception_model(settings: Settings) -> Model:
 
 
 def build_summary_model(settings: Settings) -> Model:
-    """Modelo liviano (Haiku) para el adelanto inicial (Hito 5g). Mismo proveedor Anthropic.
+    """Modelo liviano (Haiku) para el adelanto inicial. Mismo proveedor Anthropic.
 
     Sin fallback: el adelanto es un extra no crítico; si falla, el frontend lo muestra como tal
     (honestidad) y la transformación completa (Sonnet) sigue su curso aparte.

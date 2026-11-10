@@ -3,7 +3,7 @@
 No corren en CI ni por defecto: se saltan si no hay ANTHROPIC_API_KEY real. Para ejecutarlos:
     uv run pytest -m integration
 
-Filosofía (Hito 5f): si el modelo real falla una verificación, es un HALLAZGO, no un test que
+Filosofía: si el modelo real falla una verificación, es un resultado, no un test que
 haya que ajustar para que pase. Se aserta solo lo objetivo y estable; lo probabilístico o
 descriptivo se imprime como reporte.
 """
@@ -109,7 +109,7 @@ def test_a1_pdf_native_reads_rasterized_chart() -> None:
     # Aserciones (cifras exactas, redacción libre):
     assert result.grounding.source_kind == "pdf"
     assert result.grounding.unverified_sections == len(result.presentation.sections)
-    assert any(p is not None for p in pages), "ninguna sección trae source.page (contrato 5c/PDF)"
+    assert any(p is not None for p in pages), "ninguna sección trae source.page (contrato PDF)"
     # DISCRIMINANTE: la mayoría de los valores del gráfico rasterizado deben aparecer.
     assert sum(chart_hit.values()) >= 3, f"el modelo NO leyó el gráfico rasterizado: {chart_hit}"
     # Prueba de que también leyó la tabla (texto real).
@@ -250,7 +250,7 @@ def test_a2_semantic_judge_matrix() -> None:
 
 
 # ─────────────────────────────────────────────────────────────
-# Humo básico de texto (se mantiene del hito anterior)
+# Humo básico de texto
 # ─────────────────────────────────────────────────────────────
 @pytest.mark.integration
 @_needs_key

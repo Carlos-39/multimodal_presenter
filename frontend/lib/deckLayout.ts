@@ -3,11 +3,10 @@ import type { GeneratedSlide, PapelDeSlide } from "./types";
 /**
  * Composición de una diapositiva de la presentación generada.
  *
- * La decide el PAPEL que la diapositiva declara, no lo que trae dentro. Antes se deducía de los
- * campos llenos (con imagen al lado, con viñetas en lista, si no texto centrado), y de ahí venía
- * el problema que destapó la primera prueba: tres formas posibles para catorce láminas hacen que
- * una presentación se lea como el documento transformado otra vez. Una presentación de verdad
- * varía, porque sus láminas no hacen todas lo mismo.
+ * La decide el PAPEL que la diapositiva declara, no lo que trae dentro. Deducirla de los campos
+ * llenos (con imagen al lado, con viñetas en lista, si no texto centrado) deja tres formas
+ * posibles para catorce láminas, y la presentación se lee como el documento transformado otra
+ * vez. Una presentación varía, porque sus láminas no hacen todas lo mismo.
  *
  * - `apertura` y `cierre`: una frase grande y sola, con su imagen de ambiente si la hay.
  * - `dato`: la cifra manda y el texto la glosa.

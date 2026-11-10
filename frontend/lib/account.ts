@@ -1,9 +1,8 @@
 /**
  * Cuenta y biblioteca: el cliente de los endpoints que SÍ exigen iniciar sesión.
  *
- * El resto de la aplicación no pasa por aquí, y es deliberado: sin cuenta todo sigue funcionando
- * igual que antes. Las sesiones de evaluación del Hito 8 corren sin login, así que entrar añade
- * *guardar y volver*, no habilita usar el sistema.
+ * El resto de la aplicación no pasa por aquí: sin cuenta todo funciona igual, así que entrar
+ * añade *guardar y volver*, no habilita usar el sistema.
  *
  * La sesión viaja en una cookie `HttpOnly`, así que aquí no hay ningún token que manejar: el
  * navegador la manda sola. Eso es justamente lo que impide que un XSS se la lleve.
@@ -92,7 +91,7 @@ async function json<T>(res: Response): Promise<T> {
 /**
  * Si se pueden crear cuentas. Lo decide el backend, que es donde vive el ajuste.
  *
- * Ante la duda, **cerrado**: si la pregunta falla, el formulario ofrece solo entrar. Ofrecer una
+ * Ante la duda, cerrado: si la pregunta falla, el formulario ofrece solo entrar. Ofrecer una
  * puerta que a lo mejor no existe es peor que no ofrecerla, porque el error llega después de
  * escribir un correo y una contraseña.
  */
@@ -135,7 +134,7 @@ export async function quienSoy(): Promise<Usuario | null> {
   try {
     const res = await fetch("/api/auth/yo");
     // El backend responde `null` sin sesión, no un error: no tener cuenta es el estado normal de
-    // esta aplicación. El `res.ok` se mantiene por si algún día el servidor sí falla de verdad.
+    // esta aplicación. El `res.ok` cubre el caso de que el servidor sí falle.
     return res.ok ? (((await res.json()) ?? null) as Usuario | null) : null;
   } catch {
     return null;

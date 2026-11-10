@@ -17,8 +17,8 @@ from .presentation import Presentation
 from .transform import ChartNote, GroundingReport, SourceKind
 
 VERSION_CONTRATO = 1
-"""Versión del formato guardado. No es ceremonia: el contrato cambió dos veces este mes
-(`start_s` en A1, `region` en el resaltado por región). Sin esto, el primer cambio dejaría
+"""Versión del formato guardado. No es ceremonia: el contrato ya ha cambiado
+(`start_s` del audio, `region` del resaltado por región). Sin esto, el primer cambio dejaría
 ilegibles las presentaciones ya guardadas de todo el mundo."""
 
 
@@ -66,7 +66,7 @@ class HistorialChat(_Strict):
     Se manda COMPLETO y reemplaza al guardado, en vez de añadir un turno cada vez. Así lo
     almacenado es siempre una foto de lo que se está viendo y no puede derivar: añadiendo, un
     reintento duplicaría un turno y una petición perdida dejaría un hueco, y el historial dejaría
-    de coincidir con la conversación que de verdad ocurrió.
+    de coincidir con la conversación que ocurrió.
     """
 
     mensajes: list[MensajeGuardado] = Field(default_factory=list, max_length=200)

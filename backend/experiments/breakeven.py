@@ -1,18 +1,18 @@
-"""Punto de equilibrio del RAG vectorial frente al baseline, recálculo auditable (Hito 7).
+"""Punto de equilibrio del RAG vectorial frente al baseline, recálculo auditable.
 
-La primera versión del Registro afirmaba que indexar "solo se paga tras ~267 preguntas por
+Un cálculo anterior afirmaba que indexar "solo se paga tras ~267 preguntas por
 documento". Era incorrecto por dos órdenes de magnitud y, para los documentos donde la pregunta
-importa, al revés. Este script rehace la cuenta **desde los datos crudos del experimento**, sin
+importa, al revés. Este script rehace la cuenta desde los datos crudos del experimento, sin
 volver a llamar a ningún modelo: todo sale de `runs/experiment.jsonl` y de `index_summary.json`.
 
 Los tres errores que corrige:
 
-1. **Mezcla de escalas.** Comparaba la indexación de los TRES documentos ($4.61) contra un ritmo
+1. Mezcla de escalas. Comparaba la indexación de los TRES documentos ($4.61) contra un ritmo
    de preguntas POR documento.
-2. **Costo equivocado.** Usaba la indexación TOTAL, dominada por el grafo de LightRAG y la
+2. Costo equivocado. Usaba la indexación TOTAL, dominada por el grafo de LightRAG y la
    transcripción. El RAG vectorial no necesita ninguna de las dos: solo los embeddings de Voyage
    (`voyage_usd`), que son centavos.
-3. **Promedio global.** Usaba un costo por pregunta único cuando varía ~4x según el tamaño del
+3. Promedio global. Usaba un costo por pregunta único cuando varía ~4x según el tamaño del
    documento, porque el baseline manda el documento entero en cada turno.
 
 Imprime además el control de caché: si el baseline hubiera escrito caché en cada pregunta, sus
@@ -42,7 +42,7 @@ def main() -> int:
 
     if not RUNS.exists() or not INDEX.exists():
         print(f"Faltan los datos del experimento en {DATA}.")
-        print("Son los que produjo la corrida del Hito 7; están fuera de git por tamaño.")
+        print("Los produce la corrida del experimento; están fuera de git por tamaño.")
         return 2
 
     rows = [json.loads(line) for line in RUNS.read_text(encoding="utf-8").splitlines() if line]

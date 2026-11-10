@@ -5,10 +5,10 @@ import { ChatCircleText, ListBullets, Sparkle } from "@phosphor-icons/react";
 /**
  * La barra de abajo: lo único de cromo que se añade en pantallas estrechas.
  *
- * **Sustituye al carril, no lo imita.** En escritorio hay un carril a la izquierda con las
- * secciones y lo que se puede generar; por debajo de 768 px ese carril estaba simplemente
- * apagado, y con él desaparecían la navegación por secciones y la narración, no escondidas:
- * inexistentes. Aquí vuelven, con el mismo contenido y otra forma.
+ * Sustituye al carril, no lo imita. En escritorio hay un carril a la izquierda con las
+ * secciones y lo que se puede generar; por debajo de 768 px ese carril se apaga, y con él
+ * desaparecerían la navegación por secciones y la narración. Aquí están, con el mismo contenido y
+ * otra forma.
  *
  * Abajo y no arriba porque es donde llega el pulgar, y porque la cabecera ya tiene lo suyo: los
  * dos controles de VER, que son los que más se usan leyendo.
@@ -61,8 +61,8 @@ export function BarraInferior({ activo, onIr, secciones }: BarraInferiorProps) {
             onClick={() => onIr(destino)}
             disabled={vacio}
             aria-current={esActivo ? "true" : undefined}
-            // 56 px de alto: por debajo de eso el pulgar falla, y fallar en un control de
-            // navegación durante una sesión medida contamina lo que se está midiendo.
+            // 56 px de alto: por debajo de eso el pulgar falla, y un toque fallido en la
+            // navegación también ensucia la telemetría.
             className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[0.6875rem] transition-colors disabled:opacity-35 ${
               esActivo ? "text-accent" : "text-muted hover:text-foreground"
             }`}

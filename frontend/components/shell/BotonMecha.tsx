@@ -6,27 +6,26 @@ import { ArrowCounterClockwise, Trash } from "@phosphor-icons/react";
 /**
  * Una acción destructiva con ventana para arrepentirse.
  *
- * **La mecha ES el tiempo que queda.** La vuelta que da al borde dura exactamente la ventana, así
+ * La mecha ES el tiempo que queda. La vuelta que da al borde dura exactamente la ventana, así
  * que mirarla responde «¿cuánto me queda?» sin leer nada. Mismo criterio que el puntico del
  * carrusel.
  *
- * **Nada se destruye hasta que la mecha acaba.** El componente de referencia borra al pulsar y
+ * Nada se destruye hasta que la mecha acaba. El componente de referencia borra al pulsar y
  * restaura al deshacer; aquí se confirma al final. La diferencia importa: deshacer no tiene que
  * reconstruir nada en el servidor, porque el servidor todavía no se ha enterado.
  *
- * **Quien manda es un temporizador, no la animación.** Es una distinción que parece pedante y no
- * lo es: un evento `finish` de animación solo se despacha si el documento se está pintando, así
+ * Quien manda es un temporizador, no la animación: un evento `finish` de animación solo se despacha si el documento se está pintando, así
  * que con la pestaña en segundo plano (o en cualquier entorno sin render) el borrado no llegaría a
  * ocurrir nunca. La animación dibuja; el reloj decide. Los dos se pausan juntos.
  *
- * **Se detiene si la pestaña se va.** No se puede deshacer lo que no se está viendo. Al volver,
+ * Se detiene si la pestaña se va. No se puede deshacer lo que no se está viendo. Al volver,
  * sigue donde estaba.
  *
  * Los segundos van también en la etiqueta: con «reducir movimiento» la mecha no recorre nada, y el
  * número es lo que conserva la información.
  */
 interface BotonMechaProps {
-  /** Qué pasa cuando la mecha llega al final. Aquí es donde se borra de verdad. */
+  /** Qué pasa cuando la mecha llega al final. Aquí es donde se borra. */
   onConfirmar: () => void;
   onDeshacer?: () => void;
   /** Se avisa al armar y al desarmar, para que el contenedor pueda atenuarse. */

@@ -1,8 +1,4 @@
-"""Punto de entrada de la API FastAPI.
-
-Hito 0: la app levanta, responde un health check y emite trazas verificables a
-Logfire. Nada de pipeline, modelo ni lógica de negocio todavía (eso es Hito 2+).
-"""
+"""Punto de entrada de la API FastAPI."""
 
 from contextlib import asynccontextmanager
 
@@ -30,13 +26,13 @@ async def ciclo_de_vida(_app: FastAPI):
     aplicación, no delante de alguien que está intentando entrar. Es idempotente: arrancar dos
     veces no hace nada la segunda.
 
-    La persistencia es OPCIONAL: la aplicación entera sigue funcionando sin cuenta, que es como
-    corren las sesiones de evaluación del Hito 8. Esto solo prepara el sitio donde guardar.
+    La persistencia es OPCIONAL: la aplicación entera sigue funcionando sin cuenta. Esto solo
+    prepara el sitio donde guardar.
 
     Los ajustes se leen AQUÍ y no se toma el `settings` de arriba, que quedó fijado al importar el
     módulo. Los endpoints los resuelven por dependencia en cada petición, así que si ambos no leen
-    lo mismo se migra una base y se usa otra, que es exactamente lo que pasó al escribir los
-    tests: tablas que no existían en la base contra la que corría la aplicación.
+    lo mismo se migra una base y se usa otra: tablas que no existen en la base contra la que
+    corre la aplicación.
     """
     aplicadas = await migrar(get_settings())
     if aplicadas:
@@ -58,8 +54,8 @@ logfire.instrument_fastapi(app)
 # modelo, reintentos, errores) pero NO el cuerpo de los prompts ni de las respuestas.
 #
 # Por defecto PydanticAI envía el contenido, así que el texto de cada documento acababa en un panel
-# de un tercero. Para documentos propios es una decisión; para las sesiones del Hito 8 sería un
-# problema, porque el consentimiento promete anonimato y los documentos serán de otras personas.
+# de un tercero. Para documentos propios es una decisión; con documentos de otras personas es un
+# problema de privacidad.
 # El coste de apagarlo es depurar un prompt a ciegas, que se hace a mano cuando hace falta.
 logfire.instrument_pydantic_ai(include_content=False)
 

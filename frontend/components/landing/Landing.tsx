@@ -18,10 +18,10 @@ import { Trama } from "./Trama";
 /**
  * La portada.
  *
- * **Sin cuenta se puede todo menos guardar**, y eso se dice en el botón: «Probar como invitado»
+ * Sin cuenta se puede todo menos guardar, y eso se dice en el botón: «Probar como invitado»
  * no es una versión recortada, es la aplicación.
  *
- * **Entrar ocurre AQUÍ.** `AuthForm` se extrajo del cajón de cuenta exactamente para esto: una
+ * Entrar ocurre AQUÍ. `AuthForm` se extrajo del cajón de cuenta exactamente para esto: una
  * copia del acceso en la portada habría divergido en silencio de la del cajón.
  *
  * Los límites del sistema no tienen sección propia: viven en las preguntas frecuentes. Dicho al
@@ -57,13 +57,13 @@ export function Landing({ onEntrar }: { onEntrar: () => void }) {
        * La cabecera encoge al bajar: deja de ser una barra pegada al borde y se queda en una
        * píldora flotando, más estrecha y más corta.
        *
-       * **No lleva estado de React.** Lo que cambia es un atributo en el DOM y el resto lo hace
+       * No lleva estado de React. Lo que cambia es un atributo en el DOM y el resto lo hace
        * CSS: meter el scroll en estado volvería a renderizar la portada entera en cada rueda de
        * ratón. Mismo criterio que el pulgar del segmentado o el reloj de la espera.
        *
-       * El cristal es `backdrop-filter: blur()` del de toda la vida. Descarté el componente de
-       * cristal con filtro SVG: se desactiva solo en Safari y en Firefox, lee claro/oscuro del
-       * sistema operativo en vez de nuestro tema, y su aberración cromática pelearía con una
+       * El cristal es `backdrop-filter: blur()` del de toda la vida, y no un componente de
+       * cristal con filtro SVG: ese se desactiva solo en Safari y en Firefox, lee claro/oscuro del
+       * sistema operativo en vez del tema de la aplicación, y su aberración cromática pelearía con una
        * paleta que es de una sola tinta.
        */}
       <header ref={cabecera} data-reducida="false" className="group sticky top-0 z-30">
@@ -121,9 +121,8 @@ export function Landing({ onEntrar }: { onEntrar: () => void }) {
 /**
  * El héroe, a una sola columna y con la demostración a lo ancho.
  *
- * Estuvo en dos columnas mientras el visual era una ilustración estrecha. La demostración son dos
- * paneles (el documento y lo que la aplicación escribe) y en media pantalla cada panel quedaba en
- * 300 px: se lee peor justo donde hay que leer. A lo ancho cada panel tiene el doble, y el titular
+ * La demostración son dos paneles (el documento y lo que la aplicación escribe) y en media
+ * pantalla cada panel quedaría en 300 px: se lee peor justo donde hay que leer. A lo ancho cada panel tiene el doble, y el titular
  * conserva su medida en vez de partirse en cinco líneas para dejarle hueco.
  */
 function Hero({ onInvitado, onAcceso }: { onInvitado: () => void; onAcceso: () => void }) {
@@ -132,11 +131,11 @@ function Hero({ onInvitado, onAcceso }: { onInvitado: () => void; onAcceso: () =
       {/*
        * La trama del hero.
        *
-       * **Un semitono es cómo se imprime un tono continuo con UNA sola tinta**, que es exactamente
-       * lo que hace esta paleta desde el segundo rediseño: el fondo acaba diciendo lo mismo que el
+       * Un semitono es cómo se imprime un tono continuo con UNA sola tinta, que es exactamente
+       * lo que hace esta paleta: el fondo acaba diciendo lo mismo que el
        * sistema de color. Unos anillos habrían quedado bonitos sin significar nada.
        *
-       * Va SOLO aquí. La aplicación es seria a propósito y la bitácora es para leer; la portada es
+       * Va SOLO aquí. La aplicación es seria y la bitácora es para leer; la portada es
        * el único sitio donde alguien todavía no sabe qué es esto y hay que llamarlo.
        *
        * El alto es la ventana menos la cabecera, así que el borde de la sección siguiente queda
@@ -185,7 +184,7 @@ function Hero({ onInvitado, onAcceso }: { onInvitado: () => void; onAcceso: () =
 /**
  * La demostración, ya fuera del héroe.
  *
- * Sigue siendo lo segundo que se ve, y a propósito: es lo único de la portada que enseña lo que la
+ * Es lo segundo que se ve porque es lo único de la portada que enseña lo que la
  * aplicación HACE, y no lo que promete. El titular convence; esto demuestra.
  */
 function Muestra() {
@@ -202,8 +201,8 @@ function Muestra() {
  * El cierre: el único sitio de la portada donde el tipo manda.
  *
  * Todos los titulares de la página miden lo mismo, y eso deja el final sin peso: se llega al
- * último bloque igual que al tercero. Aquí la escala sube de golpe porque **es el único momento
- * que pide una decisión**. Nada más cambia: ni color de acento nuevo, ni fondo, ni movimiento.
+ * último bloque igual que al tercero. Aquí la escala sube de golpe porque es el único momento
+ * que pide una decisión. Nada más cambia: ni color de acento nuevo, ni fondo, ni movimiento.
  * Una cosa grande y lo demás callado.
  */
 function Cierre({ onInvitado }: { onInvitado: () => void }) {
@@ -238,8 +237,8 @@ function Cierre({ onInvitado }: { onInvitado: () => void }) {
           <div>
             <h3 className="font-sans text-xl font-medium tracking-[-0.015em] text-foreground">Cómo se construyó</h3>
             <p className="mt-2 max-w-[54ch] text-sm leading-6 text-foreground-secondary">
-              Catorce capítulos sobre qué se construyó, por qué, y qué apareció al medirlo.
-              Incluido lo que no funcionó.
+              Cómo está construida la aplicación y cómo se comporta por dentro, para quien tenga
+              curiosidad por lo que pasa debajo de la pantalla.
             </p>
           </div>
           <span className="flex shrink-0 items-center gap-1.5 text-sm text-accent transition-colors group-hover:text-accent-hover">
@@ -289,7 +288,7 @@ function DialogoAcceso({ onCerrar }: { onCerrar: () => void }) {
         <div className="mt-5">
           {/* Entrar desde la portada lleva a la biblioteca, no al área de trabajo en blanco: si
               tienes cuenta, lo que vienes a buscar es lo tuyo. «Probar como invitado» sigue
-              entrando directo, que es el camino del Hito 8. */}
+              entrando directo al área de trabajo. */}
           <AuthForm onUsuario={() => router.push("/biblioteca")} />
         </div>
       </div>

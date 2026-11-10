@@ -70,7 +70,7 @@ export function Preguntas() {
                 />
               </summary>
               {/* La respuesta sube desde detrás del renglón en vez de aparecer de golpe. Es el
-                  único gesto que me traje del menú escalonado, y es CSS: así los `details` siguen
+                  único gesto tomado del menú escalonado, y es CSS: así los `details` siguen
                   siendo nativos (teclado, lector de pantalla, y abren aunque el JavaScript no
                   cargue), que es por lo que se eligieron. */}
               <div className="respuesta overflow-hidden">

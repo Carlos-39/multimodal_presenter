@@ -6,14 +6,14 @@ import { X } from "@phosphor-icons/react";
 /**
  * La pista que enseña dónde quedó lo que acabas de guardar.
  *
- * **Aparece después de guardar por primera vez, no al entrar.** Un recorrido de bienvenida llega
+ * Aparece después de guardar por primera vez, no al entrar. Un recorrido de bienvenida llega
  * cuando todavía no hay ninguna pregunta en la cabeza y se salta sin leer; esta llega en el
  * segundo exacto en que alguien acaba de crear algo y no sabe a dónde fue. Es la única de toda la
  * aplicación: si hubiera cinco, se cerrarían las cinco igual de rápido.
  *
- * **No se cierra sola.** Un aviso con temporizador obliga a leer deprisa, y quien use un lector de
- * pantalla o lea despacio lo pierde. Se va al cerrarlo, al pulsar fuera o al irse a la biblioteca
- *, y no vuelve nunca.
+ * No se cierra sola. Un aviso con temporizador obliga a leer deprisa, y quien use un lector de
+ * pantalla o lea despacio lo pierde. Se va al cerrarlo, al pulsar fuera o al irse a la biblioteca,
+ * y no vuelve nunca.
  *
  * `role="status"` y no `alert`: informa, no interrumpe, así que no roba el foco.
  */

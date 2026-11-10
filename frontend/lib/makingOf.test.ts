@@ -23,8 +23,7 @@ describe("trozos", () => {
   });
 
   it("no se come el texto: recomponer los trozos devuelve la línea", () => {
-    // Es la propiedad que de verdad importa. Un parser que pierda una palabra del Registro
-    // rompería lo único que este documento promete: contar lo que pasó.
+    // Es la propiedad que importa: un parser que pierda una palabra altera el contenido.
     const linea = "**La información** no se degrada al aplanar: ==se pierde==.";
     const recompuesto = trozos(linea)
       .map((t) => t.texto)

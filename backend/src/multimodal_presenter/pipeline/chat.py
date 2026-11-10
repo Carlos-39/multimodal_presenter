@@ -1,14 +1,14 @@
-"""Chat anclado a fuentes (Hito 6).
+"""Chat anclado a fuentes.
 
-Arquitectura (decidida en Fase 2, no se reabre): cada turno RELEE el documento ORIGINAL
+Arquitectura: cada turno RELEE el documento ORIGINAL
 completo: nunca busca sobre la `Presentation` (que es una selección núcleo/satélite y perdería
-contenido). Para no reprocesar el documento en cada turno se usa **prompt caching** de Anthropic
+contenido). Para no reprocesar el documento en cada turno se usa prompt caching de Anthropic
 vía `CachePoint`: el documento va antes del marcador y queda cacheado; cada pregunta solo procesa
 lo nuevo (historial + pregunta).
 
 Anclaje: el LLM aporta la cita (`source_quote`); el código la valida con la MISMA regla
 determinista de la Fase 3 (`ground_quote`). Si no se puede anclar, se dice con honestidad, no
-se fabrica una fuente (mismo espíritu que `not_found` en 5c).
+se fabrica una fuente (mismo espíritu que `not_found`).
 """
 
 from collections.abc import AsyncIterator
@@ -76,11 +76,11 @@ trata?"). Devuelve solo las preguntas.\
 #: contestar conversando, que es exactamente salirse del sobre. Cada una costaba dos llamadas,
 #: porque el reintento sin streaming la salvaba.
 #:
-#: Con una herramienta no hay sobre del que salirse: el esquema lo impone la API. Comprobado que el
-#: streaming de texto parcial se mantiene idéntico, que es lo único que se podía perder.
+#: Con una herramienta no hay sobre del que salirse: el esquema lo impone la API. El streaming
+#: de texto parcial se mantiene idéntico, que es lo único que se podía perder.
 #:
-#: El resto de agentes sigue con `PromptedOutput` a propósito: ninguno ha dado este fallo, y
-#: cambiarlos todos a la vez en vísperas de las sesiones es mover lo que funciona.
+#: El resto de agentes sigue con `PromptedOutput`: ninguno ha dado este fallo, y cambiarlos
+#: todos a la vez es mover lo que funciona.
 chat_agent = Agent(output_type=ToolOutput(ChatAnswer), system_prompt=_CHAT_PROMPT)
 suggestions_agent = Agent(
     output_type=PromptedOutput(SuggestionsResponse), system_prompt=_SUGGESTIONS_PROMPT
@@ -180,16 +180,15 @@ async def chat_stream(
             # `run_stream()`». Es un límite de la biblioteca, no un fallo del modelo ni de la red:
             # cuando la salida no encaja con `ChatAnswer`, el camino normal es devolvérsela al
             # modelo para que la corrija, y ese reintento NO existe mientras se streamea. El turno
-            # moría ahí y el participante veía «la generación se interrumpió».
+            # moriría ahí y el usuario vería «la generación se interrumpió».
             #
             # Así que se rehace el turno sin streaming, que sí reintenta. Se pierde el efecto de
             # escritura de ESE turno y se paga una llamada más; a cambio hay respuesta en vez de
             # un error. Lo que se emitió antes del fallo lo reemplaza el evento final.
             #
             # La causa va DENTRO del mensaje, entre llaves, y no como atributo suelto: sin token
-            # de Logfire los registros salen por la consola, y ahí solo se imprime el mensaje ya
-            # formateado. Un atributo que nadie va a leer es como no haberlo escrito, pasó: la
-            # primera versión de esta línea puso la causa al lado y en Railway no apareció.
+            # de Logfire los logs salen por la consola, y ahí solo se imprime el mensaje ya
+            # formateado. Un atributo suelto no aparece.
             #
             # Hace falta porque el mensaje de pydantic-ai dice QUÉ pasó pero no en qué campo, y
             # sin eso no se distingue entre que el modelo se inventara una clave de más, que se

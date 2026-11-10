@@ -1,7 +1,7 @@
 /**
- * Proxy en STREAMING hacia el backend para el SSE de /chat/stream (Hito 6).
+ * Proxy en STREAMING hacia el backend para el SSE de /chat/stream.
  *
- * Mismo motivo que el route handler de /transform/stream (5d): el `rewrites()` de Next
+ * Mismo motivo que el route handler de /transform/stream: el `rewrites()` de Next
  * BUFFERIZA el SSE y lo entrega de golpe, lo que arruinaría el efecto de escritura en vivo del
  * chat. Este handler devuelve el `ReadableStream` del backend tal cual, sin aplanarlo. Como las
  * rutas del filesystem tienen precedencia sobre los rewrites `afterFiles`, intercepta SOLO

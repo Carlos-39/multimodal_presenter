@@ -2,26 +2,26 @@ import { createHash } from "node:crypto";
 import { THEME_INIT_SCRIPT } from "./theme";
 
 /**
- * La política de contenido del sitio. **Son dos, y la razón es que una sola costaría páginas.**
+ * La política de contenido del sitio. Son dos, porque una sola costaría páginas.
  *
  * La política fuerte usa un *nonce*, y Next solo puede inyectar un nonce al renderizar en el
  * servidor: una página prerenderizada se generó cuando no existía ninguna petición, así que sus
  * scripts saldrían sin nonce y el navegador los bloquearía. Su propia documentación lo dice sin
- * rodeos: usar nonce obliga a que TODAS las páginas sean dinámicas. Y aquí hay veintidós
- * estáticas, entre ellas la portada y los catorce capítulos de la bitácora.
+ * rodeos: usar nonce obliga a que TODAS las páginas sean dinámicas. Y aquí la mayoría son
+ * estáticas, entre ellas la portada y los capítulos de «cómo se construyó».
  *
- * Renunciar a eso para proteger páginas que **no tocan datos de nadie** sería pagar con lo único
+ * Renunciar a eso para proteger páginas que no tocan datos de nadie sería pagar con lo único
  * que esas páginas tienen (salir ya hechas) a cambio de nada. Así que la línea se traza por lo que
  * cada página maneja:
  *
- * - **Las de la aplicación** (`/`, `/biblioteca`, `/galeria`) muestran documentos de personas, así
+ * - Las de la aplicación (`/` y `/biblioteca`) muestran documentos de personas, así
  *   que llevan nonce y `strict-dynamic`: solo se ejecuta lo que esta petición autorizó.
- * - **Las de contenido fijo** (portada, bitácora) llevan `'unsafe-inline'` y siguen siendo
+ * - Las de contenido fijo (portada, bitácora) llevan `'unsafe-inline'` y siguen siendo
  *   estáticas. Sigue prohibido traer un script de otro dominio, que es la vía por la que algo
  *   inyectado se lleva lo que encuentra.
  *
- * Y un detalle del estándar que decide la forma de todo esto: **`'unsafe-inline'` se IGNORA si en
- * la misma directiva hay un hash o un nonce.** No se pueden poner los dos «por si acaso»; hay que
+ * Y un detalle del estándar que decide la forma de todo esto: `'unsafe-inline'` se IGNORA si en
+ * la misma directiva hay un hash o un nonce. No se pueden poner los dos «por si acaso»; hay que
  * elegir, y por eso las dos políticas no se parecen más de lo que se parecen.
  */
 
@@ -39,11 +39,7 @@ export const HASH_SCRIPT_TEMA = `sha256-${createHash("sha256")
 function esDeLaAplicacion(ruta: string): boolean {
   return (
     ruta === "/" ||
-    ruta.startsWith("/biblioteca") ||
-    ruta.startsWith("/galeria") ||
-    // El portón también: se renderiza por petición de todas formas, así que la política fuerte
-    // sale gratis, y es la pantalla donde se escribe un secreto.
-    ruta.startsWith("/acceso")
+    ruta.startsWith("/biblioteca")
   );
 }
 

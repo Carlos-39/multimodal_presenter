@@ -1,4 +1,4 @@
-"""Tests de la narración TTS (Hito 5g Parte 3). Mockean Sonnet (guion) y el TTS (OpenAI)."""
+"""Tests de la narración TTS. Mockean Sonnet (guion) y el TTS (OpenAI)."""
 
 import pytest
 from fastapi.testclient import TestClient

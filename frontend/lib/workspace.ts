@@ -1,25 +1,25 @@
 /**
- * Escala 2 del layout compositivo (Hito 5e): reglas de COLUMNAS opcionales en pantalla.
+ * Escala 2 del layout compositivo: reglas de COLUMNAS opcionales en pantalla.
  *
  * El núcleo fijo (header + nav) nunca compite por espacio, está fuera de esta lógica. Aquí
- * solo se arbitran los dos paneles OPCIONALES (fuente 5c y chat 6): dónde va cada uno según
+ * solo se arbitran los dos paneles OPCIONALES (fuente y chat): dónde va cada uno según
  * cuáles pidió abrir el usuario y el ancho de viewport.
  *
  * Regla (desktop-first, coexistencia estilo NotebookLM con salvaguarda de ancho):
- * - `>= WIDE`: los paneles abiertos **coexisten** como columnas (hay sitio sin aplastar el
+ * - `>= WIDE`: los paneles abiertos coexisten como columnas (hay sitio sin aplastar el
  *   contenido).
- * - `[MID, WIDE)`: cabe **una** columna → se muestra el panel abierto más reciente; el otro
+ * - `[MID, WIDE)`: cabe una columna → se muestra el panel abierto más reciente; el otro
  *   queda oculto (sigue "abierto" en estado y reaparece al ensanchar la ventana).
- * - `< MID`: no caben columnas → el más reciente se muestra como **overlay** (drawer sobre el
+ * - `< MID`: no caben columnas → el más reciente se muestra como overlay (drawer sobre el
  *   contenido), uno a la vez.
  *
  * Es determinista y depende SOLO de (paneles abiertos, ancho); no de cuántas secciones llegaron
  * por streaming: por eso el streaming no dispara recálculo de columnas.
  *
- * NOTA sobre la Escala 1 (composición INTERNA de una sección con varios content_type): es **spec
- * documentada, no cableada**. El contrato define `Section.content` como UN solo bloque, así que
+ * NOTA sobre la Escala 1 (composición INTERNA de una sección con varios content_type): es spec
+ * documentada, no cableada. El contrato define `Section.content` como UN solo bloque, así que
  * una sección no combina tipos hoy; las reglas internas (chart > table > timeline > text) se
- * activarían solo si el contrato admitiera secciones multi-contenido. Ver Registro (Hito 5e/5f).
+ * activarían solo si el contrato admitiera secciones multi-contenido.
  */
 
 export type PanelId = "source" | "chat";

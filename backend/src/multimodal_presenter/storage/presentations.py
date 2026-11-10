@@ -1,6 +1,6 @@
 """Biblioteca: guardar, listar y recuperar presentaciones de un usuario.
 
-**Toda consulta filtra por usuario.** No hay una función que recupere una presentación "por id" a
+Toda consulta filtra por usuario. No hay una función que recupere una presentación "por id" a
 secas: el id del dueño es siempre parte de la condición. Es deliberado, una función así existiría
 para que alguien la llamara sin el filtro, y bastaría un descuido en un endpoint para que
 cualquiera leyera la biblioteca de otro. Lo que no existe no se puede olvidar de usar.

@@ -1,6 +1,6 @@
 """Validación determinista de archivos subidos (guardas de seguridad, Fase 1).
 
-Cierra los huecos que la auditoría del PoC anterior señaló: tope de tamaño (sin cargar
+Cubre: tope de tamaño (sin cargar
 todo en memoria de golpe), validación de tipo por *magic bytes* reales (no por extensión
 ni por el content-type del cliente), y error limpio ante archivos corruptos/vacíos.
 

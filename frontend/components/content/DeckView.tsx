@@ -13,7 +13,7 @@ import { SourceCitation, UnanchoredNotice } from "./SourceCitation";
 
 /**
  * Presentación GENERADA en diapositivas (guion propio, desde la fuente). Pieza nueva y separada de
- * la vista de slides del 5h (re-composición sin generación). Trazabilidad por slide (mix honesto):
+ * la vista de slides (re-composición sin generación). Trazabilidad por slide (mix honesto):
  * anclada a la fuente ("ver en el documento"), o marcada como síntesis si es una simplificación
  * declarada. Las imágenes de apoyo llevan su etiqueta obligatoria.
  *
@@ -44,9 +44,9 @@ export function DeckView({ deck, onOpenSource, initialIndex = 0 }: DeckViewProps
   const shown = total > 0 ? Math.min(index, total - 1) : 0;
 
   const rootId = useId();
-  // El marco es ahora quien se desplaza cuando una diapositiva no cabe, y el desplazamiento no se
+  // El marco es quien se desplaza cuando una diapositiva no cabe, y el desplazamiento no se
   // reinicia solo: sin esto, pasar de una diapositiva larga a la siguiente la dejaría empezada por
-  // la mitad. `instant` y no suave a propósito, cambiar de diapositiva no es recorrerla.
+  // la mitad. `instant` y no suave: cambiar de diapositiva no es recorrerla.
   const marco = useRef<HTMLDivElement>(null);
   useEffect(() => {
     marco.current?.scrollTo({ top: 0, behavior: "instant" });

@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/shell/ThemeToggle";
  * El armazón del «making of». Deliberadamente más desnudo que la aplicación: aquí no hay nada que
  * operar, solo que leer. Una barra fina para volver, y nada más compitiendo con el texto.
  *
- * El fondo ya no es plano: cada acto tiene su tono, y el índice vive fijo al lado del capítulo.
+ * Cada acto tiene su tono de fondo, y el índice vive fijo al lado del capítulo.
  * Las dos cosas salen del mismo dato (el acto que cada capítulo ya declara) y las monta `Armazon`,
  * que necesita saber en qué ruta estamos.
  */

@@ -8,15 +8,15 @@ import { ACTOS, escrito, type Acto } from "@/lib/makingOf";
 export const metadata: Metadata = {
   title: "Cómo se construyó · Multimodal Presenter",
   description:
-    "Catorce capítulos sobre qué se construyó, por qué, y qué apareció al medirlo. Incluido lo que no funcionó.",
+    "Cómo está construida la aplicación y cómo se comporta por dentro, en diecisiete capítulos cortos.",
 };
 
 /**
  * El índice ES la versión corta.
  *
- * Cada capítulo lleva su conclusión en una línea, así que quien lea solo estas catorce líneas ya
- * se lleva la historia, y quien quiera entra. Es el progressive disclosure que la aplicación
- * aplica al contenido (resumen / detallado), aplicado aquí a su propio relato.
+ * Cada capítulo lleva su conclusión en una línea, así que quien lea solo esas líneas ya se lleva
+ * la idea, y quien quiera entra. Es la misma revelación progresiva que la aplicación aplica al
+ * contenido (resumido y detallado).
  */
 export default function IndiceMakingOf() {
   const actos = [...new Set(CAPITULOS.map((c) => c.acto))];
@@ -28,17 +28,17 @@ export default function IndiceMakingOf() {
         Cómo se construyó
       </h1>
       <p className="mt-5 max-w-[60ch] font-serif text-[1.0625rem] leading-[1.65] text-foreground-secondary">
-        Catorce capítulos sobre qué se construyó, por qué, y qué apareció al medirlo. Las cifras
-        salen de mediciones reales, no de estimaciones. El último capítulo es lo que no se hizo.
+        Cómo está construida la aplicación y cómo se comporta por dentro: de dónde sale cada
+        sección, cómo se vuelve a la fuente, qué genera aparte y qué hay alrededor. Para quien
+        tenga curiosidad por lo que pasa debajo de la pantalla.
       </p>
       <p className="mt-4 text-xs text-muted">
-        Cada capítulo lleva su conclusión debajo: leyendo solo esas líneas ya está la historia.
+        Cada capítulo lleva su conclusión debajo: leyendo solo esas líneas ya se tiene la idea general.
       </p>
 
-      {/* El árbol primero y la lista después, que es el mismo progressive disclosure que aplica
-          la aplicación: aquí está la forma entera de un vistazo (cinco actos, catorce capítulos,
-          cuál es más largo) y abajo cada uno con lo que concluye. Es lo único que se mueve solo en
-          esta página: se dibuja una vez al llegar y se acabó. */}
+      {/* El árbol primero y la lista después: arriba la forma entera de un vistazo y abajo cada
+          capítulo con lo que concluye. Es lo único que se mueve solo en esta página, y se dibuja
+          una vez al llegar. */}
       <div className="mt-10 rounded-xl border border-border bg-surface/60 px-5 py-4 sm:px-6">
         <Indice variante="portada" />
       </div>
@@ -91,7 +91,7 @@ function Seccion({ acto }: { acto: Acto }) {
                 {capitulo.conclusion}
               </p>
               <p className="ml-8 mt-1.5 text-xs text-muted">
-                {capitulo.hitos}
+                {capitulo.etapa}
                 {listo ? null : " · por escribir"}
               </p>
             </>
@@ -101,13 +101,10 @@ function Seccion({ acto }: { acto: Acto }) {
             <li key={capitulo.slug} className="border-b border-border last:border-b-0">
               {listo ? (
                 /*
-                 * Que se vea que esto se pulsa **sin pasar el ratón por encima**. Antes la fila
-                 * era un enlace sin ninguna marca: solo se enteraba quien ya lo sospechaba, y en
-                 * una pantalla táctil no se entera nadie.
-                 *
-                 * En reposo ya hay dos señales: el filo a la izquierda (la misma rama del árbol
-                 * de arriba) y el ángulo a la derecha. Al pasar por encima las dos se encienden en
-                 * acento y el título se subraya, que es lo que confirma lo que ya se intuía.
+                 * Que se vea que esto se pulsa sin pasar el ratón por encima, también en una
+                 * pantalla táctil. En reposo hay dos señales: el filo a la izquierda (la misma rama
+                 * del árbol de arriba) y el ángulo a la derecha. Al pasar por encima las dos se
+                 * encienden en acento y el título se subraya.
                  */
                 <Link
                   href={`/making-of/${capitulo.slug}`}

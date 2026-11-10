@@ -1,4 +1,4 @@
-"""Fixtures compartidas de los tests del pipeline (Hito 2)."""
+"""Fixtures compartidas de los tests del pipeline."""
 
 import copy
 import io
@@ -11,14 +11,14 @@ import pytest
 from pydantic_ai.models.test import TestModel
 
 # Evita que los tests envíen trazas a Logfire real (no contaminar el dashboard que se usará
-# para la telemetría del Hito 8). Debe ejecutarse antes de importar la app; conftest se
+# para la telemetría). Debe ejecutarse antes de importar la app; conftest se
 # carga antes que cualquier módulo de test. La app real (uvicorn) sí lee el token del .env.
 os.environ["LOGFIRE_TOKEN"] = ""
 os.environ["PYDANTIC_AI_NO_BANNER"] = "1"  # sin el banner de PydanticAI en la salida de tests
 
 # La persistencia vive en disco y la app migra al arrancar, así que levantar la app en un test
 # crearía la base REAL de quien corre los tests. Se apunta a una carpeta temporal de la sesión,
-# por el mismo motivo que se vacían las claves: un test no puede tocar datos de verdad.
+# por el mismo motivo que se vacían las claves: un test no puede tocar datos reales.
 # Se pone ANTES de importar la app, igual que el token de Logfire.
 os.environ["DATA_DIR"] = tempfile.mkdtemp(prefix="mmp-tests-")
 
@@ -28,7 +28,7 @@ os.environ["DATA_DIR"] = tempfile.mkdtemp(prefix="mmp-tests-")
 # cerrada responde 403 la cierra él mismo, con un ajuste propio.
 os.environ["REGISTRO_ABIERTO"] = "true"
 
-# Claves que el CI NO tiene y que la máquina del autor SÍ tiene en su `.env`.
+# Claves que el CI NO tiene y que una máquina de desarrollo SÍ puede tener en su `.env`.
 _CLAVES_DE_API = (
     "ANTHROPIC_API_KEY",
     "GOOGLE_API_KEY",
@@ -42,7 +42,7 @@ def sin_cuentas_acumuladas():
     """Vacía TODOS los contadores antes y después de cada test.
 
     Viven en memoria de su módulo, así que sobreviven de un test al siguiente y de un ARCHIVO al
-    siguiente: cinco fallos a propósito en los tests de login dejarían a los de la biblioteca sin
+    siguiente: cinco fallos provocados en los tests de login dejarían a los de la biblioteca sin
     poder registrar a nadie, y el fallo aparecería lejos de su causa.
 
     Se vacían por el registro de `limites` y no uno a uno: así un contador nuevo queda cubierto
@@ -60,13 +60,13 @@ def sin_cuentas_acumuladas():
 def sin_claves_reales(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch):
     """Vacía las claves de API en TODOS los tests que no sean de integración.
 
-    Por qué existe: el CI corre **sin ninguna clave** (decisión del Hito 0, se validan en
+    Por qué existe: el CI corre sin ninguna clave (se validan en
     runtime al construir el modelo, no al importar, y los tests mockean el LLM), pero la
-    máquina del autor sí las tiene en `backend/.env`. Esa asimetría deja pasar tests mal
-    mockeados: pasan en local y **fallan en el CI**. Con esta fixture, correr la suite en
+    máquina de desarrollo sí las tiene en `backend/.env`. Esa asimetría deja pasar tests mal
+    mockeados: pasan en local y fallan en el CI. Con esta fixture, correr la suite en
     local es idéntico a correrla en el CI, así que el fallo aparece donde se puede arreglar.
 
-    Pasó de verdad: un test de `/summary` esperaba un 415 del cuerpo del endpoint, pero
+    Ejemplo: un test de `/summary` esperaba un 415 del cuerpo del endpoint, pero
     FastAPI resuelve las dependencias ANTES de entrar a ese cuerpo, así que construía el
     modelo del adelanto con la clave real del `.env`. En el CI reventó.
 
@@ -74,7 +74,7 @@ def sin_claves_reales(request: pytest.FixtureRequest, monkeypatch: pytest.Monkey
     ponerlas vacías basta. Hay que limpiar la caché de `get_settings` (es `lru_cache`) antes y
     después, o el valor cacheado sobreviviría al parcheo.
 
-    Los tests marcados `integration` quedan EXENTOS: llaman a las APIs de verdad y las
+    Los tests marcados `integration` quedan EXENTOS: llaman a las APIs reales y las
     necesitan. Si un test nuevo falla por falta de clave, la pregunta correcta es si le falta
     un mock o si debería estar marcado como de integración.
     """
@@ -97,7 +97,7 @@ INPUT_TEXT = (
     "En 2023 las ventas fueron 100 y en 2024 fueron 150."
 )
 
-# Presentación válida contra el contrato del Hito 1, con quotes anclables al INPUT_TEXT.
+# Presentación válida contra el contrato de datos, con quotes anclables al INPUT_TEXT.
 _MOCK_PRESENTATION = {
     "title": "Crecimiento de la empresa",
     "sections": [
@@ -180,7 +180,7 @@ def png_bytes() -> bytes:
 def make_wav(seconds: float, rate: int = 8000) -> bytes:
     """WAV silencioso REAL de la duración pedida (stdlib `wave`, sin dependencias).
 
-    Se genera de verdad en vez de mockear la duración: así los tests del tope de duración
+    Se genera un archivo real en vez de mockear la duración: así los tests del tope de duración
     ejercitan la lectura real de la cabecera, igual que los de PDF usan magic bytes reales.
     """
     buffer = io.BytesIO()

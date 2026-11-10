@@ -1,21 +1,21 @@
 """Contrato público de la transformación, frontera backend↔frontend.
 
-Mantiene la disciplina tipada del Hito 1: la respuesta es un envelope Pydantic
+Mantiene la disciplina tipada de la presentación: la respuesta es un envelope Pydantic
 `{presentation, grounding}`, no un dict suelto. El estado de grounding viaja en el CUERPO
 (no solo en Logfire) porque el frontend lo necesita para la atribución de fuentes
-interactiva (Punto 4) y el anclaje del chat (Hito 6).
+interactiva y el anclaje del chat.
 
-Hito 4: el grounding distingue tres estados honestos según la fuente:
+El grounding distingue tres estados honestos según la fuente:
 - `verified`   → texto: la cita se encontró en el documento (offsets calculados).
 - `not_found`  → texto: se verificó y la cita NO está (warning real de fabricación).
 - `unverified` → PDF/imagen/audio: no se puede verificar por substring sin aplanar la fuente
-  (contra el principio rector); queda pendiente la verificación por página/región (Hito 5).
+  (contra el principio rector); queda pendiente la verificación por página/región.
 
-Audio (A1): el estado honesto es `unverified`, el MISMO de PDF/imagen, y a propósito no se
+Audio: el estado honesto es `unverified`, el MISMO de PDF/imagen, y deliberadamente no se
 añade un cuarto estado. La cita de una sección generada desde audio proviene de la
-transcripción que hizo el modelo de percepción (Fase 0) ( un derivado aplanado de la señal ),
+transcripción que hizo el modelo de percepción (Fase 0), un derivado aplanado de la señal,
 así que encontrarla ahí no verifica nada contra el audio: sería verificar contra el derivado y
-presentarlo como verificación de la fuente, justo la sobre-afirmación que eliminó el Hito 8A.1.
+presentarlo como verificación de la fuente, una sobre-afirmación.
 Lo que sí se aporta es `SectionGrounding.start_s`, el análogo de `page`: lleva al momento del
 audio, sin afirmar que el contenido quedó verificado.
 """
@@ -61,16 +61,16 @@ class RegionBox(_Strict):
 class CitedRegion(_Strict):
     """Dónde está la cita DENTRO de la página citada. Un recuadro por renglón.
 
-    Sube el PDF de fidelidad de PÁGINA (5c: "te llevo a la página 7") a fidelidad de REGIÓN. Es
+    Sube el PDF de fidelidad de PÁGINA ("te llevo a la página 7") a fidelidad de REGIÓN. Es
     el cuarto nivel del mismo esquema honesto que ya usan el texto (offsets exactos) y el audio
-    (momento, A1).
+    (momento).
 
-    **No existe el valor "página" aquí**, y es deliberado: la fidelidad de página es la AUSENCIA
+    No existe el valor "página" aquí, y es deliberado: la fidelidad de página es la AUSENCIA
     del campo (`region = None`). Así el estado contradictorio ("solo sé la página" pero con
     recuadros dentro) no se puede ni representar, y un cliente que ignore el campo se comporta
     exactamente como antes de que existiera.
 
-    **Localizar no es verificar** (mismo criterio que `start_s` en audio): encontrar la cita en la
+    Localizar no es verificar (mismo criterio que `start_s` en audio): encontrar la cita en la
     capa de texto NO cambia `GroundingStatus`, que sigue siendo `unverified` para PDF. Lo que se
     gana es poder señalar dónde mirar, no una afirmación de que el contenido quedó verificado.
     """
@@ -84,7 +84,7 @@ class CitedRegion(_Strict):
     quality: Literal["exact", "approximate"]
     """`exact`: la cita está literal (salvo variantes tipográficas y de espaciado).
     `approximate`: se halló un pasaje muy parecido; el recuadro señala una zona, no la frase. La
-    UI debe decirlo: marcar como exacto algo aproximado sería la sobre-afirmación del 8A.1."""
+    UI debe decirlo: marcar como exacto algo aproximado sería una sobre-afirmación."""
 
     boxes: list[RegionBox] = Field(min_length=1)
 
@@ -114,15 +114,15 @@ class GroundingReport(_Strict):
     sections: list[SectionGrounding]
     total_sections: int = Field(ge=0)
     verified_sections: int = Field(ge=0)
-    unverified_sections: int = Field(ge=0)  # PDF/imagen: pendiente de verificación (Hito 5)
+    unverified_sections: int = Field(ge=0)  # PDF/imagen: pendiente de verificación
     not_found_sections: int = Field(ge=0)  # texto: cita no anclable al documento
 
-    # Hito 8: el grounding se endureció. (1) Matching robusto (canonicalización de puntuación)
+    # Grounding endurecido: (1) matching robusto (canonicalización de puntuación)
     # reduce los `not_found` falsos → más contenido trazable. (2) El `not_found` verdadero ya NO
     # es un warning blando: el frontend lo pone en AVISO visible y le quita el botón de fuente
     # (no se finge una cita que no ancla), coherente con el chat. No se descarta la sección
     # (dejaría el contenido incompleto): se avisa con honestidad.
-    # TODO(Hito5): VERIFICACIÓN por página/región para PDF/imagen (hoy `unverified`). Ojo con la
+    # TODO: VERIFICACIÓN por página/región para PDF/imagen (hoy `unverified`). Ojo con la
     # distinción: la localización por región ya existe (ver `CitedRegion`), pero localizar no es
     # verificar: el estado no cambia por encontrar la cita en la capa de texto. Lo que sigue
     # abierto es poder afirmar que el contenido quedó verificado contra la fuente binaria.
@@ -136,7 +136,7 @@ class SemanticObservation(_Strict):
 class SemanticCoherenceReport(_Strict):
     """Coherencia semántica contenido↔fuente (Fase 3, nivel LLM).
 
-    Interfaz real ya cableada por el pipeline; hoy no-op. TODO(Hito2.1): implementar.
+    Interfaz real ya cableada por el pipeline; hoy no-op. TODO: implementar.
     """
 
     observations: list[SemanticObservation] = Field(default_factory=list)
@@ -147,7 +147,7 @@ class SemanticCoherenceReport(_Strict):
 
 
 class ChartNote(_Strict):
-    """Nota determinista sobre un gráfico tras la regla de isomorfismo (Hito 5a).
+    """Nota determinista sobre un gráfico tras la regla de isomorfismo.
 
     - `corrected`: el tipo se corrigió a uno admisible según la forma de los datos.
     - `degraded`: no había gráfico válido; la sección se muestra como tabla.
@@ -175,13 +175,13 @@ class TransformResponse(_Strict):
 
 
 class SummaryResponse(_Strict):
-    """Adelanto inicial del contenido (Hito 5g), separado de la presentación completa."""
+    """Adelanto inicial del contenido, separado de la presentación completa."""
 
     summary: str
 
 
 class NarrationRequest(_Strict):
-    """Petición de narración (Hito 5g Parte 3): la presentación ya generada (sus núcleos).
+    """Petición de narración: la presentación ya generada (sus núcleos).
 
     No modifica el contrato: solo transporta una `Presentation` existente al endpoint de audio.
     """
@@ -190,7 +190,7 @@ class NarrationRequest(_Strict):
 
 
 class ImageExplanationResponse(_Strict):
-    """Explicación bajo demanda de una imagen real del documento (Hito 5h Parte 3)."""
+    """Explicación bajo demanda de una imagen real del documento."""
 
     explanation: str
 
@@ -202,7 +202,7 @@ class TranscriptionResponse(_Strict):
 
 
 class IllustrationsRequest(_Strict):
-    """Petición de ilustraciones de apoyo (Hito 5h Parte 1): la presentación ya generada."""
+    """Petición de ilustraciones de apoyo: la presentación ya generada."""
 
     presentation: Presentation
 
@@ -223,14 +223,13 @@ class IllustrationsResponse(_Strict):
 PapelDeSlide = Literal["apertura", "afirmacion", "dato", "comparacion", "cita", "figura", "cierre"]
 """Qué hace una diapositiva, y por tanto qué forma tiene.
 
-Antes no existía: una diapositiva traía título, cuerpo, viñetas e imagen, y la composición se
-deducía de cuál de esos campos venía lleno. Con ese vocabulario solo podía salir una cosa, prosa
-en cajas, y por eso la presentación parecía el documento transformado otra vez en vez de una
-presentación. Un deck de verdad varía: abre planteando algo, enseña una cifra sola, pone dos cosas
-una al lado de la otra, deja hablar al documento, cierra.
+Sin este campo, una diapositiva solo trae título, cuerpo, viñetas e imagen, y la composición se
+deduce de cuál de esos campos viene lleno. Con ese vocabulario solo puede salir prosa en cajas, y
+la presentación parece el documento transformado otra vez. Un deck varía: abre planteando algo,
+enseña una cifra sola, pone dos cosas una al lado de la otra, deja hablar al documento, cierra.
 
 `dato` y `cita` además OBLIGAN el anclaje, y eso no es decorativo: una cifra sacada del documento
-y una frase textual son justo lo que tiene que poder comprobarse. El rediseño sube, por
+y una frase textual son justo lo que tiene que poder comprobarse. Esto sube, por
 construcción, la parte de la presentación que se puede verificar contra la fuente.
 """
 
@@ -255,13 +254,12 @@ EvidenciaVisual = Annotated[
 ]
 """Lo que SOSTIENE la afirmación de una diapositiva, cuando no es texto.
 
-Son los mismos tipos que ya usa el contenido del documento, a propósito: la aplicación sabe
+Son los mismos tipos que ya usa el contenido del documento: la aplicación sabe
 dibujarlos, están validados y, en el caso del gráfico, pasan por la misma regla de isomorfismo. No
 hay un renderizador nuevo ni un contrato paralelo.
 
-Existe porque faltaba la otra mitad del modelo que esto sigue. Una diapositiva es una afirmación
-sostenida por EVIDENCIA, y la evidencia es visual; poner un párrafo debajo de la afirmación deja
-la misma perspectiva que el documento, solo que más corta. Esa era la queja, y era correcta.
+Una diapositiva es una afirmación sostenida por EVIDENCIA, y la evidencia es visual; poner un
+párrafo debajo de la afirmación deja la misma perspectiva que el documento, solo que más corta.
 
 `TextContent` queda fuera de la unión aunque sea del mismo grupo: el texto ya tiene su sitio en
 `body`, y dos maneras de decir lo mismo son dos sitios donde mirar.
@@ -274,7 +272,7 @@ class GeneratedSlide(_Strict):
     Trazabilidad por slide (mix honesto): `source` + `grounding` si se ancló a una cita del
     documento; `is_synthesis=True` si es una simplificación declarada (sin cita exacta); el raro
     `not_found` si el modelo diera una cita inexistente. `illustration` (opcional) reusa el tipo
-    del 5h con su etiqueta obligatoria.
+    de las ilustraciones con su etiqueta obligatoria.
     """
 
     papel: PapelDeSlide = "afirmacion"
@@ -283,7 +281,7 @@ class GeneratedSlide(_Strict):
         max_length=16,
         description="Solo `dato`: la cifra tal como se muestra, con su unidad. Ej: «80 km».",
     )
-    """Corta a propósito. Una diapositiva `dato` existe para que se vea UN número desde el fondo
+    """Corta deliberadamente. Una diapositiva `dato` existe para que se vea UN número desde el fondo
     de la sala; si cupiera una frase, dejaría de ser un dato y sería una afirmación."""
     comparacion: Comparacion | None = None
     evidencia: EvidenciaVisual | None = None
@@ -294,7 +292,7 @@ class GeneratedSlide(_Strict):
     grounding: GroundingStatus = "not_found"
     start_s: float | None = Field(default=None, ge=0)
     """Solo audio: momento del que viene la cita, igual que en `SectionGrounding` y en la
-    respuesta del chat. Sin esto, abrir la fuente desde una diapositiva arrancaba el reproductor
+    respuesta del chat. Sin esto, abrir la fuente desde una diapositiva arrancaría el reproductor
     en 0:00 en vez de en la cita: una inconsistencia entre vistas del mismo documento."""
     region: CitedRegion | None = None
     """Solo PDF: dónde está la cita dentro de la página, igual que en `SectionGrounding`. Sin
@@ -322,7 +320,7 @@ class GeneratedDeck(_Strict):
     slides: list[GeneratedSlide] = Field(min_length=1)
 
 
-# --- Eventos SSE del endpoint /transform/stream (Hito 5d) ---
+# --- Eventos SSE del endpoint /transform/stream ---
 # Cada `Section` streameada es indistinguible en forma de una del contrato no-streaming.
 
 
@@ -361,7 +359,7 @@ class StreamStart(_Strict):
 class StreamSection(_Strict):
     type: Literal["section"] = "section"
     section: Section
-    grounding: SectionGrounding  # entrada por sección (para 5c en vivo)
+    grounding: SectionGrounding  # entrada por sección (resaltado en vivo)
     chart_note: ChartNote | None = None
 
 

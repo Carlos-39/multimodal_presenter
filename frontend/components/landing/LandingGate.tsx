@@ -10,7 +10,7 @@ import { recuerdaLaVisita } from "./recuerdo";
  *
  * El servidor ya decidió que a esta visita le toca portada (ver `app/page.tsx`), así que el primer
  * render del cliente es el mismo y no hay desajuste de hidratación. Al entrar se monta la
- * aplicación **aquí mismo**, sin navegar: ya estamos en `/`, que es su dirección, y una
+ * aplicación aquí mismo, sin navegar: ya estamos en `/`, que es su dirección, y una
  * navegación solo pediría la página otra vez para acabar en el mismo sitio.
  *
  * La portada tiene además su dirección propia en `/inicio`, que es a donde se vuelve desde la

@@ -8,8 +8,8 @@ import { useEnPantalla } from "@/hooks/useEnPantalla";
  * De dónde sale y en qué se convierte.
  *
  * El dibujo es propio, con los tokens: sigue al tema claro y oscuro sin dos versiones, y no es
- * una captura de nada. Las líneas se dibujan al entrar en pantalla porque **el recorrido es el
- * contenido**: cuatro formatos distintos entran por el mismo sitio y salen como lo mismo. Una
+ * una captura de nada. Las líneas se dibujan al entrar en pantalla porque el recorrido es el
+ * contenido: cuatro formatos distintos entran por el mismo sitio y salen como lo mismo. Una
  * imagen fija lo diría; dibujarse lo explica.
  */
 const ENTRADAS = [
@@ -32,7 +32,7 @@ export function ComoFunciona() {
    * El recorrido: `-1` antes de empezar, `0..3` una entrada encendida cada vez, y al llegar a `4`
    * se encienden las cuatro y se queda ahí.
    *
-   * **Termina.** La sección defiende que metas lo que metas sale lo mismo, y encender las cuatro
+   * Termina. La sección defiende que metas lo que metas sale lo mismo, y encender las cuatro
    * entradas una a una contra las mismas tres salidas ES esa frase. Un bucle eterno la diría una
    * vez y después solo pediría atención; dejando las cuatro encendidas al final, el estado de
    * reposo del dibujo es la conclusión.

@@ -7,12 +7,12 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
  * "cómo ver" el contenido (vista y nivel de detalle), para que se lean como la misma familia.
  * `value` puede no coincidir con ninguna opción (nada seleccionado).
  *
- * **El fondo de la opción activa se desliza en vez de saltar**, y al hacerlo se estira: el borde
+ * El fondo de la opción activa se desliza en vez de saltar, y al hacerlo se estira: el borde
  * que va delante llega primero y el de atrás lo alcanza. No es adorno, un salto no dice de dónde
  * vienes, y aquí el gesto conecta las dos opciones. Mismo criterio que la lámina del carrusel, que
  * entra por el lado del que vienes.
  *
- * **La posición del pulgar se escribe en el DOM, no en estado de React.** Es un elemento puramente
+ * La posición del pulgar se escribe en el DOM, no en estado de React. Es un elemento puramente
  * visual: meterlo en estado forzaría un render por cada paso del estirón sin que cambie nada del
  * árbol. Y de paso respeta la regla de pureza del proyecto, que prohíbe `setState` síncrono en un
  * efecto: que es justo donde hay que medir.
@@ -23,7 +23,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
  *
  * Con «reducir movimiento» el pulgar salta: sigue marcando lo activo, sin recorrido.
  *
- * **Lo activo va en acento, pero el pulgar sigue siendo papel.** Rellenarlo de azul lo convertiría
+ * Lo activo va en acento, pero el pulgar sigue siendo papel. Rellenarlo de azul lo convertiría
  * en un botón, y el azul relleno ya significa otra cosa en esta aplicación: la acción principal
  * («Generar presentación», «Nueva»). Esto no se pulsa para que pase algo, se pulsa para mirar otra
  * cosa. Dejar el pulgar claro con el borde y la palabra en acento tiene además una ventaja de
@@ -53,8 +53,8 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
   const recoger = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   /**
    * Hay un estirón a medias. Lo mira el `ResizeObserver` para no pisarlo: al activarse, el botón
-   * gana `font-medium` y **cambia de ancho**, lo que dispara el observador, que recolocaba el
-   * pulgar al instante y se comía la animación entera.
+   * gana `font-medium` y cambia de ancho, lo que dispara el observador, que recolocaría el
+   * pulgar al instante y se comería la animación entera.
    */
   const enVuelo = useRef(false);
 
@@ -98,7 +98,7 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
     enVuelo.current = true;
     recoger.current = setTimeout(() => {
       // Se vuelve a MEDIR en vez de usar lo capturado: para cuando toca recoger, el botón ya es
-      // el activo y engordó con `font-medium`. Con la medida vieja el pulgar quedaba corto.
+      // el activo y engordó con `font-medium`. Con la medida vieja el pulgar quedaría corto.
       const final = { left: el.offsetLeft, width: el.offsetWidth };
       anterior.current = final;
       marco.style.left = `${final.left}px`;

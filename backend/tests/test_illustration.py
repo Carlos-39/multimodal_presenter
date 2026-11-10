@@ -1,4 +1,4 @@
-"""Tests de las ilustraciones de apoyo generadas (Hito 5h Parte 1), con Haiku e imagen mockeados."""
+"""Tests de las ilustraciones de apoyo generadas, con Haiku e imagen mockeados."""
 
 import asyncio
 import base64

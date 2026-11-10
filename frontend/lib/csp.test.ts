@@ -68,7 +68,6 @@ describe("las dos políticas", () => {
   it("reparte las rutas por lo que cada una maneja", () => {
     expect(esDeLaAplicacion("/")).toBe(true);
     expect(esDeLaAplicacion("/biblioteca")).toBe(true);
-    expect(esDeLaAplicacion("/galeria")).toBe(true);
     expect(esDeLaAplicacion("/inicio")).toBe(false);
     expect(esDeLaAplicacion("/making-of")).toBe(false);
     expect(esDeLaAplicacion("/making-of/contrato")).toBe(false);

@@ -1,7 +1,7 @@
 /**
  * Qué se vuelve a procesar en cada turno del chat, y qué no.
  *
- * **Las dos barras son del mismo ancho a propósito.** Lo que entra al modelo es idéntico en los
+ * Las dos barras tienen el mismo ancho. Lo que entra al modelo es idéntico en los
  * dos turnos (el documento completo va siempre), y esa es justamente la decisión que el capítulo
  * defiende. Lo único que cambia es el color del tramo grande: en el primer turno se escribe en
  * caché, del segundo en adelante se lee. Si la segunda barra fuera más corta, el dibujo diría que
@@ -11,10 +11,9 @@
  */
 const TOTAL = 3253;
 const DOC = 3223;
-// La barra no llega al borde: el tramo de la pregunta mide 4 px (porque a escala ESO es lo que
-// mide) y su rótulo necesita vivir fuera. Estirarla hasta el borde cortaba los rótulos; agrandar
-// el tramo de la pregunta para que cupiera el texto dentro habría mentido sobre la proporción,
-// que es justo lo que la figura existe para enseñar.
+// La barra no llega al borde: el tramo de la pregunta mide 4 px a escala y su rótulo necesita
+// espacio fuera. Agrandar el tramo para meter el texto dentro falsearía la proporción, que es lo
+// que la figura enseña.
 const ANCHO = 404;
 const X0 = 108;
 

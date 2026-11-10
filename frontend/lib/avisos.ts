@@ -6,7 +6,7 @@
  * que, si se pierde, como mucho enseña una pista de más.
  *
  * Todo entre `try`/`catch` porque en modo privado, con el almacenamiento bloqueado o en una
- * ventana sin permisos, **leer ya lanza**. Si no se puede recordar, se decide no volver a enseñar:
+ * ventana sin permisos, leer ya lanza. Si no se puede recordar, se decide no volver a enseñar:
  * molestar en cada carga es peor que no avisar nunca.
  */
 const PREFIJO = "mmp_visto_";

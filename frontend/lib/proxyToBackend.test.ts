@@ -34,7 +34,7 @@ describe("cabecerasHaciaElBackend", () => {
     const h = cabecerasHaciaElBackend(
       peticion({ "content-type": "text/plain", cookie: "mmp_sesion=a", "x-forwarded-for": "1.2.3.4" }),
     );
-    // `content-length` es el caso que de verdad muerde: copiado de la petición de entrada deja al
+    // `content-length` es el caso delicado: copiado de la petición de entrada deja al
     // backend esperando un cuerpo de otro tamaño que el que le llega.
     expect(h.has("content-length")).toBe(false);
     expect(h.has("host")).toBe(false);

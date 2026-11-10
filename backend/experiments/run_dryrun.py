@@ -1,4 +1,4 @@
-"""Dry run del Hito 7: 4 condiciones × 1 documento × 6 preguntas + juez Haiku.
+"""Dry run del experimento: 4 condiciones × 1 documento × 6 preguntas + juez Haiku.
 
 Objetivo: validar el pipeline de punta a punta y medir el COSTO REAL (no estimado) para decidir
 si escalar. Registra cada corrida en JSONL (trazable) y proyecta el costo de la versión reducida
@@ -79,13 +79,13 @@ async def main() -> None:
     await graph.build(transcription, per_page)
 
     # Voyage multimodal (condición 2): el tier gratis SIN tarjeta limita a 3 RPM / 10K TPM, lo que
-    # bloquea los embeddings de imágenes de página. Se reporta como hallazgo y se continúa con las
+    # bloquea los embeddings de imágenes de página. Se reporta y se continúa con las
     # otras 3 condiciones si falla.
     vector = VoyagePageIndex()
     vector_available = True
     try:
         await vector.index(pdf)
-    except Exception as exc:  # noqa: BLE001 (HALLAZGO, no se oculta)
+    except Exception as exc:  # noqa: BLE001 (el fallo se reporta, no se oculta)
         vector_available = False
         print(
             f"  [BLOQUEADO] Voyage multimodal (vector_rag): {type(exc).__name__}: {str(exc)[:160]}"
@@ -137,7 +137,7 @@ async def main() -> None:
                 correctness, judge_usage = await judge_answer(
                     q.question, q.reference_answer, answer
                 )
-            except Exception as exc:  # noqa: BLE001 (un fallo es un HALLAZGO, se registra)
+            except Exception as exc:  # noqa: BLE001 (un fallo se registra)
                 agg[cond]["errors"] += 1
                 print(f"  [ERROR] {cond} / {q.id}: {type(exc).__name__}: {exc}")
                 append_jsonl(

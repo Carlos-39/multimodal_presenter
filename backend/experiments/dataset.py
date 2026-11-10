@@ -1,8 +1,8 @@
-"""Dataset PROVISIONAL del dry run (Hito 7), NO es ground truth validado.
+"""Dataset PROVISIONAL del dry run, NO es ground truth validado.
 
 Preguntas sobre "Attention Is All You Need" (arXiv 1706.03762) para validar el pipeline y medir
 costo. Las respuestas de referencia y las páginas de evidencia son un mejor-esfuerzo y DEBEN ser
-validadas a mano antes de cualquier corrida con valor de tesis
+validadas a mano antes de cualquier corrida cuyos resultados se vayan a reportar
 (el experimento completo usa su dataset validado). Categorías: factual_1hop, multi_hop,
 aggregation, visual, unanswerable.
 """

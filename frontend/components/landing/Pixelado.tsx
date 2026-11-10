@@ -5,18 +5,16 @@ import { useEffect, useRef } from "react";
 /**
  * Una trama de píxeles que aparece al pasar por encima de la sección y se va al salir.
  *
- * **Solo al señalar.** La primera versión florecía sola al llegar y se quedaba puesta, y estaba
- * mal por dos motivos: en modo claro la trama competía con el texto justo mientras se lee, y una
- * sección que se decora sola convierte en decorado lo que es el argumento del proyecto. Así solo
- * aparece si alguien la señala, y desaparece al irse, que es lo que hacía el componente del que
- * sale esto y yo había cambiado sin necesidad.
+ * Solo al señalar. Si apareciera sola al llegar y se quedara puesta, en modo claro la trama
+ * competiría con el texto justo mientras se lee, y una sección que se decora sola convierte en
+ * decorado lo que es el argumento del proyecto. Por eso solo aparece si alguien la señala, y
+ * desaparece al irse.
  *
- * **El píxel va en la tinta del texto, no en el acento.** En claro son puntos oscuros sobre papel
+ * El píxel va en la tinta del texto, no en el acento. En claro son puntos oscuros sobre papel
  * claro; en oscuro, claros sobre papel oscuro. La trama es siempre lo contrario del papel, que es
  * de donde sale el contraste: y de paso no gasta el azul, que ya trabaja en el héroe.
  *
- * **El retardo de cada píxel es su distancia al centro**, así que la trama se abre como una onda.
- * Esa idea es de la referencia y es la buena.
+ * El retardo de cada píxel es su distancia al centro, así que la trama se abre como una onda.
  *
  * Al salir se recoge y, cuando el último llega a cero, el bucle se cancela: no queda nada
  * corriendo detrás. Con «reducir movimiento» aparece y desaparece de una vez, sin onda.
@@ -36,9 +34,8 @@ type Punto = { x: number; y: number; max: number; tam: number; espera: number; p
 /**
  * Medio hueco libre de puntos, en px, a cada lado del centro.
  *
- * Son los 24rem de la columna de texto (`max-w-3xl`) más un dedo de aire. Antes el hueco era un
- * óvalo, y un óvalo no encaja con una columna: por arriba y por abajo la trama volvía a meterse
- * donde hay renglones. Una banda recta sí, porque es la forma que tiene el texto.
+ * Son los 24rem de la columna de texto (`max-w-3xl`) más un dedo de aire. Un óvalo no encajaría
+ * con una columna: por arriba y por abajo la trama volvería a meterse donde hay renglones. Una banda recta sí, porque es la forma que tiene el texto.
  */
 const HUECO = 464; // 29rem
 
@@ -88,7 +85,7 @@ export function Pixelado({ paso = 15, lado = 3 }: PixeladoProps) {
       for (let x = 0; x < w; x += paso) {
         for (let y = 0; y < h; y += paso) {
           // Dentro del hueco de la máscara no se siembra. La máscara es CSS y solo OCULTA: el
-          // lienzo seguía pintando ahí, y eso era trabajo que nadie llegaba a ver. El límite es
+          // lienzo seguiría pintando ahí, trabajo que nadie llega a ver. El límite es
           // el mismo que usa el degradado.
           if (Math.abs(x - cx) < HUECO) continue;
           const d = Math.hypot(x - cx, y - cy) / lejos;
@@ -143,7 +140,7 @@ export function Pixelado({ paso = 15, lado = 3 }: PixeladoProps) {
       };
       if (raf) cancelAnimationFrame(raf);
       // El primer fotograma, ya: colgar el dibujo de un rAF significa que donde el navegador no
-      // lo dispare no aparecería nunca. Misma lección que la mecha.
+      // lo dispare no aparecería nunca.
       marco(t0);
     };
 
@@ -200,8 +197,7 @@ export function Pixelado({ paso = 15, lado = 3 }: PixeladoProps) {
      * hasta que no se note.
      *
      * Va aquí, en la CAPA, y no en la sección: una máscara recorta al elemento y a todos sus
-     * hijos, así que puesta arriba se comería el texto. Ya me pasó con la rejilla de los fondos y
-     * con los anillos del héroe.
+     * hijos, así que puesta arriba se comería el texto.
      */
     <div
       ref={caja}

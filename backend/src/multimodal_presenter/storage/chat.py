@@ -1,21 +1,19 @@
 """Historial de chat de una presentación guardada.
 
-Cierra el pendiente declarado en el Hito 6: hasta ahora la conversación vivía solo en memoria del
-navegador y se perdía al recargar, con la nota de que "el futuro login traerá su modelo de sesión
-y ESE hito reemplaza este almacenamiento". Este es ese hito.
+Sin esto, la conversación vive solo en memoria del navegador y se pierde al recargar.
 
 Dos decisiones que son el fondo del módulo:
 
-**El historial se ata a la PRESENTACIÓN, no al usuario+documento.** Las respuestas del chat están
+El historial se ata a la PRESENTACIÓN, no al usuario+documento. Las respuestas del chat están
 ancladas a `section_id` concretos de *esa* generación. Atado al documento, volver a transformarlo
 dejaría el historial apuntando a secciones que ya no existen: citas colgando de nada.
 
-**Se reemplaza entero, no se añade turno a turno.** Lo guardado es siempre una foto de lo que se
+Se reemplaza entero, no se añade turno a turno. Lo guardado es siempre una foto de lo que se
 está viendo, así que no puede derivar. Añadiendo, un reintento duplicaría un turno y una petición
 perdida dejaría un hueco: y un historial con huecos es peor que no tenerlo, porque parece
 completo.
 
-Como en el resto de la biblioteca, **toda consulta filtra por usuario**. No hay una función que
+Como en el resto de la biblioteca, toda consulta filtra por usuario. No hay una función que
 lea el historial "de una presentación" a secas.
 """
 

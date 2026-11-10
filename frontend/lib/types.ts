@@ -13,7 +13,7 @@
 export type SectionRole = "core" | "satellite";
 export type ChartType = "line" | "bar" | "pie" | "scatter";
 
-/** Estado del adelanto inicial (Hito 5g): sin pedir, en curso, listo o fallido. */
+/** Estado del adelanto inicial: sin pedir, en curso, listo o fallido. */
 export type SummaryStatus = "idle" | "loading" | "done" | "error";
 
 export interface SourceReference {
@@ -69,7 +69,7 @@ export type SectionContent =
   | ChartContent;
 
 /**
- * Ilustración de apoyo GENERADA (Hito 5h Parte 1). NO es contenido trazable: no tiene `source` ni
+ * Ilustración de apoyo GENERADA. NO es contenido trazable: no tiene `source` ni
  * estado de grounding. Siempre se muestra con su etiqueta permanente.
  */
 export interface GeneratedIllustration {
@@ -103,9 +103,9 @@ export interface Section {
 /**
  * Qué hace una diapositiva, y por tanto qué forma tiene.
  *
- * Antes la composición se deducía de qué campos venían llenos: con imagen al lado, con viñetas en
- * lista, y si no, texto centrado. Tres formas para catorce láminas, y por eso la presentación
- * parecía el documento troceado en cajas en vez de una presentación.
+ * Deducir la composición de qué campos vienen llenos (con imagen al lado, con viñetas en lista,
+ * y si no, texto centrado) da tres formas para catorce láminas, y la presentación parece el
+ * documento troceado en cajas en vez de una presentación.
  */
 export type PapelDeSlide =
   | "apertura"
@@ -192,8 +192,8 @@ export interface RegionBox {
 /** Dónde está la cita DENTRO de la página citada. Un recuadro por renglón.
  *
  * No existe un valor "página" aquí: la fidelidad de página (lo de siempre, llevar a la página sin
- * señalar dentro) es la AUSENCIA de este objeto. `approximate` obliga a decirlo en la interfaz, 
- * marcar como exacto algo aproximado sería la sobre-afirmación que eliminó el Hito 8A.1. */
+ * señalar dentro) es la AUSENCIA de este objeto. `approximate` obliga a decirlo en la interfaz:
+ * marcar como exacto algo aproximado sería una sobre-afirmación. */
 export interface CitedRegion {
   /** Página en la que están los recuadros. NO se da por supuesto que sea la de la cita: si el
    * modelo erró el número y la frase estaba en una página vecina, los recuadros son de esa. */
@@ -225,11 +225,11 @@ export interface GroundingReport {
   sections: SectionGrounding[];
   total_sections: number;
   verified_sections: number;
-  unverified_sections: number; // PDF/imagen: pendiente de verificación (Hito 5)
+  unverified_sections: number; // PDF/imagen: pendiente de verificación
   not_found_sections: number; // texto: cita no encontrada = warnings reales
 }
 
-/** Nota determinista sobre un gráfico tras la regla de isomorfismo (Hito 5a). */
+/** Nota determinista sobre un gráfico tras la regla de isomorfismo. */
 export interface ChartNote {
   section_id: string;
   kind: "corrected" | "degraded";
@@ -257,7 +257,7 @@ export interface TransformResponse {
   audio_evidence: string | null;
 }
 
-/** Eventos SSE de POST /transform/stream (Hito 5d). */
+/** Eventos SSE de POST /transform/stream. */
 export type StreamEvent =
   /**
    * Solo audio: lo que la fase de percepción oyó, emitido ANTES del título. Llega durante los
@@ -282,7 +282,7 @@ export type StreamEvent =
     }
   | { type: "error"; message: string };
 
-// ── Chat anclado a fuentes (Hito 6) ──
+// ── Chat anclado a fuentes ──
 
 /** Un turno del historial (vive en el estado del frontend; no se persiste). */
 export interface ChatTurn {

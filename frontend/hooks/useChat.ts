@@ -12,17 +12,14 @@ import type {
 } from "@/lib/types";
 
 /**
- * Punto ÚNICO de la responsabilidad "chat" en el frontend (Hito 6): historial de sesión,
- * streaming de cada turno y caché/prefetch de preguntas sugeridas.
+ * Punto ÚNICO de la responsabilidad "chat" en el frontend: historial de sesión, streaming de
+ * cada turno y caché/prefetch de preguntas sugeridas.
  *
- * El historial ya NO se pierde al recargar. La nota que había aquí decía que vivía solo en memoria
- * "hasta que exista login, y ESE hito reemplaza este almacenamiento"; el hito del login llegó y
- * esto es su parte. Haberlo tenido aislado en un hook es lo que hizo el cambio local: el hook
- * avisa de cada turno terminado y `page` decide si hay dónde guardarlo.
+ * El historial no se pierde al recargar si hay cuenta: el hook avisa de cada turno terminado y
+ * `page` decide si hay dónde guardarlo.
  *
- * Quién persiste y quién no está repartido así a propósito: este hook no sabe que existen cuentas
- * ni presentaciones guardadas. Sin cuenta nadie escucha el aviso y el chat se comporta igual que
- * antes, que es lo que exigen las sesiones de evaluación del Hito 8.
+ * Este hook no sabe que existen cuentas ni presentaciones guardadas. Sin cuenta nadie escucha el
+ * aviso y el chat funciona igual, sin login.
  *
  * Lo que NO se guarda, y es deliberado: los turnos que fallaron (un error de red no es parte de la
  * conversación) y las preguntas sugeridas (son una invitación, se vuelven a pedir y son baratas).
@@ -164,10 +161,10 @@ export function useChat(
         // es correcto. Quien escuche decide si hay dónde guardarlo; sin cuenta, nadie escucha.
         alTerminarTurno?.(guardableRef.current);
       } catch (error) {
-        // El comodín NO puede tragarse la causa. Antes, cualquier cosa que no fuera un `Error`
-        // (una `DOMException` de un navegador que corta el streaming, por ejemplo) salía como
-        // «La generación se interrumpió» a secas, y entonces el fallo no se puede diagnosticar ni
-        // con los registros del servidor delante: no se sabe siquiera si llegó a haber petición.
+        // El comodín NO puede tragarse la causa. Si cualquier cosa que no fuera un `Error`
+        // (una `DOMException` de un navegador que corta el streaming, por ejemplo) saliera como
+        // «La generación se interrumpió» a secas, el fallo no se podría diagnosticar ni con los
+        // registros del servidor delante: no se sabría siquiera si llegó a haber petición.
         const detalle = error instanceof Error ? error.message : String(error ?? "");
         const message = detalle.trim()
           ? detalle

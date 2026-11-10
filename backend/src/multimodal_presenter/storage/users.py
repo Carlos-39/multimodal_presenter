@@ -1,6 +1,6 @@
 """Cuentas y sesiones.
 
-**Autenticación de PROTOTIPO, y conviene decirlo con esas palabras.** Lleva lo que no se puede
+Autenticación de PROTOTIPO, y conviene decirlo con esas palabras. Lleva lo que no se puede
 omitir sin que sea una irresponsabilidad (hash moderno de contraseña, cookie `HttpOnly`, sesiones
 revocables) y no lleva verificación de correo, recuperación de contraseña, segundo factor ni
 límite de intentos. Es una decisión de alcance declarada, no un olvido.
@@ -43,9 +43,9 @@ def _normaliza_email(email: str) -> str:
 def valida_email(email: str) -> str:
     """Comprobación deliberadamente simple, no RFC-5322.
 
-    Validar correos de verdad es un problema sorprendentemente difícil y la biblioteca que lo
-    hace bien consulta DNS por defecto, lo que fallaría sin conexión, justo en una sesión de
-    evaluación. Para un prototipo, lo que importa es que haya una arroba y algo a cada lado.
+    Validar correos a fondo es un problema sorprendentemente difícil y la biblioteca que lo
+    hace bien consulta DNS por defecto, lo que fallaría sin conexión. Para un prototipo, lo que
+    importa es que haya una arroba y algo a cada lado.
     """
     limpio = _normaliza_email(email)
     local, arroba, dominio = limpio.partition("@")
@@ -116,7 +116,7 @@ async def abrir_sesion(conn: aiosqlite.Connection, usuario_id: str) -> str:
 
 
 async def cerrar_sesion(conn: aiosqlite.Connection, token: str) -> None:
-    """Revoca la sesión. Borrar la fila es lo que hace que salir sea inmediato de verdad."""
+    """Revoca la sesión. Borrar la fila es lo que hace que salir sea inmediato."""
     await conn.execute("DELETE FROM sesiones WHERE token = ?", (token,))
     await conn.commit()
 

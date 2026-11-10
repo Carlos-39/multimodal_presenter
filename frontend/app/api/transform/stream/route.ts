@@ -1,5 +1,5 @@
 /**
- * Proxy en STREAMING hacia el backend para el SSE de /transform/stream (Hito 5d).
+ * Proxy en STREAMING hacia el backend para el SSE de /transform/stream.
  *
  * Por qué existe (y no basta el rewrite de next.config): el `rewrites()` de Next BUFFERIZA
  * la respuesta del backend y la entrega de golpe, así que las secciones no llegan una por una

@@ -7,9 +7,8 @@ import type { GroundingReport } from "@/lib/types";
  * - Texto: "N/total ancladas"; ámbar si hay citas no encontradas (warning real).
  * - PDF/imagen/audio: la verificación de contenido no aplica (no se aplana la fuente) → se
  *   muestra neutro, no como fallo. Lo que SÍ varía entre ellos es a qué ancla cada uno, y el
- *   tooltip lo dice: el PDF a una página, el audio a un momento, la imagen a sí misma. Decir
- *   "por página" para un audio (que no tiene páginas) era simplemente incorrecto.
- *   TODO(Hito5): verificación por página/región + resaltado interactivo sobre el documento.
+ *   tooltip lo dice: el PDF a una página, el audio a un momento, la imagen a sí misma.
+ *   TODO: verificación por página/región + resaltado interactivo sobre el documento.
  */
 interface GroundingIndicatorProps {
   grounding: GroundingReport | null;

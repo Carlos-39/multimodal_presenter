@@ -6,13 +6,13 @@ import { X } from "@phosphor-icons/react";
 /**
  * Una hoja que sube desde abajo.
  *
- * **Es la respuesta a una sola pregunta, repetida.** En escritorio, lo que no cabe en el contenido
+ * Es la respuesta a una sola pregunta, repetida. En escritorio, lo que no cabe en el contenido
  * vive en columnas: el carril de secciones a la izquierda, la fuente y el chat a la derecha. En un
  * teléfono no hay anchura para ninguna columna, así que todas se convierten en lo mismo, una hoja
  * que sube, tapa lo justo y se va. Una idea repetida vale más que cuatro soluciones distintas, y
  * además se aprende una vez.
  *
- * Sube tapando **tres cuartos** de la pantalla como mucho: que siga viéndose un trozo del documento
+ * Sube tapando tres cuartos de la pantalla como mucho: que siga viéndose un trozo del documento
  * detrás es lo que dice «esto está encima de aquello» sin tener que explicarlo, y es lo que hace
  * obvio que tocar fuera la cierra.
  *

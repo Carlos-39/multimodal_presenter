@@ -7,9 +7,7 @@ import { Equilibrio } from "./figuras/Equilibrio";
 import { EscaleraFidelidad } from "./figuras/EscaleraFidelidad";
 import { HuecoContrato } from "./figuras/HuecoContrato";
 import { Isomorfismo } from "./figuras/Isomorfismo";
-import { OrdenSeq } from "./figuras/OrdenSeq";
 import { PipelineAudio } from "./figuras/PipelineAudio";
-import { TandasImagen } from "./figuras/TandasImagen";
 import { Troceo } from "./figuras/Troceo";
 import { Umbrales } from "./figuras/Umbrales";
 import { UnSoloSitio } from "./figuras/UnSoloSitio";
@@ -23,19 +21,17 @@ const FIGURAS: Record<FiguraId, () => React.ReactElement> = {
   isomorfismo: Isomorfismo,
   "cache-chat": CacheChat,
   equilibrio: Equilibrio,
-  "tandas-imagen": TandasImagen,
   troceo: Troceo,
   umbrales: Umbrales,
-  "orden-seq": OrdenSeq,
   "un-solo-sitio": UnSoloSitio,
 };
 
 /**
  * Cómo se compone un capítulo.
  *
- * Las dos voces tipográficas del 5k siguen significando lo mismo: **Source Serif** es el documento
- * (aquí, la narración), **Geist** es la herramienta (navegación, etiquetas) y **Geist Mono** son
- * los números. El resaltador conserva su significado exacto de la aplicación: marca el rastro de
+ * Las voces tipográficas significan lo mismo que en la aplicación: Source Serif es el documento
+ * (aquí, la narración), Geist es la herramienta (navegación, etiquetas) y Geist Mono son los
+ * números. El resaltador conserva su significado exacto de la aplicación: marca el rastro de
  * verificación. En la aplicación resalta una cita comprobable; aquí, una cifra que se midió.
  */
 export function Bloques({ bloques }: { bloques: Bloque[] }) {
@@ -163,7 +159,7 @@ function Pieza({ trozo }: { trozo: Trozo }) {
     case "fuerte":
       return <strong className="font-semibold text-foreground">{trozo.texto}</strong>;
     case "marca":
-      // El MISMO amarillo que marca un pasaje verificado en el documento fuente. Aquí dice
+      // El mismo amarillo que marca un pasaje verificado en el documento fuente. Aquí dice
       // "esto se midió", que es la versión de este documento de la misma promesa.
       return (
         // Conserva la tipografía de la frase: el amarillo ya lleva el significado, y cambiar de

@@ -196,9 +196,9 @@ def test_una_comparacion_declarada_sin_lados_no_rompe_nada() -> None:
 def test_el_plan_no_pone_topes_de_valor_a_ninguna_lamina() -> None:
     """El plan describe la FORMA de la respuesta, nunca cuánto cabe en cada campo.
 
-    Esto invierte la regla que yo mismo fijé aquí antes, y la inversión la pagó producción. El
-    razonamiento viejo era bueno a medias: con el tope en el plan, pydantic le devuelve el error
-    al modelo y este lo corrige. La mitad que no vi es que el modelo devuelve el deck ENTERO de
+    Esto invierte una regla anterior, que falló en producción. El razonamiento viejo era bueno
+    a medias: con el tope en el plan, pydantic le devuelve el error al modelo y este lo corrige.
+    Lo que no contemplaba es que el modelo devuelve el deck ENTERO de
     una vez, así que un cuerpo de 70 palabras no invalidaba su lámina, invalidaba las catorce; y
     cuando el reintento volvía a pasarse, saltaba «Exceeded maximum output retries» y /deck
     respondía 500 sin decir por qué.
@@ -259,7 +259,7 @@ def test_una_lamina_que_no_valida_no_se_lleva_la_presentacion(monkeypatch, input
     """La red de seguridad del montaje.
 
     Lo que llega al montaje lo escribió un modelo, y hasta ahora una sola lámina inválida
-    respondía 500 y dejaba al participante sin presentación. Aquí se fuerza ese fallo (una cifra
+    respondía 500 y dejaba al usuario sin presentación. Aquí se fuerza ese fallo (una cifra
     imposible, más larga de lo que el contrato admite) y se comprueba que las demás llegan.
     """
     import asyncio
@@ -339,7 +339,7 @@ def test_una_lamina_con_cuerpo_largo_no_tumba_la_presentacion(input_text: str) -
     El plan acotaba el cuerpo a 280 caracteres. Como el modelo devuelve el deck entero de una
     vez, una lámina de 70 palabras invalidaba la respuesta COMPLETA; pydantic se la devolvía
     para que la corrigiera, el modelo volvía a pasarse y a la segunda saltaba
-    «Exceeded maximum output retries». /deck respondía 500 y el participante se quedaba sin
+    «Exceeded maximum output retries». /deck respondía 500 y el usuario se quedaba sin
     presentación, con un registro que no nombraba la causa.
     """
     app.dependency_overrides[get_settings] = lambda: Settings(openai_api_key="", logfire_token="")
@@ -429,7 +429,7 @@ def test_el_esquema_del_plan_lo_acepta_cada_proveedor_del_fallback() -> None:
 
 
 def test_un_dato_sin_titulo_no_pierde_su_cifra() -> None:
-    """El caso que se vio con el PDF de los duendes, y que yo mismo provoqué.
+    """El caso que se vio con el PDF de los duendes, provocado por una regla del prompt.
 
     El prompt le prohíbe repetir la cifra en el título (porque repetirla gastaba la lámina), y
     el modelo tomó el camino seguro: dejó el título en blanco. El contrato exige título, así que

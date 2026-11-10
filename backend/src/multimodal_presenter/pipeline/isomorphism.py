@@ -1,4 +1,4 @@
-"""Isomorfismo estructural de gráficos (Punto 3 de Fase 2), determinista, sin LLM.
+"""Isomorfismo estructural de gráficos, determinista, sin LLM.
 
 Un gráfico cuya forma visual no corresponde a la estructura real de los datos enseña una
 relación falsa (interferencia estructural, Schnotz), peor que no mostrar gráfico. Aquí:
@@ -7,8 +7,8 @@ relación falsa (interferencia estructural, Schnotz), peor que no mostrar gráfi
    estructuralmente válidos.
 2. `enforce_isomorphism(presentation)`: aplica la regla al resultado del LLM. Como el LLM
    genera datos+tipo juntos, la regla no pre-restringe su elección: la CORRIGE después de
-   forma **determinista y reproducible** (misma forma inválida → misma corrección siempre,
-   coherente con el Punto 1.5). Si ningún tipo es válido, DEGRADA el gráfico a tabla.
+   forma determinista y reproducible (misma forma inválida → misma corrección siempre). Si
+   ningún tipo es válido, DEGRADA el gráfico a tabla.
 
 La regla vive aquí (código), NO en el prompt del modelo.
 """
@@ -80,7 +80,7 @@ def admissible_chart_types(data: ChartData) -> set[ChartType]:
     if single and _nonneg(data) and not ordered and 2 <= n <= 8:
         valid.add(ChartType.PIE)  # partes de un todo
     # scatter: requiere pares numéricos (x,y) que esta forma (categorías+series) no modela.
-    # TODO(Hito5x): soportar scatter exige evolucionar ChartData a puntos (x,y). Fuera de 5a.
+    # TODO: soportar scatter exige evolucionar ChartData a puntos (x,y).
     return valid
 
 
@@ -116,8 +116,8 @@ def isomorfizar(content: object) -> tuple[object, tuple[str, str] | None]:
     Devuelve (contenido, (clase, detalle) o None). La clase es `corrected` o `degraded`.
 
     Está separada de la sección porque la misma regla tiene que valer en dos sitios: el contenido
-    del documento y la evidencia de una diapositiva. Son la misma pregunta —¿este gráfico puede
-    representar estos datos?— y una segunda implementación sería una segunda verdad.
+    del documento y la evidencia de una diapositiva. Son la misma pregunta (¿este gráfico puede
+    representar estos datos?) y una segunda implementación sería una segunda verdad.
 
     Y esa reutilización es lo que hace que la evidencia de una presentación sea COMPROBABLE y no
     solo bonita: un gráfico generado pasa por el mismo filtro determinista que el contenido

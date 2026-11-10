@@ -5,7 +5,7 @@
 # euros con un proxy delante, sin cambiar una línea.
 #
 # Dos piezas, como en el despliegue:
-#   - `api`: FastAPI, con el volumen. **Sin puerto publicado**, igual que allí: no tiene dominio
+#   - `api`: FastAPI, con el volumen. Sin puerto publicado, igual que allí: no tiene dominio
 #              propio y solo se llega a él desde `web`. Para mirarlo de cerca: `docker compose
 #              exec api sh`.
 #   - `web`: Next, que es quien da la cara y reenvía `/api/*` por la red interna.
@@ -20,7 +20,7 @@ services:
   api:
     build: ./backend
     env_file:
-      # Las claves salen de mi `.env` de siempre, que nunca entra en la imagen (ver
+      # Las claves salen de `backend/.env`, que nunca entra en la imagen (ver
       # `backend/.dockerignore`). Opcional: sin él la aplicación arranca igual y falla con un
       # mensaje claro al generar, que es el comportamiento de siempre.
       - path: ./backend/.env
@@ -63,11 +63,6 @@ services:
         # arranca bien y responde 500 a todo `/api/*`, que es de los fallos que no señalan su
         # causa. En la plataforma hay que ponerlo también como variable de construcción.
         BACKEND_URL: http://api:8000
-    environment:
-      # El portón, en cambio, SÍ se lee en ejecución: lo mira el proxy en cada petición, así que
-      # cambiarlo no obliga a reconstruir. Vacío = sin portón.
-      #   ACCESO_CODIGO=loquesea docker compose up -d web
-      ACCESO_CODIGO: ${ACCESO_CODIGO:-}
     ports:
       - "3000:3000"
     networks: [interna]
@@ -77,12 +72,12 @@ services:
     restart: unless-stopped
 
 networks:
-  # **Con IPv6, y no por capricho.** Uvicorn escuchando en `::` crea un socket SOLO de IPv6 (lo
-  # comprobé: desde el propio contenedor, `localhost` responde y `127.0.0.1` rechaza), y `::` es lo
-  # que hay que usar porque la red privada de la plataforma puede ser IPv6.
+  # Con IPv6. Uvicorn escuchando en `::` crea un socket SOLO de IPv6 (desde el propio contenedor,
+  # `localhost` responde y `127.0.0.1` rechaza), y `::` es lo que hay que usar porque la red
+  # privada de la plataforma puede ser IPv6.
   #
   # Así que lo que se arregla es la red local, no el servidor: una red de compose sin IPv6 no se
-  # parece a donde esto va a vivir, y «funciona en mi máquina» dejaría de significar nada.
+  # parece a donde esto va a vivir.
   interna:
     enable_ipv6: true
 

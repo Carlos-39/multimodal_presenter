@@ -10,13 +10,13 @@ parte del contrato, así que ya viajan en el payload de la presentación y se re
 
 Dos sitios distintos para dos cosas distintas:
 
-- El **deck** es JSON y va a la base. Puede pesar megas cuando lleva ilustraciones (son data
+- El deck es JSON y va a la base. Puede pesar megas cuando lleva ilustraciones (son data
   URIs), así que NO viaja en la respuesta de abrir una presentación: se pide aparte, cuando quien
   la abre pulsa para verla. Abrir una presentación tiene que ser inmediato.
-- La **narración** son bytes de mp3 y van a un archivo. Meter un mp3 en una columna de texto
+- La narración son bytes de mp3 y van a un archivo. Meter un mp3 en una columna de texto
   obligaría a codificarlo en base64, un tercio más grande y sin poder escucharlo a mano.
 
-Como en el resto de la biblioteca, **toda consulta filtra por usuario**.
+Como en el resto de la biblioteca, toda consulta filtra por usuario.
 """
 
 from __future__ import annotations

@@ -1,16 +1,15 @@
-"""Sin cuenta la aplicación sigue siendo la aplicación (F5), y la telemetría no sabe quién eres.
+"""Sin cuenta la aplicación sigue siendo la aplicación, y la telemetría no sabe quién eres.
 
 Dos promesas que el login podría romper sin que nadie se diera cuenta, y que por eso se comprueban
 en vez de confiarse:
 
-1. **Entrar es opcional.** Las sesiones de evaluación del Hito 8 corren SIN login: si la aplicación
-   acabara exigiendo cuenta para transformar, preguntar o generar, el Hito 8 se rompe. Añadir la
+1. Entrar es opcional. El modo invitado funciona SIN login: si la aplicación acabara exigiendo
+   cuenta para transformar, preguntar o generar, se rompe. Añadir la
    dependencia de usuario a un endpoint es un cambio de una línea y no se nota al probar a mano,
    porque quien prueba suele estar dentro.
 
-2. **La telemetría no lleva identidad de cuenta.** El consentimiento informado dice que la
-   participación es anónima por `Pxx`. Atarla a una cuenta la volvería identificable y
-   contradiría lo ya prometido a quien firmó.
+2. La telemetría no lleva identidad de cuenta. Es anónima: solo lleva la etiqueta `Pxx`.
+   Atarla a una cuenta la volvería identificable.
 """
 
 from __future__ import annotations
@@ -149,14 +148,14 @@ def cliente_con_telemetria(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 def test_estar_dentro_no_deja_rastro_en_la_telemetria(cliente_con_telemetria) -> None:
-    """La prueba de verdad: con sesión abierta, lo que se escribe a disco no permite saber de quién.
+    """La prueba central: con sesión abierta, lo que se escribe a disco no permite saber de quién.
 
-    El consentimiento promete anonimato por `Pxx`. Si el correo o el id de la cuenta acabaran en
-    el JSONL, lo prometido dejaría de ser cierto para quien ya firmó.
+    La telemetría es anónima por `Pxx`. Si el correo o el id de la cuenta acabaran en el JSONL,
+    dejaría de serlo.
     """
     cliente, carpeta_ux = cliente_con_telemetria
 
-    correo = "participante.identificable@ejemplo.com"
+    correo = "persona.identificable@ejemplo.com"
     registro = cliente.post("/auth/registro", json={"email": correo, "contrasena": "unaclavelarga"})
     assert registro.status_code == 201
     usuario_id = registro.json()["id"]
@@ -178,8 +177,7 @@ def test_estar_dentro_no_deja_rastro_en_la_telemetria(cliente_con_telemetria) ->
     crudo = lineas[0]
     assert correo not in crudo
     assert usuario_id not in crudo
-    # Y lo que SÍ debe estar: el participante que fijó el facilitador, que es la identidad del
-    # estudio y la única que el consentimiento contempla.
+    # Y lo que SÍ debe estar: la etiqueta `Pxx`, la única identidad que lleva la telemetría.
     assert json.loads(crudo)["participant"] == "P07"
 
 

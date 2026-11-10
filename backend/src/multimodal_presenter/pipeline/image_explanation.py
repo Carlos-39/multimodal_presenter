@@ -1,11 +1,11 @@
-"""Explicación bajo demanda de una imagen REAL del documento (Hito 5h Parte 3).
+"""Explicación bajo demanda de una imagen REAL del documento.
 
 NO genera nada nuevo: es una vía de acceso directa a una capacidad ya construida, el documento se
-procesa como binario nativo (Hito 4, el modelo "ve" la imagen real). Se le pide al modelo que
+procesa como binario nativo (el modelo "ve" la imagen real). Se le pide al modelo que
 explique, en lenguaje accesible, lo que muestra una imagen/figura del documento (un diagrama, una
 estructura, una gráfica compleja). La explicación trata sobre la imagen real, así que su atribución
 es la propia imagen (se renderiza justo debajo de ella en el `SourcePanel`); no lleva etiqueta de
-"no verificable" (eso es solo para las ilustraciones generadas de la Parte 1, que es otra cosa).
+"no verificable" (eso es solo para las ilustraciones generadas, que son otra cosa).
 """
 
 from __future__ import annotations

@@ -24,7 +24,7 @@ export function leerPreferencia(preferencia: Preferencia, pordefecto: boolean): 
   const reciente = enMemoria.get(preferencia);
   if (reciente !== undefined) return reciente;
   try {
-    // En modo privado o con el almacenamiento bloqueado, **leer ya lanza**.
+    // En modo privado o con el almacenamiento bloqueado, leer ya lanza.
     const guardado = window.localStorage.getItem(PREFIJO + preferencia);
     return guardado === null ? pordefecto : guardado === "1";
   } catch {
@@ -42,7 +42,7 @@ export function leerPreferencia(preferencia: Preferencia, pordefecto: boolean): 
  * desaconseja. `useSyncExternalStore` admite un valor para el servidor y otro para el cliente,
  * que es exactamente la forma de este problema.
  *
- * Sin sincronizar entre pestañas a propósito: dos pestañas abiertas son dos vistas, y que plegar
+ * Sin sincronizar entre pestañas: dos pestañas abiertas son dos vistas, y que plegar
  * algo en una mueva la otra por debajo sobresalta más de lo que ayuda.
  */
 const oyentes = new Set<() => void>();

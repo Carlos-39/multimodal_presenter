@@ -2,7 +2,7 @@
 
 Existe por un fallo concreto: al pulsar «explicar esta imagen», la explicación salía con los
 asteriscos y las almohadillas a la vista (`**así**`) porque el modelo respondía en Markdown y la
-interfaz lo pinta como texto plano. Y lo pinta como texto plano a propósito: en este proyecto no
+interfaz lo pinta como texto plano. Y lo pinta como texto plano deliberadamente: en este proyecto no
 hay ningún renderizador de Markdown, y no lo hay porque admitirlo invitaría a meter en el
 contenido cosas que el diseño no sabe componer (encabezados dentro de una tarjeta, tablas que no
 pasaron por `content_type`, enlaces que esquivan el anclaje a la fuente).
@@ -13,8 +13,7 @@ texto. Donde el modelo quiera una tabla, hay un tipo para pedirla.
 
 Queda fuera, y es deliberado: la estructuración del documento, la presentación y el guion de la
 narración. Sus salidas ya son estructuradas o muy cortas, y tocar esos prompts cambia lo que
-generan: no es algo que convenga hacer en mitad de una evaluación sin medir el antes y el
-después.
+generan: no conviene hacerlo sin medir el antes y el después.
 """
 
 from __future__ import annotations

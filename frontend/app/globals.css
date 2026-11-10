@@ -1,27 +1,24 @@
 @import "tailwindcss";
 
 /*
- * IDENTIDAD VISUAL: tokens de diseño en un solo lugar (rediseño sobre la base del Hito 5a).
+ * IDENTIDAD VISUAL: tokens de diseño en un solo lugar.
  *
  * Dirección: herramienta rigurosa de trabajo con información, no "demo de IA".
  *
- * **Lo único cálido de toda la interfaz es la prueba.** El 5a y el 5k se apoyaron en neutros
- * CÁLIDOS contra un acento frío, y el diagnóstico de entonces era correcto: hacía falta contraste
- * de temperatura. Lo que no se vio es hacia dónde se resolvía, papel crema con serifa para el
- * cuerpo es, literalmente, la casa de Claude, y la propia guía de diseño que se usó advierte del
- * crema cercano a #F4F1EA como el tic más repetido de interfaz generada.
+ * Lo único cálido de toda la interfaz es la prueba. Hace falta contraste de temperatura, pero
+ * un papel crema con serifa para el cuerpo es un recurso visual demasiado repetido.
  *
- * Aquí el calor no se quita: se MUEVE. Los neutros pasan a frío-neutros y el acento sigue siendo
- * tinta, así que el contraste de temperatura se conserva, pero ahora lo aporta el amarillo del
- * resaltador, que es la única nota cálida que queda. El color de la verificación deja de ser un
+ * Por eso el calor no se quita: se MUEVE. Los neutros son frío-neutros y el acento es tinta, así
+ * que el contraste de temperatura se conserva, pero lo aporta el amarillo del resaltador, que es
+ * la única nota cálida. El color de la verificación deja de ser un
  * color más y pasa a ser la única temperatura de la pantalla.
  *
  * - El acento se reserva a lo interactivo o activo (sección activa, control encendido, enlaces,
  *   foco).
  * - "Resaltador": único color con licencia propia, y solo en el rastro de verificación (la cita
  *   al pie de una sección y el pasaje marcado en el documento fuente comparten color).
- * - Los semánticos (verificado, aviso) conservan su temperatura: son alertas, se usan poco y a
- *   propósito, y leerlos es más importante que la coherencia del ambiente.
+ * - Los semánticos (verificado, aviso) conservan su temperatura: son alertas, se usan poco, y
+ *   leerlos es más importante que la coherencia del ambiente.
  * - Dos voces tipográficas: lo que viene del DOCUMENTO va en serif (`font-serif`); lo que es de
  *   la HERRAMIENTA, en sans. Los NÚMEROS siguen en Geist Mono tabular (tablas, ejes).
  * - Radios por jerarquía: 6px controles (`rounded-md`), 10px contenedores (`rounded-lg`),
@@ -147,7 +144,7 @@ body {
 }
 
 /*
- * Entrada suave de cada sección al montarse durante el streaming (Hito 5d): fade-in + leve
+ * Entrada suave de cada sección al montarse durante el streaming: fade-in + leve
  * desplazamiento hacia arriba (corto: acompaña, no compite con el contenido), para que el
  * "aparecer una por una" se sienta fluido y no como un parpadeo instantáneo. La animación CSS
  * corre una sola vez, al insertarse el nodo en el DOM; las secciones ya montadas no se
@@ -481,7 +478,7 @@ body {
 /*
  * La misma idea girada noventa grados: en pantallas estrechas lo que en escritorio entra por el
  * lado entra por abajo, porque es de donde viene el pulgar. Mismo tiempo y misma curva que el
- * cajón, a propósito: dos velocidades distintas para el mismo gesto se notan aunque nadie sepa
+ * cajón: dos velocidades distintas para el mismo gesto se notan aunque nadie sepa
  * decir por qué.
  */
 @keyframes hoja-sube {
@@ -579,13 +576,13 @@ body {
 /*
  * El paso de una lámina a la siguiente, en las piezas que se recorren solas.
  *
- * **Entra desde el lado hacia el que vas.** Un fundido sin dirección deja la duda de si
+ * Entra desde el lado hacia el que vas. Un fundido sin dirección deja la duda de si
  * avanzaste o retrocediste; viniendo del lado correcto, el gesto ya lo dice. El
  * desplazamiento es corto (20 px) porque lo que informa es la dirección, no la distancia.
  *
  * Dura casi el doble que `section-enter`, que es la entrada de dentro de la aplicación: ahí hay
  * trabajo que hacer y el movimiento estorba, aquí es la pieza la que tiene que explicarse sola.
- * Y es **la misma duración la pase el tiempo o la pases tú**: una animación que se acelera al
+ * Y es la misma duración la pase el tiempo o la pases tú: una animación que se acelera al
  * pulsar hace sentir el clic como una interrupción en vez de como el mando.
  */
 @keyframes pasar-adelante {
@@ -704,9 +701,9 @@ body {
 /*
  * Las preguntas frecuentes de la portada.
  *
- * **La respuesta sube desde detrás del renglón** en vez de aparecer de golpe: el contenedor
- * recorta y el párrafo entra desde abajo. Es el gesto del menú escalonado que me gustaba, hecho
- * con dos reglas en lugar de con 70 kB de librería, y, sobre todo, sin tocar los `details`
+ * La respuesta sube desde detrás del renglón en vez de aparecer de golpe: el contenedor
+ * recorta y el párrafo entra desde abajo. Es el gesto de un menú escalonado, hecho con dos
+ * reglas en lugar de con 70 kB de librería, y, sobre todo, sin tocar los `details`
  * nativos, que son los que hacen que esto funcione con teclado, con lector de pantalla y aunque
  * el JavaScript no llegue a cargar.
  *
@@ -755,19 +752,19 @@ body {
   background-color: var(--background);
   transition: background-color 2000ms ease;
 }
-.papel[data-asentado="true"].acto-cimiento {
+.papel[data-asentado="true"].acto-idea {
   background-color: color-mix(in srgb, var(--surface-sunken) 80%, var(--background));
 }
-.papel[data-asentado="true"].acto-trazabilidad {
+.papel[data-asentado="true"].acto-fuente {
   background-color: color-mix(in srgb, var(--surface-sunken) 40%, var(--background));
 }
-.papel[data-asentado="true"].acto-midiendo {
+.papel[data-asentado="true"].acto-trazabilidad {
   background-color: var(--background);
 }
-.papel[data-asentado="true"].acto-usable {
+.papel[data-asentado="true"].acto-generado {
   background-color: color-mix(in srgb, var(--surface) 42%, var(--background));
 }
-.papel[data-asentado="true"].acto-cierre {
+.papel[data-asentado="true"].acto-aplicacion {
   background-color: color-mix(in srgb, var(--surface) 85%, var(--background));
 }
 
@@ -794,7 +791,7 @@ body {
  * El tronco y los codos son bordes, no un SVG: los títulos de estos capítulos ocupan dos líneas y
  * un dibujo con las filas calculadas a altura fija se descuadra en cuanto una envuelve.
  *
- * En la portada el árbol **se dibuja**: baja el tronco de cada acto y detrás van saliendo sus
+ * En la portada el árbol se dibuja: baja el tronco de cada acto y detrás van saliendo sus
  * ramas. Es el mismo gesto que el trazo de las figuras, y es lo único que se mueve solo en esa
  * página: una vez, al llegar, y se acabó.
  */
@@ -876,20 +873,19 @@ body {
 /*
  * El área de trabajo, iluminada desde arriba.
  *
- * **No es una trama, es luz.** Se probaron seis fondos con patrón (rejilla, puntos, pautado) y
- * todos tenían el mismo problema: dan algo que seguir con la vista justo donde hay que leer. Esto
- * no dibuja nada. El papel se aclara hacia donde está el texto y se apaga hacia los bordes, así
+ * No es una trama, es luz. Un fondo con patrón (rejilla, puntos, pautado) da algo que seguir con
+ * la vista justo donde hay que leer. Esto no dibuja nada. El papel se aclara hacia donde está el texto y se apaga hacia los bordes, así
  * que el vacío de los lados deja de pesar lo mismo que el centro sin que aparezca ni una línea.
  *
- * **El techo es el color de las tarjetas, y no se toca.** El punto más claro se queda por debajo
+ * El techo es el color de las tarjetas, y no se toca. El punto más claro se queda por debajo
  * de `--surface`: si lo alcanzara, arriba del todo las tarjetas perderían su borde contra el papel
- * y dejarían de ser objetos. Por eso el recorrido se gana sobre todo **bajando los bordes**, no
+ * y dejarían de ser objetos. Por eso el recorrido se gana sobre todo bajando los bordes, no
  * subiendo el centro.
  *
- * Sin movimiento, a propósito: esta es la pantalla donde alguien está leyendo algo difícil.
+ * Sin movimiento: esta es la pantalla donde alguien está leyendo algo difícil.
  */
 /*
- * **El grano no es una segunda decoración: es cómo se apaga el papel.**
+ * El grano no es una segunda decoración: es cómo se apaga el papel.
  *
  * La luz y los puntos son UNA sola capa pintada en dos tiempos. El grano va debajo y la luz
  * encima; donde la luz es opaca (el centro, que es donde se lee) tapa los puntos del todo, y según
@@ -917,11 +913,9 @@ body {
 /*
  * La tarjeta de la biblioteca: lo que se ilumina es el BORDE, por donde pasa el puntero.
  *
- * La primera versión reusaba `.luz`, el foco macizo del botón de la portada, y estaba mal por dos
- * motivos. Uno de bulto: en oscuro salía un manchón blanco en mitad de la tarjeta, y en claro no
- * se veía nada (el relleno de `.luz` es blanco, que sobre papel claro es invisible). Y uno de
- * orden: yo había puesto aquí un color de acento, pero `.tarjeta-luz` estaba ANTES que `.luz` en
- * la hoja y, a igual especificidad, gana la última. El acento no llegaba a aplicarse nunca.
+ * No reusa `.luz`, el foco macizo del botón de la portada: en oscuro sería un manchón blanco en
+ * mitad de la tarjeta, y en claro no se vería nada (el relleno de `.luz` es blanco, invisible
+ * sobre papel claro).
  *
  * Un relleno tapa; un borde encendido señala. Y funciona igual en los dos temas porque el acento
  * cambia con ellos, cosa que el blanco no hace.
@@ -1010,11 +1004,11 @@ body {
 /*
  * El brillo que sigue al puntero en el botón principal de la portada.
  *
- * **Solo en la portada.** La aplicación es seria a propósito y un botón que reluce dentro del área
+ * Solo en la portada. La aplicación es sobria y un botón que reluce dentro del área
  * de trabajo sería ruido; la portada es lo primero que ve alguien que todavía no sabe qué es esto,
  * y ahí una superficie que responde al dedo dice «esto está vivo» antes que cualquier frase.
  *
- * **Solo contesta, nunca empieza.** No hay brillo hasta que alguien señala el botón: es respuesta
+ * Solo contesta, nunca empieza. No hay brillo hasta que alguien señala el botón: es respuesta
  * a un gesto, no una animación corriendo sola para pedir atención. Por eso SUSTITUYE al oscurecido
  * del hover en vez de sumarse: dos respuestas distintas al mismo gesto se estorban.
  *
@@ -1097,11 +1091,10 @@ body {
  * La barra de la narración.
  *
  * El elemento mide 24 px de alto aunque la línea se vea de 4. No es decoración: el área sensible
- * de un `input[type=range]` es su caja, no lo que se pinta dentro, y con los 4 px de antes la
- * barra solo se podía usar con un ratón. En un teléfono (que es por donde entran los
- * participantes) era imposible agarrarla, así que volver atrás diez segundos no existía.
+ * de un `input[type=range]` es su caja, no lo que se pinta dentro, y con 4 px la barra solo se
+ * podría usar con un ratón. En un teléfono sería imposible agarrarla.
  *
- * Los selectores de pista y pulgar van por separado para WebKit y Gecko a propósito: no se pueden
+ * Los selectores de pista y pulgar van por separado para WebKit y Gecko: no se pueden
  * agrupar en una sola regla, porque un navegador que no reconoce uno de los dos descarta la regla
  * entera y se queda sin estilo.
  */
@@ -1145,8 +1138,7 @@ body {
  *
  * Lo que se dibuja al entrar en pantalla depende de un `IntersectionObserver`, y al imprimir no
  * hay pantalla por la que entrar: las figuras del «cómo se construyó» saldrían con las líneas a
- * medio trazar o directamente sin ellas. Un capítulo impreso tiene que verse como el terminado,
- * que para un documento de tesis no es un detalle.
+ * medio trazar o directamente sin ellas. Un capítulo impreso tiene que verse terminado.
  */
 @media print {
   .trazo,

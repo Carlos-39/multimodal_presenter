@@ -1,10 +1,10 @@
-"""Narración tipo audiolibro (Hito 5g Parte 3).
+"""Narración tipo audiolibro.
 
 Dos pasos, bajo demanda y cacheados por documento:
 1. GUION (Sonnet): una síntesis hablada del contenido, con su propio hilo narrativo, NO una
    transcripción del texto en pantalla. Narra los NÚCLEOS como columna vertebral y menciona que
-   hay más detalle en modo detallado. Coherente con el Punto 2 (la redundancia texto+audio solo se
-   permite en casos verificables, que no aplican aquí) y con "resumen primero, detalle a un clic".
+   hay más detalle en modo detallado. La redundancia texto+audio solo se permite en casos
+   verificables, que no aplican aquí, y se sigue "resumen primero, detalle a un clic".
 2. VOZ (OpenAI tts-1): sintetiza el guion a audio (mp3).
 
 Caché en memoria por proceso, con clave = hash del contenido de la presentación: pedir la misma
@@ -47,7 +47,7 @@ _SCRIPT_SYSTEM = (
 
 script_agent = Agent(system_prompt=_SCRIPT_SYSTEM)
 
-# Cachés por proceso (clave = hash del contenido). Acotadas: pocas sesiones de evaluación.
+# Cachés por proceso (clave = hash del contenido). Acotadas: poco volumen de uso.
 _script_cache: dict[str, str] = {}
 _audio_cache: dict[str, bytes] = {}
 

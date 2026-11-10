@@ -13,13 +13,13 @@ import { track } from "@/lib/telemetry";
 import type { CitedRegion, GroundingStatus, SourceReference } from "@/lib/types";
 
 /**
- * Chat anclado a fuentes (Hito 6). Reemplaza el placeholder del Hito 3.
+ * Chat anclado a fuentes.
  *
  * Stable Core Pattern: la ESTRUCTURA (header, lista, caja de input) es fija; solo el CONTENIDO
  * de los mensajes es dinámico. No reimplementa la convivencia de columnas (eso lo resuelve el
- * `Workspace`/`workspace.ts` del 5e); aquí solo se llena el panel.
+ * `Workspace`/`workspace.ts`); aquí solo se llena el panel.
  *
- * Cada respuesta se ancla a la fuente reusando `SourceReference` + el estado de grounding (5c):
+ * Cada respuesta se ancla a la fuente reusando `SourceReference` + el estado de grounding:
  * si está anclada, muestra un chip que abre el `SourcePanel`; si no, lo dice con honestidad en
  * vez de fingir una fuente.
  */
@@ -35,7 +35,7 @@ interface ChatPanelProps {
     region: CitedRegion | null,
   ) => void;
   disabled: boolean; // sin documento aún
-  activeSectionOrdinal: number | null; // telemetría (Hito 8): sección activa al preguntar
+  activeSectionOrdinal: number | null; // telemetría: sección activa al preguntar
 }
 
 export function ChatPanel({
@@ -77,7 +77,7 @@ export function ChatPanel({
   const streaming = status === "streaming";
   const canSend = !disabled && !streaming && input.trim().length > 0;
 
-  // Telemetría (Hito 8): este es el ÚNICO punto que distingue una pregunta SUGERIDA de una
+  // Telemetría: este es el ÚNICO punto que distingue una pregunta SUGERIDA de una
   // ESCRITA (el backend/`useChat` ya no pueden diferenciarlas). Solo metadatos: origen, posición
   // de la sugerencia y LONGITUD de la pregunta, nunca su texto (privacidad).
   function submit(question: string, origin: "suggested" | "typed", suggestionIndex?: number) {
@@ -131,8 +131,8 @@ export function ChatPanel({
               Lo primero, porque en un teléfono tres preguntas largas se comen media conversación
               y estorban justo a quien ya sabe lo que quiere preguntar. Lo segundo, porque son una
               invitación: si nacieran plegadas no las vería quien más las necesita, y además
-              `suggested_question_click` es una de las señales que mide el Hito 8, arrancar
-              escondidas cambiaría lo que esa medición significa.
+              `suggested_question_click` es una señal de telemetría: arrancar escondidas
+              cambiaría lo que esa medición significa.
               La elección se recuerda en este navegador, que es donde se tomó. */}
           <button
             type="button"
@@ -261,7 +261,7 @@ function Message({
   const response = message.response;
   const clarification = message.status === "done" ? response?.clarification : null;
 
-  // Opción D: pedido de aclaración. Estado visual propio (acento), nunca bloquea el chat: las
+  // Pedido de aclaración. Estado visual propio (acento), nunca bloquea el chat: las
   // opciones son un atajo y el usuario siempre puede reescribir abajo.
   if (clarification) {
     return (
@@ -339,7 +339,7 @@ function SourceChip({
   const startS = response.start_s ?? null;
   const region = response.region ?? null;
 
-  // No anclada: se dice con honestidad, no se inventa una fuente (mismo espíritu que not_found 5c).
+  // No anclada: se dice con honestidad, no se inventa una fuente (mismo espíritu que not_found).
   if (!source || grounding === "not_found") {
     return (
       <div className="mt-2.5 border-t border-border pt-2">

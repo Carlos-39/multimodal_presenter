@@ -1,4 +1,4 @@
-"""Tests de la telemetría de comportamiento (Hito 8, Parte A).
+"""Tests de la telemetría de comportamiento.
 
 Cubren: el endpoint escribe el JSONL, la barrera server-side de privacidad (strings largos y
 campos extra se rechazan), el apagado a disco, y la agregación de tiempo por modo del exportador.
@@ -111,9 +111,8 @@ def test_un_evento_malo_no_tumba_el_lote(tmp_path) -> None:
     """Los eventos buenos del lote se guardan aunque venga uno malo con ellos.
 
     Con `list[TelemetryEvent]` el request entero respondía 422 y se perdían hasta 50 eventos
-    buenos, en silencio (el frontend es fire-and-forget). Se vio de verdad al añadir un evento
-    nuevo mientras el backend seguía corriendo con el schema anterior. En una sesión de
-    evaluación que no se puede repetir, eso es perder datos.
+    buenos, en silencio (el frontend es fire-and-forget). Ocurrió al añadir un evento nuevo
+    mientras el backend seguía corriendo con el schema anterior.
     """
     client = _client(tmp_path)
     lote = {
@@ -318,7 +317,7 @@ def test_exportador_descarta_reenviados_pero_respeta_el_seq_repetido(tmp_path) -
                 linea("session_start", 0, "2026-10-12T10:00:00.000Z"),
                 # El reenvío: el mismo evento otra vez, idéntico.
                 linea("session_start", 0, "2026-10-12T10:00:00.000Z"),
-                # La recarga del cliente antiguo: mismo seq, otro evento de verdad.
+                # La recarga del cliente antiguo: mismo seq, otro evento distinto.
                 linea("view_change", 0, "2026-10-12T10:05:00.000Z"),
                 # Y otra sesión con el mismo seq, que tampoco es un duplicado.
                 linea("session_start", 0, "2026-10-12T10:00:00.000Z", sesion="s2"),

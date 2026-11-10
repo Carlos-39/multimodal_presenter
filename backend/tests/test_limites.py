@@ -2,13 +2,12 @@
 
 Lo que se fija aquí, por orden de importancia:
 
-1. **Que el tope corte ANTES de tocar el modelo.** Un tope que se comprueba después de gastar no
+1. Que el tope corte ANTES de tocar el modelo. Un tope que se comprueba después de gastar no
    es un tope. Se prueba con una entrada inválida: si el 429 gana al 400, la dependencia corrió
    antes que el cuerpo del endpoint, que es donde vive la llamada.
-2. **Que las dos categorías sean independientes.** Agotar las transformaciones no puede dejar a
-   nadie sin poder preguntar: en una sesión de evaluación eso sería perder los datos de la parte
-   que más importa.
-3. **Que se pueda apagar.** Con `0`, ningún tope.
+2. Que las dos categorías sean independientes. Agotar las transformaciones no puede dejar a
+   nadie sin poder preguntar.
+3. Que se pueda apagar. Con `0`, ningún tope.
 """
 
 from __future__ import annotations
@@ -80,7 +79,7 @@ def test_el_tope_corta_antes_de_llegar_al_modelo(client: TestClient) -> None:
 
 
 def test_agotar_las_transformaciones_no_deja_sin_preguntar(client: TestClient) -> None:
-    """Son dos bolsas distintas, y mezclarlas costaría los datos de la parte que más importa."""
+    """Son dos bolsas distintas: agotar una no puede bloquear la otra."""
     for _ in range(4):
         _transforma(client)
     assert _transforma(client).status_code == 429
@@ -127,7 +126,7 @@ def test_con_un_proxy_de_confianza_si_separa_por_direccion(
     for _ in range(3):
         _transforma(client, headers={"x-forwarded-for": "1.1.1.1"})
     assert _transforma(client, headers={"x-forwarded-for": "1.1.1.1"}).status_code == 429
-    # Otro participante, otra bolsa.
+    # Otra dirección, otra bolsa.
     assert _transforma(client, headers={"x-forwarded-for": "2.2.2.2"}).status_code == 400
 
 

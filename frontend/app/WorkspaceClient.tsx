@@ -62,7 +62,7 @@ import type {
 
 type Status = "idle" | "streaming" | "error" | "done";
 
-/** Fuente activa en el panel: puede venir de una sección (5c) o de una respuesta del chat (6). */
+/** Fuente activa en el panel: puede venir de una sección o de una respuesta del chat. */
 interface ActiveSource {
   source: SourceReference;
   status: GroundingStatus;
@@ -112,32 +112,32 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   const [detailLevel, setDetailLevel] = useState<DetailLevel>(DEFAULT_DETAIL_LEVEL);
   const [activeSource, setActiveSource] = useState<ActiveSource | null>(null);
 
-  // Adelanto inicial (Hito 5g): preview corto mientras corre la transformación completa.
+  // Adelanto inicial: preview corto mientras corre la transformación completa.
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryStatus, setSummaryStatus] = useState<SummaryStatus>("idle");
   // Solo audio: lo que oyó la fase de percepción (ver StreamEvent "transcript").
   const [transcript, setTranscript] = useState<string | null>(null);
 
-  // Cuenta: OPCIONAL. Sin ella todo sigue funcionando igual, las sesiones de evaluación del
-  // Hito 8 corren sin login. Entrar añade guardar y volver, nada más.
+  // Cuenta: OPCIONAL. Sin ella todo sigue funcionando igual. Entrar añade guardar y volver,
+  // nada más.
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [cuentaAbierta, setCuentaAbierta] = useState(false);
   const [guardando, setGuardando] = useState<"idle" | "guardando" | "guardada" | "error">("idle");
 
   // Qué presentación guardada se está viendo, o `null` si lo de pantalla no está guardado. Es lo
   // único que hace falta para que el chat se persista: sin presentación no hay dónde, y entonces
-  // el chat se comporta igual que antes (que es como corren las sesiones del Hito 8).
+  // el chat se comporta igual que sin cuenta.
   //
   // En un ref y no en estado porque lo lee el aviso de "turno terminado" del chat. En estado,
   // cada vez que cambiara habría que reconstruir ese callback y con él `send`, que el panel de
   // chat recibe como prop; el ref lo deja estable.
   const presentacionIdRef = useRef<string | null>(null);
 
-  // Ilustraciones de apoyo en camino (post-pase del 5h): solo para avisar en pantalla.
+  // Ilustraciones de apoyo en camino (post-pase): solo para avisar en pantalla.
   const [illustrationsPending, setIllustrationsPending] = useState(false);
   const illustrationRunRef = useRef(0); // descarta el resultado de un documento anterior
 
-  // Chat (Hito 6): historial + streaming + sugerencias, aislado en un hook.
+  // Chat: historial + streaming + sugerencias, aislado en un hook.
   //
   // El hook no sabe que existen cuentas: avisa de cada turno terminado y aquí se decide si hay
   // dónde guardarlo. Así el chat sin cuenta queda exactamente como estaba, sin una rama que
@@ -148,7 +148,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   }, []);
   const chat = useChat(original, { alTerminarTurno });
 
-  // Presentación actual (título + secciones completas) y narración (Hito 5g Parte 3). La narración
+  // Presentación actual (título + secciones completas) y narración. La narración
   // es independiente del toggle resumen/detallado y de la sección activa; solo se reinicia con un
   // documento nuevo (lo hace `resetForRun`, desde el manejador de transformación, no en efecto).
   const presentation = useMemo(() => ({ title, sections }), [title, sections]);
@@ -160,21 +160,21 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   }, []);
   const narration = useNarration(presentation, { alGenerar: alGenerarNarracion });
 
-  // Telemetría (Hito 8): relojes de interacción. Los refs se mutan SOLO en manejadores de evento
+  // Telemetría: relojes de interacción. Los refs se mutan SOLO en manejadores de evento
   // (nunca en render/efecto), coherente con la regla de hooks del proyecto.
   const modeEnteredAtRef = useRef<number | null>(null); // cuándo entró al tramo actual (se fija al montar)
   const detailLevelRef = useRef<DetailLevel>(DEFAULT_DETAIL_LEVEL); // espejo para el cierre de sesión
   // El reloj reparte TODO el tiempo de la sesión en tramos, sin huecos ni solapes. La presentación
   // generada es un tramo PROPIO: en esa vista el nivel de detalle no filtra nada (tiene sus propias
   // diapositivas), así que sumar ese tiempo a "resumen" o "detallado" sería atribuirlo a un modo
-  // que no estaba actuando: y el reparto resumen/detallado es una medida central de la RQ3.
+  // que no estaba actuando y falsearía el reparto resumen/detallado.
   const modeBucketRef = useRef<ModeBucket>(DEFAULT_DETAIL_LEVEL);
   const sourceOpenedAtRef = useRef<number | null>(null); // cuándo se abrió el panel de fuente
 
-  // Escala 2 (Hito 5e): paneles opcionales abiertos, el más reciente al final (recencia).
+  // Escala 2: paneles opcionales abiertos, el más reciente al final (recencia).
   const [openOrder, setOpenOrder] = useState<PanelId[]>([]);
 
-  // Vista de slides (Hito 5h Parte 2): modo alterno de consumir el MISMO contenido ya generado.
+  // Vista de slides: modo alterno de consumir el MISMO contenido ya generado.
   const [slidesOpen, setSlidesOpen] = useState(false);
 
   // Presentación GENERADA en diapositivas (guion propio desde la fuente): pieza nueva, bajo demanda.
@@ -185,7 +185,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   // documento nuevo) y bastaba olvidar uno para que el tiempo quedara atribuido al tramo erróneo.
   // Cierra el tramo de modo en curso y abre el siguiente, reportando cuánto duró el que se deja.
   // El evento y su payload no cambian: solo se amplía el vocabulario de `from`/`to` con `deck`, así
-  // el reparto sigue cubriendo la sesión completa sin huecos. Estable (solo refs) a propósito.
+  // el reparto sigue cubriendo la sesión completa sin huecos. Estable (solo refs).
   const cerrarTramo = useCallback((siguiente: ModeBucket, ordinal: number | null) => {
     const ahora = Date.now();
     const desde = modeEnteredAtRef.current ?? ahora;
@@ -277,7 +277,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
     setOpenOrder((prev) => prev.filter((p) => p !== id));
     if (id === "source") {
       setActiveSource(null);
-      // Tiempo inspeccionando la fuente (señal de "verificación", Punto 4).
+      // Tiempo inspeccionando la fuente (señal de "verificación").
       if (sourceOpenedAtRef.current != null) {
         track("source_close", { ms_open: Date.now() - sourceOpenedAtRef.current });
         sourceOpenedAtRef.current = null;
@@ -289,9 +289,9 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
       prev.includes("chat") ? prev.filter((p) => p !== "chat") : [...prev, "chat"],
     );
   }, []);
-  // Abrir la fuente desde una sección (5c) o desde una respuesta del chat (6): mismo panel.
-  // Cada apertura es una señal de "verificación de fuente" (Punto 4). Se registra el estado de
-  // grounding para poder ver DESPUÉS si el participante revisa justo las marcadas (not_found).
+  // Abrir la fuente desde una sección o desde una respuesta del chat: mismo panel.
+  // Cada apertura es una señal de "verificación de fuente". Se registra el estado de grounding
+  // para poder ver DESPUÉS si el usuario revisa justo las marcadas (not_found).
   const openSectionSource = useCallback(
     (
       section: Section,
@@ -318,8 +318,8 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
     [openPanel],
   );
   // Abrir una cita suelta (chat o diapositiva generada): mismo panel, distinto ORIGEN. El origen
-  // se separa porque es una medida de la RQ3 (¿desde dónde verifica la gente?) y la presentación
-  // generada reusaba este manejador, así que sus clics se contaban como si vinieran del chat.
+  // se separa porque la telemetría distingue desde dónde se verifica, y sin él los clics de la
+  // presentación generada se contarían como si vinieran del chat.
   const openLooseSource = useCallback(
     (
       origin: "chat" | "deck",
@@ -394,12 +394,11 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   /**
    * Guarda lo que hay en pantalla, con el documento del que salió y la conversación que ya hubo.
    *
-   * Si esto YA es una presentación guardada, la completa en vez de crear otra. Antes creaba una
-   * gemela con el mismo nombre, y deshabilitar el botón no habría bastado: lo que se ve puede
-   * crecer DESPUÉS de guardarlo, porque las ilustraciones de apoyo llegan en un post-pase. Quien
-   * guarda en cuanto salen las secciones y vuelve a pulsar diez segundos más tarde quiere
-   * completar lo suyo. Y la misma gemela salía por otra puerta: al restaurar una guardada, el
-   * botón volvía a ofrecer «Guardar».
+   * Si esto YA es una presentación guardada, la completa en vez de crear una gemela con el mismo
+   * nombre. Deshabilitar el botón no bastaría: lo que se ve puede crecer DESPUÉS de guardarlo,
+   * porque las ilustraciones de apoyo llegan en un post-pase. Quien guarda en cuanto salen las
+   * secciones y vuelve a pulsar diez segundos más tarde quiere completar lo suyo. Lo mismo vale
+   * al restaurar una guardada, donde el botón vuelve a ofrecer «Guardar».
    */
   async function guardar() {
     if (!original || sections.length === 0) return;
@@ -507,7 +506,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
     setActiveSectionId(data.presentation.sections[0]?.id ?? null);
   }
 
-  // Ilustraciones de apoyo generadas (Hito 5h Parte 1): post-pase NO bloqueante, SOLO para fuentes
+  // Ilustraciones de apoyo generadas: post-pase NO bloqueante, SOLO para fuentes
   // de texto (condición 1: un texto no trae imágenes). El backend decide qué secciones califican y
   // genera; aquí se fusiona el resultado. Extra no crítico: si falla, no se muestra ilustración.
   async function fetchAndMergeIllustrations(
@@ -536,7 +535,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
 
   async function handleTransform(text: string | null, file: File | null) {
     // Marca el inicio de la interacción con un documento (segmenta la sesión). Solo el TIPO de
-    // fuente, nunca el contenido ni el nombre del archivo (privacidad, Hito 8).
+    // fuente, nunca el contenido ni el nombre del archivo (privacidad).
     const sk: SourceKind = sourceKindOf(file);
     // El documento que se va a transformar, en la forma que entiende el punto único de envío.
     // Aquí siempre viene del navegador: `documentId` es para las presentaciones RESTAURADAS.
@@ -545,12 +544,12 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
     resetForRun(text, file);
     setStatus("streaming");
 
-    // Adelanto en PARALELO (Hito 5g): no se espera (no bloquea el streaming). Latencia real del
+    // Adelanto en PARALELO: no se espera (no bloquea el streaming). Latencia real del
     // LLM liviano, sin sleep. Si falla, se marca como error y se muestra como tal (honestidad).
     //
     // El AUDIO es el único caso que no puede lanzarlo aquí: el modelo del adelanto no admite
     // audio como entrada. Se dispara más abajo, al llegar la transcripción de la fase de
-    // percepción: que además es justo el momento en que hay algo que resumir. Para el usuario
+    // percepción, que además es justo el momento en que hay algo que resumir. Para el usuario
     // la diferencia es que el adelanto del audio tarda un poco más, no que no exista.
     setSummaryStatus("loading");
     if (sk !== "audio") {
@@ -660,7 +659,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
     [visible, effectiveActiveId],
   );
 
-  // Estado de anclaje por sección (Hito 8): alimenta el trato honesto del `not_found` en el
+  // Estado de anclaje por sección: alimenta el trato honesto del `not_found` en el
   // contenido (aviso en vez de fingir una fuente). Se puebla en streaming y en no-streaming.
   const groundingBySection = useMemo(
     () => Object.fromEntries(entries.map((e) => [e.section_id, e.status])),
@@ -670,27 +669,20 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   // Prefetch de preguntas sugeridas de la sección activa: se piden en segundo plano y se cachean
   // → cuando el usuario mira el chat, ya están (instantáneas).
   //
-  // Antes solo ocurría en modo detallado, y la idea era razonable (preguntar es profundizar) pero
-  // no resiste la prueba: quien lee en resumen es justamente quien más necesita que le ofrezcan
-  // por dónde seguir, y en el móvil el chat está a un toque desde cualquier modo. Dejarlas fuera
-  // del resumen las escondía de quien iba a usarlas.
+  // No depende del nivel de detalle: quien lee en resumen también necesita que le ofrezcan por
+  // dónde seguir, y en el móvil el chat está a un toque desde cualquier modo.
   //
-  // La condición que sustituye al modo es el CHAT ABIERTO, y no es un apaño para abaratar: las
-  // preguntas sugeridas solo se ven dentro del chat, así que pedirlas para quien no lo ha abierto
-  // era gastar en algo que nadie iba a mirar, y eso ya pasaba antes, en detallado. Medido: con
-  // el chat cerrado, desplazarse por el documento disparaba una llamada al modelo por cada
-  // sección por la que se pasaba.
-  //
-  // Así que esto da lo que faltaba (sugerencias también en resumen) y además gasta menos que
-  // antes. Siguen siendo instantáneas donde importa: `requestedRef` las cachea por sección, de
-  // modo que solo la primera sección tras abrir el chat espera.
+  // La condición es el CHAT ABIERTO: las preguntas sugeridas solo se ven dentro del chat, y con
+  // el chat cerrado, desplazarse por el documento dispararía una llamada al modelo por cada
+  // sección recorrida. `requestedRef` las cachea por sección, de modo que solo la primera
+  // sección tras abrir el chat espera.
   const prefetchSuggestions = chat.prefetchSuggestions;
   const chatAbierto = openOrder.includes("chat");
   useEffect(() => {
     if (chatAbierto && activeSection) prefetchSuggestions(activeSection);
   }, [chatAbierto, activeSection, prefetchSuggestions]);
 
-  // Telemetría (Hito 8): arranca la sesión al montar y la cierra al ocultarse la pestaña,
+  // Telemetría: arranca la sesión al montar y la cierra al ocultarse la pestaña,
   // reportando el último tramo de modo abierto (que ningún cambio llegó a cerrar).
   useEffect(() => {
     void quienSoy().then(setUsuario);
@@ -728,7 +720,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   }, []);
 
   // Ordinal (1-based) de una sección en la lista visible. Se reporta la POSICIÓN, no el id
-  // (que lo genera el modelo y podría describir el contenido), privacidad, Hito 8.
+  // (que lo genera el modelo y podría describir el contenido), por privacidad.
   function ordinalOf(id: string | null): number | null {
     if (!id) return null;
     const i = visible.findIndex((s) => s.id === id);
@@ -736,7 +728,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   }
 
   function handleDetailLevelChange(level: DetailLevel) {
-    // Punto ÚNICO de interacción (Punto 11): instrumenta el tiempo REAL en cada modo. El cliente
+    // Punto ÚNICO de interacción: instrumenta el tiempo REAL en cada modo. El cliente
     // lleva el reloj de "cuándo entré a este tramo" y reporta cuánto duró el que deja.
     if (level === detailLevel) return; // clic redundante: no cuenta como cambio
     detailLevelRef.current = level;
@@ -750,7 +742,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
   const hasContent = sections.length > 0;
   // Reintentar es volver a transformar EL MISMO documento, que sigue en `original` porque el
   // formulario tampoco suelta el archivo. No se hace solo: una transformación se paga entera, y
-  // decidir pagarla otra vez es del participante. Lo que faltaba era que alguien se lo dijera.
+  // decidir pagarla otra vez es del usuario.
   const puedeReintentar =
     original !== null && (original.text !== null || original.file !== null);
   const streaming = status === "streaming";
@@ -850,7 +842,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
       onNarrationSeek={narration.seek}
       onNarrationSkip={narration.skip}
     >
-      {/* Escala 2 (Hito 5e): Workspace arbitra contenido + columnas opcionales (fuente, chat).
+      {/* Escala 2: Workspace arbitra contenido + columnas opcionales (fuente, chat).
           El contenido es el slot fijo; las columnas solo cambian al abrir/cerrar un panel. */}
       <Workspace
         openOrder={effectiveOrder}
@@ -887,7 +879,7 @@ export default function WorkspaceClient({ abrir }: { abrir?: string } = {}) {
           // COMPLETA (la generación ocurre antes, con el botón en "Generando…").
           <DeckView deck={deck} onOpenSource={openDeckSource} />
         ) : slidesOpen && hasContent ? (
-          // Modo slides (Hito 5h Parte 2): re-vista del MISMO contenido ya generado; el núcleo
+          // Modo slides: re-vista del MISMO contenido ya generado; el núcleo
           // fijo y las columnas (fuente/chat) siguen disponibles.
           <SlideView
             title={presentation.title}

@@ -1,4 +1,4 @@
-"""Transcripción página→texto (Haiku) para alimentar el índice de LightRAG (Hito 7).
+"""Transcripción página→texto (Haiku) para alimentar el índice de LightRAG.
 
 Esta es la tensión "aplanar SOLO en el índice": el grafo de LightRAG se construye sobre texto,
 así que se transcribe cada página (texto + descripción de tablas/figuras) con Haiku. La respuesta

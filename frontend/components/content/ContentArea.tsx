@@ -21,7 +21,7 @@ interface ContentAreaProps {
   observations?: SemanticObservation[];
   onOpenSource?: (section: Section) => void;
   activeSourceKey?: string | null;
-  groundingBySection?: Record<string, GroundingStatus>; // estado de anclaje por sección (Hito 8)
+  groundingBySection?: Record<string, GroundingStatus>; // estado de anclaje por sección
   streaming?: boolean; // la transformación sigue en curso: aún pueden llegar secciones
   illustrationsPending?: boolean; // se están preparando ilustraciones de apoyo (llegan después)
 }
