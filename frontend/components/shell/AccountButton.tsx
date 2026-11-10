@@ -6,9 +6,8 @@ import type { Usuario } from "@/lib/account";
 /**
  * El control de cuenta de la cabecera.
  *
- * Vive DENTRO de la fila de controles, no flotando encima. Antes era un botón `fixed` sobre toda
- * la pantalla y en ventanas estrechas se montaba sobre «Chat»: al estar fuera del `flex` de la
- * cabecera, nada le reservaba sitio. El cajón sí es una capa superpuesta (eso es un cajón), pero
+ * Vive DENTRO de la fila de controles, no flotando encima. Un botón `fixed` quedaría fuera del
+ * `flex` de la cabecera: nada le reservaría sitio y en ventanas estrechas se montaría sobre «Chat». El cajón sí es una capa superpuesta (eso es un cajón), pero
  * el botón que lo abre es un control más.
  */
 export function AccountButton({

@@ -3,15 +3,15 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
 
 /**
- * Un interruptor de verdad: algo que está puesto o quitado.
+ * Un interruptor: algo que está puesto o quitado.
  *
- * **Por qué no un botón más.** El chat no es una acción que ocurre y se acaba, es un estado que se
+ * Por qué no un botón más. El chat no es una acción que ocurre y se acaba, es un estado que se
  * queda: o está abierto o no lo está. Un rectángulo que cambia de color obliga a recordar cuál de
  * los dos colores significaba «abierto»; un interruptor lo enseña por la posición, que no hay que
  * aprenderla. Por eso lleva `role="switch"` y no `aria-pressed`: la forma y la semántica dicen lo
  * mismo.
  *
- * **La perilla se estira hacia donde va y se recoge al llegar**, exactamente como el pulgar del
+ * La perilla se estira hacia donde va y se recoge al llegar, exactamente como el pulgar del
  * control segmentado. No es un efecto nuevo: es el MISMO, y que la aplicación tenga una sola idea
  * de movimiento repetida en dos sitios vale más que tener dos ideas bonitas sin relación.
  *
@@ -41,9 +41,9 @@ export function Interruptor({ checked, onChange, label, disabled = false }: Inte
    * Cómo estaba la última vez. `null` es «todavía no se ha colocado nunca».
    *
    * Lo que decide si hay recorrido es que el valor haya CAMBIADO, no que sea la primera vez. Con
-   * una bandera de «ya se estrenó» el modo estricto rompía el interruptor: React monta, limpia y
-   * vuelve a montar, así que la segunda pasada se creía un cambio, estiraba la perilla de extremo
-   * a extremo y la dejaba así: en reposo, antes de que nadie tocara nada.
+   * una bandera de «ya se estrenó» el modo estricto rompería el interruptor: React monta, limpia y
+   * vuelve a montar, así que la segunda pasada se creería un cambio, estiraría la perilla de
+   * extremo a extremo y la dejaría así: en reposo, antes de que nadie tocara nada.
    */
   const anterior = useRef<boolean | null>(null);
 

@@ -1,10 +1,9 @@
-"""Exporta la telemetría de comportamiento (Hito 8) a CSV para análisis.
+"""Exporta la telemetría de comportamiento a CSV para análisis.
 
 Lee los JSONL que deja el backend (`telemetry.record_ux_event`) y produce dos archivos:
-- `telemetry_raw.csv`   ( un evento por fila (auditoría, orden por sesión y TIEMPO).
-- `telemetry_summary.csv` ) una fila por sesión: los agregados que se cruzan con NASA-TLX y la
-  prueba de comprensión (tiempo en resumen vs. detallado, sugeridas vs. propias, verificaciones
-  de fuente por estado de grounding, etc.).
+- `telemetry_raw.csv`: un evento por fila (auditoría, orden por sesión y TIEMPO).
+- `telemetry_summary.csv`: una fila por sesión con los agregados de uso (tiempo en resumen
+  vs. detallado, sugeridas vs. propias, verificaciones de fuente por estado de grounding, etc.).
 
 Uso (desde backend/):
     uv run python scripts/export_telemetry.py
@@ -238,11 +237,11 @@ def _summarize(events: list[dict[str, Any]], out: Path) -> list[dict[str, Any]]:
 
 def main() -> None:
     # La consola de Windows suele ser cp1252 y revienta con '→'/acentos. Forzamos UTF-8 tolerante
-    # (mismo criterio que el arnés del Hito 7).
+    # (mismo criterio que los experimentos).
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-    parser = argparse.ArgumentParser(description="Exporta la telemetría del Hito 8 a CSV.")
+    parser = argparse.ArgumentParser(description="Exporta la telemetría a CSV.")
     parser.add_argument("--dir", type=Path, default=None, help="Carpeta con los JSONL.")
     parser.add_argument("--out", type=Path, default=None, help="Carpeta de salida (CSV).")
     args = parser.parse_args()

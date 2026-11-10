@@ -1,4 +1,4 @@
-"""Mini-evaluación de la entrada de audio (hallazgo A1), dos condiciones, modelo REAL.
+"""Mini-evaluación de la entrada de audio, dos condiciones, modelo REAL.
 
 Compara, sobre los mismos clips y con el MISMO estructurador (Sonnet) y el mismo contrato:
 
@@ -12,12 +12,12 @@ el resultado es que no hay diferencia: la investigación previa ya advierte que 
 informativo la diferencia probablemente sea marginal, y este arnés existe para cuantificarla,
 no para confirmarla.
 
-Las tres medidas son DETERMINISTAS (sin juez LLM, a diferencia del Hito 7) porque lo que se
+Las tres medidas son DETERMINISTAS (sin juez LLM, a diferencia del experimento RAG) porque lo que se
 pregunta es verificable por presencia de texto, y un juez añadiría varianza sin añadir
 información:
-  - `enfasis_en_nucleo`  ( ¿la frase que se dijo con énfasis quedó en una sección núcleo o en
+  - `enfasis_en_nucleo`: ¿la frase que se dijo con énfasis quedó en una sección núcleo o en
     el título? (contra `enfasis_en` del manifiesto)
-  - `duda_matizada`      ) ¿la cifra dicha con duda aparece con una marca de incertidumbre, y
+  - `duda_matizada`: ¿la cifra dicha con duda aparece con una marca de incertidumbre, y
     la cifra firme NO? Las dos mitades importan: matizarlo todo no es acertar.
   - `hablantes_citados`: ¿cuántos hablantes distintos se mencionan? (solo clips de 2 voces)
 Más el costo real por minuto de audio, que es lo que decide si esto es sostenible.
@@ -25,7 +25,7 @@ Más el costo real por minuto de audio, que es lo que decide si esto es sostenib
 Uso:
     uv run python scripts/eval_audio_evidence.py
 No corre en CI ni en pytest. Requiere los clips grabados en tests/fixtures/local/audio/
-(ver docs/Guion_Clips_Audio_A1.md), ANTHROPIC_API_KEY, OPENAI_API_KEY (línea base) y
+ANTHROPIC_API_KEY, OPENAI_API_KEY (línea base) y
 GOOGLE_API_KEY (percepción). Escribe CSV y JSONL en scripts/outputs/.
 """
 
@@ -331,7 +331,7 @@ def render_summary(rows: list[Measured]) -> str:
 
 async def main() -> None:
     # La consola de Windows suele ser cp1252 y revienta con los acentos y las flechas del
-    # reporte. Mismo criterio que el arnés del Hito 7 y el exportador de telemetría.
+    # reporte. Mismo criterio que los experimentos y el exportador de telemetría.
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
@@ -341,7 +341,7 @@ async def main() -> None:
 
     # Re-corrida ACOTADA: con ids por argumento se corren solo esos clips y los resultados se
     # FUSIONAN con los de la corrida anterior, en vez de regenerar los 16 registros. Es la
-    # misma disciplina del re-juicio acotado del Hito 7: con 1 repetición y modelos
+    # misma disciplina del re-juicio acotado de `experiments/`: con 1 repetición y modelos
     # probabilísticos, re-correr lo que ya era válido solo cambiaría cifras sin añadir
     # información. Se usa cuando un clip se re-graba porque falló como instrumento.
     pedidos = [a for a in sys.argv[1:] if not a.startswith("-")]
@@ -395,7 +395,7 @@ async def main() -> None:
     # Un clip puede fallar como INSTRUMENTO (la grabación no logró el rasgo que pretendía
     # probar). Eso no se detecta en automático: se marca a mano en el manifiesto al revisar la
     # corrida, y desde entonces el reporte lo avisa para que sus medidas no se cuenten como
-    # casos válidos. Es la lección de la auditoría del dataset del Hito 7.
+    # casos válidos. Es la lección de la auditoría del dataset del experimento RAG.
     invalidos = [c["id"] for c in clips if c.get("invalido")]
     if invalidos:
         print(

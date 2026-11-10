@@ -1,7 +1,7 @@
 #!/bin/sh
 # Arranque del backend.
 #
-# Existe por una razón concreta: **el volumen no viene con nuestro dueño**. Donde esto se despliega
+# Existe por una razón concreta: el volumen no viene con el dueño del proceso. Donde esto se despliega
 # el punto de montaje aparece a nombre de root, así que un proceso que no sea root no puede ni
 # crear la carpeta de la base. Y correr el servidor como root para esquivar eso sería arreglar un
 # problema de permisos regalando todos los permisos.

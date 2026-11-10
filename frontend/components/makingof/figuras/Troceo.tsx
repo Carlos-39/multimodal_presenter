@@ -1,10 +1,10 @@
 /**
  * Cuándo llega cada sección, por los tres caminos que se midieron.
  *
- * **La fila del medio es la figura entera.** Cuatro puntos apilados en la misma vertical dicen
+ * La fila del medio es la figura entera. Cuatro puntos apilados en la misma vertical dicen
  * «todas llegaron a la vez» de un vistazo, que es justo lo que una tabla de marcas de tiempo
  * obliga a comparar a mano. Y dicen algo más incómodo: por el camino de en medio el usuario ve
- * su primera sección *más tarde* que por los otros dos, aunque el backend trocee igual.
+ * su primera sección más tarde que por los otros dos, aunque el backend trocee igual.
  *
  * Las marcas son los segundos medidos con el modelo real. Un punto por sección: cuando dos
  * llegaron en el mismo instante, se apilan en la misma vertical en vez de dibujarse una sola,

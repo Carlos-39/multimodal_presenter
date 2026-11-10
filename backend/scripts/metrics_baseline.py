@@ -1,14 +1,14 @@
-"""A4 (Hito 5f): Línea base de métricas con el modelo REAL. Arnés mínimo y reutilizable.
+"""Línea base de métricas con el modelo REAL. Arnés mínimo y reutilizable.
 
-NO es la evaluación del Hito 8 (Pydantic Evals, Sonnet vs. Gemini): es la base sobre la que
-esa se construirá. Corre pocos documentos por el pipeline real y reporta una tabla con:
+NO es una evaluación comparativa (Pydantic Evals, Sonnet vs. Gemini): es la base sobre la que
+esa se construiría. Corre pocos documentos por el pipeline real y reporta una tabla con:
   - validación al 1er intento vs. reintentos (nº de requests del modelo; clave con PromptedOutput),
   - latencia: a `start`, a la 1ª `section`, total,
   - tokens de entrada/salida (de result.usage()),
-  - distribución core/satellite y si algún documento sale SIN núcleo (Punto 9),
+  - distribución core/satellite y si algún documento sale SIN núcleo,
   - resumen de grounding (verified/not_found/unverified) para entradas de texto.
 
-Diseño para que el Hito 8 lo extienda sin rehacerlo: `measure_document()` (mide y devuelve un
+Diseño para extenderlo sin rehacerlo: `measure_document()` (mide y devuelve un
 `DocMetrics`) está separado de `render_table()` (reporta). No se usa Pydantic Evals aquí.
 
 Uso:  uv run python scripts/metrics_baseline.py

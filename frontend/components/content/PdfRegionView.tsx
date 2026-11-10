@@ -67,8 +67,8 @@ export function PdfRegionView({
           Referencia: página <span className="tabular">{page}</span>
         </span>
         {aproximada ? (
-          // Se dice en la cara que es aproximada. Presentar como exacta una ubicación que no lo
-          // es sería la misma sobre-afirmación que eliminó el Hito 8A.1.
+          // Se dice en la cara que es aproximada: presentar como exacta una ubicación que no lo
+          // es sería sobre-afirmar.
           <span className="shrink-0 text-warning">Ubicación aproximada</span>
         ) : null}
       </div>

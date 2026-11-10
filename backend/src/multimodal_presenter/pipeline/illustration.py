@@ -1,6 +1,6 @@
-"""Ilustraciones de apoyo GENERADAS (Hito 5h Parte 1).
+"""Ilustraciones de apoyo GENERADAS.
 
-Reapertura acotada de una decisión de Fase 2: se genera una ilustración SOLO cuando (1) la sección
+Se genera una ilustración SOLO cuando (1) la sección
 no tiene imagen real del documento (a nivel de documento: solo fuentes de texto, que no traen
 imágenes), (2) el contenido se beneficia genuinamente de apoyo visual (proceso físico, mecanismo
 espacial o secuencia visual: rúbrica fija, no juicio libre), y (3) es ayuda didáctica, nunca
@@ -10,9 +10,9 @@ Flujo: un clasificador barato (Haiku) decide qué núcleos califican y da un pro
 se genera la imagen. Cacheado por documento. Techo de seguridad para acotar el costo. La condición 1
 (solo texto) la aplica el frontend al decidir si llama a este flujo.
 
-Generación de imagen (compartida con el deck 5j): proveedor PRIMARIO Ideogram (mejores dibujos), con
+Generación de imagen (compartida con el deck): proveedor PRIMARIO Ideogram (mejores dibujos), con
 FALLBACK a OpenAI gpt-image-1 si falla (patrón como el FallbackModel del LLM). Las imágenes se
-generan **SIN texto** (las etiquetas van en el HTML de la slide): así se evitan los typos que los
+generan SIN texto (las etiquetas van en el HTML de la slide): así se evitan los typos que los
 modelos de imagen cometen al "dibujar" palabras, y el texto que ve el usuario es siempre correcto.
 """
 
@@ -46,8 +46,8 @@ _SAFETY_CAP = 4  # techo por documento: la rúbrica suele dar 1-2; esto acota el
 # La imagen tiene que ENTENDERSE SOLA. No basta con que no lleve texto: tampoco puede llevar
 # marcas que remitan a información que no está dentro de la imagen, numeración de pasos, letras
 # clave, leyendas, líneas guía que apuntan a un hueco. Una referencia huérfana es PEOR que nada,
-# porque el lector busca una explicación que no existe. (Lo señaló el autor al revisar la batería
-# de diagnóstico: una foto con símbolos y sin clave deja peor a quien no conoce el tema.)
+# porque el lector busca una explicación que no existe: una foto con símbolos y sin clave deja
+# peor a quien no conoce el tema.
 #
 # Va en INGLÉS y con la restricción PRIMERO, no enterrada al final: así se midió que funciona.
 # Y se dice también en POSITIVO (con qué SÍ se construye el significado), porque los modelos de
@@ -199,7 +199,7 @@ _SUFIJOS_RESERVADOS = (".internal", ".local", ".localhost", ".home.arpa", ".test
 def _url_descargable(url: str) -> str:
     """Comprueba la URL que el proveedor dice que hay que descargar. Lanza si no es admisible.
 
-    **Es la única petición saliente del backend cuyo destino no está escrito en el código.** No la
+    Es la única petición saliente del backend cuyo destino no está escrito en el código. No la
     pone el usuario (la devuelve Ideogram en su respuesta, autenticada con nuestra clave), pero el
     servidor la busca y se trae lo que haya ahí, y eso es exactamente la forma de un SSRF.
 
@@ -208,9 +208,9 @@ def _url_descargable(url: str) -> str:
     `https`, el anfitrión no puede ser una IP literal (`169.254.169.254` y compañía), y no puede
     acabar en uno de los sufijos RESERVADOS, que es donde vive lo interno.
 
-    Ese tercer punto no estaba y hacía falta: `backend.railway.internal` tiene puntos y no es una
-    IP, así que pedir «un nombre de dominio con puntos» lo dejaba pasar, y es exactamente el
-    vecino que tendrá este servicio cuando esté desplegado.
+    El tercer punto hace falta: `backend.railway.internal` tiene puntos y no es una IP, así que
+    pedir «un nombre de dominio con puntos» lo dejaría pasar, y es justo el vecino que tiene este
+    servicio desplegado.
 
     Un allowlist de dominios sería más estricto, pero se rompería en silencio el día que cambien
     de CDN y nos dejaría sin ilustraciones por una medida de seguridad. Lo que se prohíbe aquí son
@@ -352,13 +352,12 @@ async def leer_ilustracion(
     el dibujante entiende otra cosa la clave miente. Una clave equivocada es peor que ninguna, es
     el mismo argumento con el que se prohibieron las marcas sin leyenda dentro de la imagen.
 
-    La segunda es que mirarla permite tirarla. Hasta ahora, una ilustración genérica se publicaba
-    igual porque nadie la revisaba; el único filtro estaba ANTES, decidiendo si el tema pedía
-    imagen. Ahora el filtro está también DESPUÉS, sobre la imagen concreta, que es donde se puede
-    comprobar de verdad si aporta algo.
+    La segunda es que mirarla permite tirarla. Además del filtro ANTES, que decide si el tema pide
+    imagen, hay un filtro DESPUÉS, sobre la imagen concreta, que es donde se puede comprobar si
+    aporta algo.
 
     Si la lectura falla (red, filtro del proveedor), la imagen se queda sin clave pero se publica:
-    es lo que había antes de este cambio, y no justifica perder una imagen ya pagada.
+    no justifica perder una imagen ya pagada.
 
     `exigir_utilidad=False` es para la imagen EVOCADORA, la de la apertura y el cierre de una
     presentación. No es una excepción por comodidad: su trabajo es otro. Esa imagen ambienta, dice

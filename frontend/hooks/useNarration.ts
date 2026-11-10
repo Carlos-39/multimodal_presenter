@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import type { Section } from "@/lib/types";
 
 /**
- * Narración tipo audiolibro (Hito 5g Parte 3). Punto ÚNICO de la responsabilidad "audio":
+ * Narración tipo audiolibro. Punto ÚNICO de la responsabilidad "audio":
  * pide el mp3 a POST /api/narration (guion Sonnet + TTS OpenAI en el backend), lo reproduce y lo
  * cachea por documento (no re-pide si se vuelve a reproducir el mismo contenido).
  *
@@ -14,12 +14,11 @@ import type { Section } from "@/lib/types";
  *
  * ## Por qué hay UN solo `<audio>` y por qué empieza sonando en silencio
  *
- * En iOS (y por tanto en el navegador de WhatsApp, que es por donde llegan los participantes) un
- * `play()` solo se permite si sale del toque del dedo. Generar la narración tarda unos veinte
- * segundos, así que cuando el mp3 llegaba, el permiso del toque hacía rato que había caducado y
- * el navegador bloqueaba la reproducción. El `catch` metía ese bloqueo en el mismo saco que un
- * fallo del TTS y decía «no se pudo generar la narración»: el audio estaba generado y pagado, y
- * el mensaje mandaba a buscar donde no era. Lo vimos en producción.
+ * En iOS (y por tanto en el navegador de WhatsApp) un `play()` solo se permite si sale del toque
+ * del dedo. Generar la narración tarda unos veinte segundos, así que cuando el mp3 llega, el
+ * permiso del toque hace rato que caducó y el navegador bloquea la reproducción. Tratar ese
+ * bloqueo como un fallo del TTS diría «no se pudo generar la narración» con el audio ya generado
+ * y pagado.
  *
  * Por eso dos cosas. Primera: el elemento se crea UNA vez y se reusa toda la sesión, en lugar de
  * un `new Audio(url)` por reproducción, el desbloqueo se concede al elemento, así que uno nuevo
@@ -33,10 +32,10 @@ import type { Section } from "@/lib/types";
  *
  * Con una presentación guardada la caché se precarga con la narración ya generada, así que
  * escucharla no vuelve a pasar por el TTS. No es solo el ahorro: la voz lee un guion nuevo cada
- * vez que se regenera, y una presentación guardada que suena distinta al volver no era la misma.
+ * vez que se regenera, y una presentación guardada que suena distinta al volver no es la misma.
  *
  * Este hook no sabe que existen cuentas: avisa de qué audio acaba de generar y `page` decide si
- * hay dónde guardarlo. Sin cuenta nadie escucha y todo sigue como antes.
+ * hay dónde guardarlo. Sin cuenta nadie escucha y todo funciona igual.
  */
 export type NarrationStatus = "idle" | "loading" | "playing" | "paused" | "ready" | "error";
 
@@ -55,8 +54,8 @@ export const NARRATION_SKIP_S = 15;
  *
  * Se sirve como `blob:` y no como `data:` por la CSP de la aplicación: `media-src` admite `'self'`
  * y `blob:` (que ya hacían falta para el mp3 de la narración) pero no `data:`, así que un
- * `data:audio/wav` se rechaza con `NotSupportedError` antes de sonar. Medido contra la cabecera
- * real, no supuesto. La alternativa era ensanchar la política para 132 bytes de silencio.
+ * `data:audio/wav` se rechaza con `NotSupportedError` antes de sonar. La alternativa
+ * sería ensanchar la política para 132 bytes de silencio.
  *
  * 16 bits a 44,1 kHz y no algo más pequeño porque es el formato que ningún navegador discute,
  * y el que tiene que tragárselo es el Safari de un iPhone cualquiera.
@@ -292,8 +291,8 @@ export function useNarration(
    * El mp3 que se acaba de generar, si lo hay, leído en el momento de pedirlo.
    *
    * Es para subirlo cuando alguien pulsa «Guardar» DESPUÉS de haber escuchado la narración: sin
-   * esto, guardar justo después de generarla la dejaría fuera y habría que pagar el TTS otra vez
-   *, y sonaría distinta, que es lo que de verdad molesta.
+   * esto, guardar justo después de generarla la dejaría fuera y habría que pagar el TTS otra vez,
+   * y sonaría distinta.
    */
   const audioGenerado = useCallback(() => cacheRef.current?.audio ?? null, []);
 

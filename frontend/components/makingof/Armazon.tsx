@@ -11,7 +11,7 @@ import { Papel } from "./Papel";
 /**
  * El armazón de la bitácora: el papel del acto y el índice.
  *
- * **El índice va fijo mientras se lee un capítulo y no en la portada.** Son dos momentos
+ * El índice va fijo mientras se lee un capítulo y no en la portada. Son dos momentos
  * distintos: en la portada estás eligiendo y el árbol es lo que vienes a mirar, así que vive
  * dentro de la página y en grande; dentro de un capítulo estás leyendo y lo que hace falta es
  * poder saltar sin perder el sitio. Tenerlo en los dos lados sería enseñarlo dos veces en la misma
@@ -104,7 +104,7 @@ function Cajon({ slug, acto }: { slug: string; acto: keyof typeof ACTOS }) {
 /**
  * El nombre del acto al margen, como el titulillo de un libro.
  *
- * Aparece **después** de que el papel se asiente, cuando ya llevas un rato leyendo: ahí es cuando
+ * Aparece después de que el papel se asiente, cuando ya llevas un rato leyendo: ahí es cuando
  * sirve de algo saber en qué parte de la historia estás. Dice lo mismo que el tono del papel, con
  * palabras, por si el tono no se nota.
  */

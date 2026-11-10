@@ -1,9 +1,9 @@
 import type { SourceKind } from "./types";
 
 /**
- * Ayudantes puros de la entrada de audio (A1). Mismo criterio que `detail.ts` (5b),
- * `highlight.ts` (5c) y `workspace.ts` (5e): la lógica sin estado vive aquí y se testea
- * sola, no enterrada en un componente.
+ * Ayudantes puros de la entrada de audio. Mismo criterio que `detail.ts`, `highlight.ts` y
+ * `workspace.ts`: la lógica sin estado vive aquí y se testea sola, no enterrada en un
+ * componente.
  */
 
 /**

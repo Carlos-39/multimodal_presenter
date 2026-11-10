@@ -1,4 +1,4 @@
-"""Sonda mínima de acceso al modelo de percepción de audio (Fase 0, hallazgo A1).
+"""Sonda mínima de acceso al modelo de percepción de audio.
 
 Hace UNA llamada con UN clip corto y responde tres cosas antes de construir nada más encima:
   1. ¿Responde la ruta de percepción (Google AI Studio directo)?
@@ -114,7 +114,7 @@ async def main() -> int:
 
     evidence = result.output
     # OJO: `usage` es una PROPIEDAD en pydantic-ai 2.46 (RunUsage), no un método, el mismo
-    # detalle que ya estaba anotado en el arnés del 5f.
+    # detalle que ya está anotado en `metrics_baseline.py`.
     usage = result.usage
     entrada = _usage_int(usage, "input_tokens", "request_tokens")
     salida = _usage_int(usage, "output_tokens", "response_tokens")

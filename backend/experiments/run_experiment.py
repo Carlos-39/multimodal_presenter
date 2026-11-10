@@ -1,4 +1,4 @@
-"""Arnés del experimento reducido (Hito 7): 4 condiciones × 3 docs × preguntas validadas × 1 rep.
+"""Arnés del experimento reducido: 4 condiciones × 3 docs × preguntas validadas × 1 rep.
 
 Fases (separadas para el mini-gate de costo):
   index   → indexa los 3 docs (transcripción + grafo + embeddings) y reporta el COSTO real.
@@ -43,7 +43,7 @@ from .transcription import transcribe_pages
 from .vector_rag import VoyagePageIndex
 
 K = 5  # presupuesto de páginas por consulta (condiciones con recuperación)
-REPS = 1  # Carlos eligió 1 repetición (presupuesto); sin varianza (limitación declarada)
+REPS = 1  # 1 repetición por presupuesto; sin varianza (limitación conocida)
 VOYAGE_USD_PER_1M = 0.12
 CONDITIONS = ["baseline", "vector_rag", "lightrag_naive", "lightrag_graph"]
 RUN_LOG = RUNS_DIR / "experiment.jsonl"
@@ -198,7 +198,7 @@ async def query_phase() -> None:
                         correctness = apply_unanswerable_gate(
                             q["category"], cond, pages if cond != "baseline" else [], correctness
                         )
-                    except Exception as exc:  # noqa: BLE001 (un fallo es un HALLAZGO, se registra)
+                    except Exception as exc:  # noqa: BLE001 (un fallo se registra)
                         print(f"  [ERROR] {cond}/{q['id']}: {type(exc).__name__}: {exc}")
                         append_jsonl(
                             RUN_LOG,

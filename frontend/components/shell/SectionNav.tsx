@@ -3,8 +3,8 @@
 import type { Section } from "@/lib/types";
 
 /**
- * Navegación entre secciones (parte del núcleo fijo). Funcional en este hito: al
- * seleccionar una sección, el contenedor la desplaza a la vista y la resalta.
+ * Navegación entre secciones (parte del núcleo fijo). Al seleccionar una sección, el
+ * contenedor la desplaza a la vista y la resalta.
  */
 interface SectionNavProps {
   sections: Section[];

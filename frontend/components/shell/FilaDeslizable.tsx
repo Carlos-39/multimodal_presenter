@@ -6,17 +6,17 @@ import { Trash } from "@phosphor-icons/react";
 /**
  * Arrastrar una tarjeta hacia la izquierda para eliminarla.
  *
- * **Es un atajo con el dedo, no una forma nueva de borrar.** Al soltar pasado el umbral no se
+ * Es un atajo con el dedo, no una forma nueva de borrar. Al soltar pasado el umbral no se
  * destruye nada: se ARMA la misma mecha del botón, con su ventana para arrepentirse. Una pantalla
  * táctil es justo donde más fácil es empezar un gesto sin querer, así que el deshacer importa más
  * aquí que en ningún otro sitio.
  *
- * **Solo con el dedo (y el lápiz).** Con ratón no se activa: ahí está el botón, que es visible,
+ * Solo con el dedo (y el lápiz). Con ratón no se activa: ahí está el botón, que es visible,
  * enfocable y no hay que adivinarlo. Un gesto escondido nunca puede ser la única manera de hacer
  * algo, y aquí no lo es.
  *
- * **El scroll vertical sigue siendo del navegador** (`touch-action: pan-y`): él se queda los
- * movimientos de arriba abajo y a nosotros nos manda los de lado. Así no hay que adivinar el eje
+ * El scroll vertical sigue siendo del navegador (`touch-action: pan-y`): él se queda los
+ * movimientos de arriba abajo y al componente le manda los de lado. Así no hay que adivinar el eje
  * a mano ni se queda la lista pegada cuando alguien arrastra en diagonal.
  *
  * La posición durante el arrastre se escribe en el DOM. Con estado de React serían sesenta renders
@@ -93,12 +93,12 @@ export function FilaDeslizable({ onDeslizar, children }: FilaDeslizableProps) {
           if (!arrastrando.current) {
             if (d > -HOLGURA) return;
             arrastrando.current = true;
-            // La trasera solo existe mientras el dedo arrastra. Estaba siempre puesta, y cuando la
-            // tarjeta se atenuaba -al armar la mecha- se transparentaba y aparecía una papelera
+            // La trasera solo existe mientras el dedo arrastra: si estuviera siempre puesta, al
+            // atenuarse la tarjeta (al armar la mecha) se transparentaría y aparecería una papelera
             // suelta flotando en mitad del contenido. Un fondo que solo tiene sentido durante un
             // gesto no puede estar pintado fuera del gesto.
             if (trasera.current) trasera.current.dataset.activa = "true";
-            // A partir de aquí los eventos son nuestros aunque el dedo se salga de la tarjeta.
+            // A partir de aquí los eventos llegan a este elemento aunque el dedo se salga de la tarjeta.
             // Capturar es una comodidad, no un requisito: si el navegador dice que ese puntero ya
             // no está activo, lanza: y perder el arrastre entero por eso sería absurdo.
             try {

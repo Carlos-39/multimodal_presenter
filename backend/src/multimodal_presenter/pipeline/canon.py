@@ -17,8 +17,8 @@ convirtió en un espacio corriente: que es exactamente lo que pasó una vez al m
 #
 # El mapa es estrictamente 1 carácter → 1 carácter (misma longitud), y eso no es un detalle: hace
 # que un índice hallado sobre el texto canónico siga siendo válido sobre el texto ORIGINAL. Es lo
-# que mantiene exacto el resaltado del 5c, y lo que permite al localizador de PDF volver desde una
-# posición del texto hasta la caja del carácter que le corresponde.
+# que mantiene exacto el resaltado de la cita, y lo que permite al localizador de PDF volver desde
+# una posición del texto hasta la caja del carácter que le corresponde.
 #
 # NO se toca la semántica (no minúsculas, no colapso de espacios): solo se unifican variantes
 # tipográficas de un mismo signo.

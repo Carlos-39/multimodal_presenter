@@ -2,18 +2,17 @@
 
 Las dos cosas de un tirón, porque separarlas es la forma de acabar analizando un volcado de
 anteayer: pide el crudo al endpoint protegido, lo guarda con fecha y llama al exportador que ya
-existe. **El exportador no se toca**: es el que se usó con los datos de desarrollo y el que define
+existe. El exportador no se toca: es el que se usó con los datos de desarrollo y el que define
 qué significa cada columna. Dos implementaciones de eso serían dos verdades.
 
-Uso (desde backend/). **En PowerShell las variables NO se ponen delante del comando**:
+Uso (desde backend/). En PowerShell las variables NO se ponen delante del comando:
 
     PowerShell:
         $env:TELEMETRIA_TOKEN = "..."     # el del servicio `api`
-        $env:ACCESO_CODIGO    = "..."     # el del servicio `web`, para pasar el portón
-        uv run python scripts/bajar_telemetria.py --url https://<tu-url> --out ../datos-sesiones
+        uv run python scripts/bajar_telemetria.py --url https://<tu-url> --out ../telemetria
 
     bash:
-        TELEMETRIA_TOKEN=... ACCESO_CODIGO=... uv run python scripts/bajar_telemetria.py --url ...
+        TELEMETRIA_TOKEN=... uv run python scripts/bajar_telemetria.py --url ...
 
 Lo que deja:
     <out>/telemetria-YYYYMMDDTHHMMSSZ.jsonl   el crudo tal cual, que es el respaldo
@@ -33,30 +32,11 @@ from pathlib import Path
 import httpx
 
 
-def _pasa_el_porton(cliente: httpx.Client, url: str, codigo: str | None) -> None:
-    """Deja la cookie del portón en el cliente, si el despliegue tiene portón.
-
-    **Hace falta aunque el token sea correcto**, y es la clase de detalle que cuesta una tarde:
-    el portón cubre `/api/*` entero, así que sin la cookie el volcado responde 401 ANTES de que
-    nadie mire el token. Pasó de verdad: el 401 del portón se leyó como «token incorrecto» y
-    mandó a revisar lo que estaba bien.
-    """
-    if not codigo:
-        return
-    r = cliente.get(url.rstrip("/") + "/", params={"c": codigo}, follow_redirects=False)
-    if not cliente.cookies.get("mmp_acceso"):
-        raise SystemExit(
-            f"El código de acceso no sirvió (respuesta {r.status_code}). "
-            "Es el valor de ACCESO_CODIGO del servicio `web`."
-        )
-
-
-def descarga(url: str, token: str, codigo: str | None, destino: Path) -> int:
+def descarga(url: str, token: str, destino: Path) -> int:
     """Guarda el volcado y devuelve cuántos eventos trae. Lanza si la respuesta no es buena."""
     destino.parent.mkdir(parents=True, exist_ok=True)
     eventos = 0
     with httpx.Client(timeout=120, follow_redirects=False) as cliente:
-        _pasa_el_porton(cliente, url, codigo)
         # El token va en una CABECERA y nunca en la URL: las URL acaban en registros de acceso, en
         # el historial y en cualquier captura de pantalla.
         with cliente.stream(
@@ -66,15 +46,6 @@ def descarga(url: str, token: str, codigo: str | None, destino: Path) -> int:
         ) as respuesta:
             if respuesta.status_code != 200:
                 cuerpo = respuesta.read().decode("utf-8", "replace")
-                # Los dos 401 posibles se distinguen por el cuerpo, no por el código: decir «token
-                # incorrecto» cuando el problema es el portón manda a revisar lo que está bien.
-                if "enlace de acceso" in cuerpo:
-                    raise SystemExit(
-                        "El portón bloqueó la petición. Pasa el código de acceso:\n"
-                        "  PowerShell:  $env:ACCESO_CODIGO = '...'\n"
-                        "  bash:        export ACCESO_CODIGO=...\n"
-                        "Es el valor de ACCESO_CODIGO del servicio `web`."
-                    )
                 raise SystemExit(
                     f"El servidor respondió {respuesta.status_code}. "
                     + {
@@ -98,7 +69,6 @@ def main() -> int:
     parser.add_argument("--url", required=True, help="URL pública, p. ej. https://algo.app")
     parser.add_argument("--out", type=Path, default=Path("telemetria"), help="Carpeta de salida.")
     parser.add_argument("--solo-bajar", action="store_true", help="No generar los CSV.")
-    parser.add_argument("--codigo", default=None, help="Código del portón (o ACCESO_CODIGO).")
     args = parser.parse_args()
 
     token = os.environ.get("TELEMETRIA_TOKEN")
@@ -108,11 +78,10 @@ def main() -> int:
             "  PowerShell:  $env:TELEMETRIA_TOKEN = '...'\n"
             "  bash:        export TELEMETRIA_TOKEN=..."
         )
-    codigo = args.codigo or os.environ.get("ACCESO_CODIGO")
 
     marca = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     crudo = args.out / f"telemetria-{marca}.jsonl"
-    eventos = descarga(args.url, token, codigo, crudo)
+    eventos = descarga(args.url, token, crudo)
     print(f"bajado: {crudo}  ({eventos} eventos, {crudo.stat().st_size / 1024:.1f} KB)")
 
     if args.solo_bajar:

@@ -1,6 +1,6 @@
-"""Re-juicio acotado post-auditoría (Hito 7). NO regenera respuestas.
+"""Re-juicio acotado post-auditoría. NO regenera respuestas.
 
-La auditoría (`docs/Auditoria_Dataset_Hito7.md`) encontró dos problemas con impacto medido:
+La auditoría del dataset encontró dos problemas con impacto medido:
 1. La métrica de `unanswerable` premiaba el fallo de recuperación (abstención con `retrieved_pages
    == []` puntuaba 1.0). Se corrige con `apply_unanswerable_gate` (baseline exento).
 2. El gold de `jv5` (lectura de una gráfica) era factualmente falso; ya se corrigió en

@@ -1,6 +1,6 @@
 /**
- * Explicación bajo demanda de una imagen REAL del documento (Hito 5h Parte 3).
- * Reusa la capacidad de visión del backend (Hito 4): el modelo relee el binario y explica la
+ * Explicación bajo demanda de una imagen REAL del documento.
+ * Reusa la capacidad de visión del backend: el modelo relee el binario y explica la
  * imagen. La atribución es la propia imagen (se muestra junto a ella en el SourcePanel).
  */
 export async function fetchImageExplanation(

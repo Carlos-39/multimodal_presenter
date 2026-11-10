@@ -1,9 +1,9 @@
-"""Biblioteca (F2): guardar, listar, volver a abrir, y que nadie lea lo de otro.
+"""Biblioteca: guardar, listar, volver a abrir, y que nadie lea lo de otro.
 
-Lo que de verdad hay que blindar aquí es el aislamiento entre cuentas. El resto son caminos
+Lo que más hay que blindar aquí es el aislamiento entre cuentas. El resto son caminos
 felices; esto es lo que, si falla, convierte la función en un problema.
 
-Y una segunda cosa que importa igual: que **mandar `document_id` en vez del archivo** funcione y
+Y una segunda cosa que importa igual: que mandar `document_id` en vez del archivo funcione y
 exija propiedad. Es lo que permite que una presentación guardada siga sirviendo (chat, deck,
 panel de fuente) desde un navegador que ya no tiene el `File`.
 """
@@ -115,7 +115,7 @@ def test_el_listado_no_trae_el_contenido(client: TestClient) -> None:
 
 
 def test_varias_presentaciones_a_la_vez(client: TestClient) -> None:
-    """ "Tener varias sesiones guardadas" es parte del encargo, no un extra."""
+    """ "Tener varias sesiones guardadas" es un requisito, no un extra."""
     _registra(client, "a@x.com")
     for titulo in ("Duendes", "Café", "Volcanes"):
         _guarda(client, titulo)
@@ -262,7 +262,7 @@ def test_sin_nada_sigue_siendo_400(client: TestClient) -> None:
 
 
 # ─────────────────────────────────────────────────────────────
-# Historial de chat (F3): cierra el pendiente del Hito 6
+# Historial de chat
 # ─────────────────────────────────────────────────────────────
 RESPUESTA = {
     "content": {"content_type": "text", "text": "Por encima de las nubes de tormenta."},
@@ -283,7 +283,7 @@ CONVERSACION = {
 
 
 def test_el_chat_se_guarda_y_vuelve_con_la_presentacion(client: TestClient) -> None:
-    """El punto de F3: la conversación sobrevive a recargar, y vuelve CON su presentación."""
+    """La conversación sobrevive a recargar, y vuelve CON su presentación."""
     _registra(client, "a@x.com")
     pid = _guarda(client)["id"]
 
@@ -292,7 +292,7 @@ def test_el_chat_se_guarda_y_vuelve_con_la_presentacion(client: TestClient) -> N
 
     completa = client.get(f"/biblioteca/presentaciones/{pid}").json()
     assert [m["rol"] for m in completa["chat"]] == ["user", "assistant"]
-    # El ancla es lo que importa de verdad: una respuesta restaurada sin su cita sería una
+    # El ancla es lo que importa: una respuesta restaurada sin su cita sería una
     # afirmación sin respaldo, justo lo que el proyecto dice no hacer.
     assert completa["chat"][1]["respuesta"]["source"]["quote"] == TEXTO
     assert completa["chat"][1]["respuesta"]["grounding"] == "verified"
@@ -404,7 +404,7 @@ def test_borrar_la_presentacion_se_lleva_su_chat(client: TestClient) -> None:
 
 
 # ─────────────────────────────────────────────────────────────
-# Artefactos generados (F4): deck y narración
+# Artefactos generados: deck y narración
 #
 # Lo que se protege aquí no es el ahorro de una llamada al modelo: es que lo guardado sea lo
 # MISMO al volver. Regenerar da otro guion y otra voz, y una presentación que cambia sola no era
@@ -434,7 +434,7 @@ def _ruta_narracion(pid: str) -> str:
 
 
 def test_el_deck_guardado_vuelve_igual(client: TestClient) -> None:
-    """El punto de F4: al volver salen LAS MISMAS diapositivas, no unas nuevas parecidas."""
+    """Al volver salen LAS MISMAS diapositivas, no unas nuevas parecidas."""
     _registra(client, "a@x.com")
     pid = _guarda(client)["id"]
 
@@ -674,7 +674,7 @@ def test_actualizar_exige_cuenta(client: TestClient) -> None:
 
 
 # ─────────────────────────────────────────────────────────────
-# El payload grande: la regresión que de verdad dolía
+# El payload grande: una regresión con impacto real
 #
 # Las ilustraciones de apoyo son data URIs. Cuatro de ellas son ~3,5 MB, y el analizador de
 # multipart topa en 1 MB las partes que NO son archivo. Mientras el payload viajó como campo de
@@ -687,7 +687,7 @@ def _payload_ilustrado(megas: int = 3) -> dict:
     datos = json.loads(json.dumps(PAYLOAD))
     datos["presentation"]["sections"][0]["illustration"] = {
         "kind": "generated_illustration",
-        # Un data URI de verdad, del tamaño de verdad.
+        # Un data URI real, del tamaño real.
         "image_url": "data:image/jpeg;base64," + ("A" * (megas * 1024 * 1024)),
         "alt": "Un duende rojo sobre una tormenta",
     }
@@ -752,7 +752,7 @@ def test_el_nombre_del_archivo_no_puede_partir_la_cabecera() -> None:
     assert _disposicion(None) == "inline"
 
     # El salto de línea no se borra: se CODIFICA. Que el texto siga ahí es inofensivo; lo que
-    # importaba era que dejara de ser un salto de línea de verdad y no pudiera partir la cabecera.
+    # importaba era que dejara de ser un salto de línea real y no pudiera partir la cabecera.
     veneno = _disposicion("x\r\nSet-Cookie: sesion=robada\r\n")
     assert "\r" not in veneno and "\n" not in veneno
     assert "%0D%0A" in veneno

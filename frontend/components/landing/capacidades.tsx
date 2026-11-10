@@ -5,7 +5,7 @@ import { Barra } from "./Barra";
 /**
  * Las capacidades del carrusel, cada una con su lámina.
  *
- * Las láminas son **tipografía y formas con los tokens**, no capturas ni ventanas dibujadas. Cada
+ * Las láminas son tipografía y formas con los tokens, no capturas ni ventanas dibujadas. Cada
  * una enseña lo que la capacidad produce, en el mismo lenguaje visual en que lo produce: una
  * sección con su cita se ve como una sección con su cita. Así lo que se promete aquí es
  * literalmente lo que aparece después.
@@ -201,13 +201,10 @@ function LaminaAudio() {
 /**
  * Las dos piezas que esta capacidad promete, las dos a la vista.
  *
- * Antes era una caja 16:9 con dos barras y unos puntos debajo, y no se leía como una diapositiva:
- * le faltaba todo lo que hace que una diapositiva parezca una diapositiva (que haya más detrás,
- * que lleve su número) y faltaba entera la mitad de la narración, que está en el título de la
- * capacidad y no aparecía por ningún lado.
- *
- * Ahora hay una pila asomando, el número de lámina, y debajo la banda de audio con su onda y su
- * duración. Sin capturas: todo dibujado con los tokens, como las figuras del «cómo se construyó».
+ * Una caja 16:9 suelta no se lee como una diapositiva: le falta lo que hace que una diapositiva
+ * lo parezca (que haya más detrás, que lleve su número), y la narración, que está en el título de
+ * la capacidad, también tiene que verse. Por eso hay una pila asomando, el número de lámina, y
+ * debajo la banda de audio con su onda y su duración. Sin capturas: todo dibujado con los tokens, como las figuras del «cómo se construyó».
  */
 const ONDA = [5, 9, 14, 8, 17, 11, 6, 13, 18, 10, 7, 15, 9, 12, 6, 16, 8, 11, 5, 13];
 
@@ -242,7 +239,7 @@ function LaminaGenerar() {
       </div>
 
       {/* La narración. La onda va en acento hasta donde se ha escuchado y en borde lo que falta:
-          la misma idea de progreso que el reproductor de verdad. */}
+          la misma idea de progreso que el reproductor real. */}
       <div className="mt-3 flex items-center gap-2.5 rounded-lg border border-border bg-surface px-3 py-2">
         <span
           aria-hidden

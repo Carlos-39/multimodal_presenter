@@ -1,4 +1,4 @@
-"""Tests del endpoint POST /explain-image (Hito 5h Parte 3) con el modelo mockeado."""
+"""Tests del endpoint POST /explain-image con el modelo mockeado."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -43,8 +43,8 @@ def test_fuente_texto_es_400(client, input_text: str) -> None:
 def test_los_prompts_que_se_pintan_tal_cual_prohiben_markdown():
     """El texto libre que la interfaz pinta sin tocar no puede venir en Markdown.
 
-    No hay renderizador de Markdown en el frontend (a propósito), así que un `**así**` se ve
-    escrito. Pasó con «explicar esta imagen» en producción. Este test no comprueba el estilo del
+    No hay renderizador de Markdown en el frontend, así que un `**así**` se ve
+    escrito. Ocurrió con «explicar esta imagen» en producción. Este test no comprueba el estilo del
     prompt: comprueba que la regla sigue puesta en los dos sitios que la necesitan, para que
     reescribir uno de ellos no se la lleve por delante en silencio.
     """

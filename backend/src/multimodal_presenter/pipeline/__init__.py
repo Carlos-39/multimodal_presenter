@@ -4,8 +4,8 @@ Fase 0 (percepción de audio, solo si la fuente es audio) → Fase 1 (determinis
 Fase 2 (LLM) → Fase 3 (determinista + interfaz semántica).
 Acepta texto, binario (PDF/imagen), audio, o texto+archivo. Cada fase queda trazada en Logfire.
 
-La Fase 0 es nueva y AISLADA: para texto, PDF e imagen no se ejecuta y el flujo de las Fases
-1-3 es exactamente el de siempre. Ver `perception.py` para el por qué.
+La Fase 0 está AISLADA: para texto, PDF e imagen no se ejecuta y el flujo de las Fases
+1-3 no cambia. Ver `perception.py` para el por qué.
 """
 
 import logfire

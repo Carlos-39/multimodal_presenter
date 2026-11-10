@@ -6,13 +6,13 @@ paso compara Ideogram con Gemini bajo el prompt mejorado, que es el que se usar�
 
 Diseño del experimento:
 
-- **Los prompts de imagen son REALES**, generados por el propio clasificador del 5h sobre
+- Los prompts de imagen son REALES, generados por el propio clasificador de ilustraciones sobre
   contenidos variados, no escritos a mano para la ocasión. Si se escribieran a mano se estaría
   midiendo otra cosa.
-- **La variante B solo cambia la capa que vive en `_generate_image`** (bloque de estilo y
+- La variante B solo cambia la capa que vive en `_generate_image` (bloque de estilo y
   `negative_prompt`), no el `image_prompt` del clasificador. Así A y B comparten exactamente el
   mismo cuerpo y la comparación aísla lo que un arreglo tocaría sin rehacer el clasificador.
-- **Gemini se prueba con la variante B**, no con la A: el prompt mejorado se va a usar de todos
+- Gemini se prueba con la variante B, no con la A: el prompt mejorado se va a usar de todos
   modos, así que la pregunta útil es cuál proveedor va mejor CON él.
 
 Cada imagen se guarda en disco y el índice se escribe en JSON a medida que avanza: si una llamada
@@ -66,7 +66,7 @@ _ESTILO_B_PREFIJO = (
     "carried by shapes, colour, arrows and composition alone. Clean light background, detailed "
     "and clear artwork, not a vague abstract icon. Subject to depict: "
 )
-# Se excluyen palabras/letras/etiquetas pero NO números: es la decisión ya tomada en el 5j
+# Se excluyen palabras/letras/etiquetas pero NO números: es la decisión ya tomada en las slides
 # (excluir números se consideró demasiado). Lo que cambia aquí es el IDIOMA, no el criterio.
 _NEGATIVO_B = (
     "text, words, letters, labels, captions, titles, subtitles, watermark, logo, signature, "
@@ -96,7 +96,7 @@ def variante_c(image_prompt: str) -> tuple[str, str, str | None]:
     return _IMAGE_STYLE_PREFIX + image_prompt, _NEGATIVO_B, _STYLE_TYPE_B
 
 
-# ── Contenidos de prueba: variados y del tipo que el sistema procesa de verdad ──
+# ── Contenidos de prueba: variados y del tipo que el sistema procesa ──
 CONTENIDOS = [
     (
         "tormenta",
@@ -133,7 +133,7 @@ CONTENIDOS = [
 
 
 async def prompts_reales() -> list[tuple[str, str]]:
-    """Genera los `image_prompt` con el clasificador REAL del 5h (Haiku, céntimos)."""
+    """Genera los `image_prompt` con el clasificador REAL de ilustraciones (Haiku, céntimos)."""
     from multimodal_presenter.model_provider import build_summary_model
     from multimodal_presenter.pipeline.illustration import _classify
     from multimodal_presenter.schemas import Presentation
@@ -185,7 +185,7 @@ async def genera_ideogram(prompt: str, negativo: str, style_type: str | None) ->
 
 
 async def genera_gemini(prompt: str) -> bytes:
-    """Usa el generador REAL de producción, para medir lo que de verdad corre.
+    """Usa el generador REAL de producción, para medir lo que corre en la aplicación.
 
     El prompt ya se construyó arriba, así que se llama a `_gemini_image` con él tal cual; lo que
     aporta es la proporción y el tamaño fijados, que es como sale en la aplicación.

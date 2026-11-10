@@ -1,9 +1,9 @@
-"""Contrato del chat anclado a fuentes (Hito 6).
+"""Contrato del chat anclado a fuentes.
 
 Reusa las piezas del contrato de la transformación, NO inventa un esquema paralelo:
-- la respuesta del chat es un `SectionContent` (la MISMA discriminated union del Hito 1:
+- la respuesta del chat es un `SectionContent` (la MISMA discriminated union de la presentación:
   texto/tabla/timeline/gráfico) → se renderiza con la misma Generative UI;
-- el anclaje es un `SourceReference` + un `GroundingStatus`, idénticos a los del 5c.
+- el anclaje es un `SourceReference` + un `GroundingStatus`, idénticos a los de las secciones.
 
 No es una `Section` de la presentación (no tiene rol núcleo/satélite ni entra en la
 `Presentation`): es una respuesta conversacional. Por eso vive aquí y no toca
@@ -30,9 +30,9 @@ class ChatTurn(_Strict):
 
 
 class ClarificationNeeded(_Strict):
-    """Cognitive Forcing Function (opción D, Fase 2): pedido de aclaración ante ambigüedad real.
+    """Cognitive Forcing Function: pedido de aclaración ante ambigüedad real.
 
-    Es una INVITACIÓN de cortesía, nunca un obstáculo (coherente con el Punto 9: sin checkpoints
+    Es una INVITACIÓN de cortesía, nunca un obstáculo (sin checkpoints
     bloqueantes). Se pide a lo sumo una vez por ambigüedad; si está presente, la respuesta NO es
     una respuesta anclada sino una pregunta breve con 1-2 interpretaciones clicables opcionales.
     """
@@ -95,7 +95,7 @@ class ChatResponse(_Strict):
 
 
 class SuggestionsResponse(_Strict):
-    """Preguntas sugeridas específicas a una sección (Punto 9). Invitación, no obligación."""
+    """Preguntas sugeridas específicas a una sección. Invitación, no obligación."""
 
     questions: list[str] = Field(default_factory=list)
 

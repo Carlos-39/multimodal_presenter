@@ -8,19 +8,19 @@ import type { VoiceStatus } from "@/hooks/useVoiceInput";
 /**
  * El control de grabar, con onda y cronómetro.
  *
- * **La onda es la única señal de que el micrófono te está oyendo.** Antes había un borde que
- * pulsaba, y un borde pulsa igual con el micrófono silenciado, con el canal equivocado o con la
- * mano encima: parecía que grababa y no se sabía. La onda sale del nivel real de la señal, así que
+ * La onda es la única señal de que el micrófono te está oyendo. Un borde que pulsa lo hace
+ * igual con el micrófono silenciado, con el canal equivocado o con la mano encima: parece que
+ * graba y no se sabe. La onda sale del nivel real de la señal, así que
  * si no se mueve es que no entra nada, y eso es información, no decoración.
  *
- * **Se despliega hacia la izquierda, encima de lo que ya hay.** El botón conserva su hueco de
+ * Se despliega hacia la izquierda, encima de lo que ya hay. El botón conserva su hueco de
  * 36 px, así que la caja de texto no se mueve al empezar a grabar. Un control que empuja el layout
  * mientras hablas obliga a recolocar la vista justo cuando no estás mirando.
  *
  * El cronómetro no es un adorno: al transcribir se paga por duración, y saber que llevas dos
  * minutos hablando es la diferencia entre parar y seguir.
  *
- * **Dibuja solo mientras graba**, y con `requestAnimationFrame`: el bucle muere al parar, no se
+ * Dibuja solo mientras graba, y con `requestAnimationFrame`: el bucle muere al parar, no se
  * queda consumiendo batería detrás de un panel cerrado.
  */
 interface PastillaVozProps {
@@ -107,13 +107,13 @@ export function PastillaVoz({ estado, nivel, onToggle, disabled = false }: Pasti
       <div
         aria-hidden={!grabando}
         // Se despliega hacia la DERECHA, sobre la caja de texto. Hacia la izquierda no hay sitio
-        // (el micro es lo más a la izquierda de la fila) y se salía del panel del chat por encima
+        // (el micro es lo más a la izquierda de la fila) y se saldría del panel del chat por encima
         // del documento. Y tapar la caja mientras grabas es honesto: en ese momento eso no es una
         // caja de texto.
         //
         // Ninguna utilidad se declara dos veces: con `px-2.5` en la base y `px-0` en la rama,
         // Tailwind no decide por el orden del atributo sino por el del CSS generado, y el panel
-        // plegado se quedaba en 22 px en vez de 0.
+        // plegado se quedaría en 22 px en vez de 0.
         className={`pointer-events-none absolute left-full top-1/2 z-10 ml-2 flex -translate-y-1/2 items-center gap-2 overflow-hidden rounded-md border bg-surface py-1.5 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
           grabando
             ? "w-[8.5rem] border-warning px-2.5 opacity-100"

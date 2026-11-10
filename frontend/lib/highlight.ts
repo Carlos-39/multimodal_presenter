@@ -1,6 +1,6 @@
 /**
  * Parte un texto en tres tramos para resaltar el rango [start, end): antes, resaltado, después.
- * Puro y determinista (Caso A del Hito 5c). Si no hay offsets válidos, no resalta nada.
+ * Puro y determinista. Si no hay offsets válidos, no resalta nada.
  */
 export interface HighlightSegments {
   before: string;

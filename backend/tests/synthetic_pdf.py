@@ -1,11 +1,12 @@
-"""Generador del PDF sintético DISCRIMINANTE (Hito 5f, A1), con verdad de referencia conocida.
+"""Generador del PDF sintético DISCRIMINANTE, con verdad de referencia conocida.
 
-La prueba de A1 necesita demostrar que el modelo LEE contenido visual que un extractor de texto
-perdería. Para asertarlo objetivamente, este PDF mezcla tres cosas cuya procedencia conocemos:
+La prueba del PDF nativo necesita demostrar que el modelo LEE contenido visual que un extractor
+de texto perdería. Para asertarlo objetivamente, este PDF mezcla tres cosas de procedencia
+conocida:
 
 - GRÁFICO rasterizado (imagen PNG): sus valores existen SOLO como píxeles + etiquetas dibujadas
   dentro de la imagen. `pypdf` no puede extraerlos (eso reproduce el error del PoC anterior).
-  Las etiquetas van impresas SOBRE cada barra a propósito: la prueba mide "¿lee lo visual?", no
+  Las etiquetas van impresas SOBRE cada barra: la prueba mide "¿lee lo visual?", no
   "¿estima alturas de píxeles?".
 - TABLA como TEXTO real del PDF: sus valores SÍ son extraíbles por `pypdf`.
 - PÁRRAFO de contexto (texto real), sin ninguno de los números anteriores.

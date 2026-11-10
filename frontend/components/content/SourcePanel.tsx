@@ -16,21 +16,21 @@ import { PdfRegionView } from "./PdfRegionView";
 import { urlDelDocumento } from "@/lib/documentForm";
 
 /**
- * Panel de documento fuente (atribución interactiva, Punto 4 · Hito 5c). Lo comparten la
- * transformación (fuente de una sección) y el chat (Hito 6): recibe un `SourceReference` + su
+ * Panel de documento fuente (atribución interactiva). Lo comparten la
+ * transformación (fuente de una sección) y el chat: recibe un `SourceReference` + su
  * estado de grounding, no una `Section`, así ambos usan el MISMO panel, no un esquema paralelo.
  *
- * Es una de las COLUMNAS OPCIONALES de la Escala 2 (Hito 5e): `Workspace` decide su ancho y su
+ * Es una de las COLUMNAS OPCIONALES del área de trabajo: `Workspace` decide su ancho y su
  * emplazamiento (columna u overlay), así que llena el espacio que le den (`w-full h-full`).
  * Ramifica según el tipo de fuente:
  * - texto: resaltado exacto del rango [char_start, char_end) (o estado neutro si `not_found`).
  * - PDF: documento navegable (iframe nativo), navega a `source.page`. Fidelidad de PÁGINA,
- *   no de región. TODO(Hito5x): resaltado de región en PDF/imagen.
+ *   no de región. TODO: resaltado de región en PDF/imagen.
  * - imagen: imagen completa, sin navegación.
  * - audio: reproductor nativo que arranca en el momento de la cita (`startS`), el análogo de
  *   la fidelidad de página del PDF. Se dice explícitamente que el contenido verbal proviene
  *   de la percepción del modelo y no es verificable contra la señal: el estado es `unverified`
- *   y la UI no finge lo contrario (misma honestidad que el aviso de `not_found` del 8A.1).
+ *   y la UI no finge lo contrario (misma honestidad que el aviso de `not_found`).
  */
 interface SourcePanelProps {
   original: OriginalSource;
@@ -57,13 +57,12 @@ export function SourcePanel({
 }: SourcePanelProps) {
   // El object URL se crea y se revoca en el MISMO efecto, para que cada montaje tenga el suyo.
   //
-  // Antes se creaba en un `useMemo` y se revocaba en el cleanup de un efecto aparte, y eso se
-  // rompe con el doble montaje de StrictMode: monta → el cleanup revoca la URL → vuelve a
-  // montar, pero el `useMemo` está cacheado y devuelve la MISMA URL, ya muerta. Se descubrió al
-  // añadir el audio: el `<iframe>` del PDF y el `<img>` alcanzaban a cargar antes del revoke,
-  // pero el `<audio>` carga sus metadatos más tarde y se encontraba la URL revocada
-  // (`MEDIA_ELEMENT_ERROR: Format error`). Solo se manifestaba en desarrollo; aun así, depender
-  // de ese orden de carga era frágil para los tres tipos de fuente.
+  // Crearlo en un `useMemo` y revocarlo en el cleanup de otro efecto se rompe con el doble
+  // montaje de StrictMode: monta → el cleanup revoca la URL → vuelve a montar, pero el `useMemo`
+  // está cacheado y devuelve la MISMA URL, ya muerta. El `<iframe>` del PDF y el `<img>` alcanzan
+  // a cargar antes del revoke, pero el `<audio>` carga sus metadatos más tarde y se encuentra la
+  // URL revocada (`MEDIA_ELEMENT_ERROR: Format error`). Solo pasa en desarrollo; aun así,
+  // depender de ese orden de carga es frágil para los tres tipos de fuente.
   // Con `File` se crea un object URL como siempre; en una presentación RESTAURADA no hay archivo
   // y se apunta al endpoint que sirve el documento guardado. Sin esto, lo guardado se podría leer
   // pero no VERIFICAR: y poder verificar es lo que este proyecto promete.
@@ -109,9 +108,9 @@ export function SourcePanel({
           (React reconcilia al último key) y uniforme para texto, PDF, imagen y audio.
 
           El PREFIJO no es decorativo. Este bloque y el de "explicar imagen" son hermanos, y los
-          dos se remontan con la misma fuente: con `sourceKey` pelado compartían clave, que es un
-          caso que React declara no soportado ("puede duplicar u omitir hijos"). Se vio: cada
-          apertura de fuente APILABA un visor más en lugar de reemplazarlo. */}
+          dos se remontan con la misma fuente: con `sourceKey` pelado compartirían clave, que es un
+          caso que React declara no soportado ("puede duplicar u omitir hijos"): cada apertura
+          de fuente APILARÍA un visor más en lugar de reemplazarlo. */}
       <div key={`contenido-${sourceKey}`} className="min-h-0 flex-1 overflow-y-auto">
         {sourceKind === "text" ? (
           <TextSource
@@ -152,7 +151,7 @@ export function SourcePanel({
         )}
       </div>
 
-      {/* Explicar imagen REAL (Hito 5h Parte 3): solo para fuentes binarias (PDF/imagen). Vive
+      {/* Explicar imagen REAL: solo para fuentes binarias (PDF/imagen). Vive
           aquí, sobre la imagen real = trazabilidad reforzada; NO es una ilustración generada. Se
           remonta por `sourceKey` → colapsada de nuevo al cambiar de fuente. */}
       {sourceKind !== "text" && sourceKind !== "audio" && original.file ? (
@@ -222,8 +221,7 @@ function PdfSource({
   // - "Abrir en pestaña nueva": lo natural en escritorio.
   // - "Descargar": la salida fiable donde la anterior no lo es. Abrir una URL `blob:` en una
   //   pestaña nueva depende del navegador (algunos lo bloquean y en móvil es justo donde menos
-  //   se puede confiar), que es precisamente el escenario para el que se creó este enlace en el
-  //   5f. El atributo `download` no depende de que exista un visor.
+  //   se puede confiar), que es precisamente el escenario para el que existe este enlace. El atributo `download` no depende de que exista un visor.
   //
   // Se AÑADE la descarga en vez de reemplazar el enlace: lo que ya funciona en escritorio sigue
   // igual, y quien no pueda abrirlo tiene una salida que no falla.
@@ -272,7 +270,7 @@ function PdfSource({
  *
  * Dice explícitamente de dónde viene el texto de la cita (de la percepción del modelo, no de
  * la señal verificada) en vez de presentarla como un fragmento verificado. Es la misma
- * honestidad del aviso de `not_found` del 8A.1: lo que ancla es trazable, lo que no, se avisa.
+ * honestidad del aviso de `not_found`: lo que ancla es trazable, lo que no, se avisa.
  */
 function AudioSource({
   url,

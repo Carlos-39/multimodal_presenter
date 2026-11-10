@@ -1,7 +1,7 @@
 /**
  * La forma de los datos decide, y el código corrige.
  *
- * **Dos filas porque hay dos desenlaces, y el segundo es el que casi nadie implementa.** Arriba,
+ * Dos filas porque hay dos desenlaces, y el segundo es el que casi nadie implementa. Arriba,
  * el tipo elegido no cabe en la forma y se corrige en silencio. Abajo, NINGÚN tipo cabe, y
  * entonces no se dibuja nada: se degrada a tabla y se dice. Enseñar solo la corrección dejaría
  * pensar que siempre hay un gráfico, que es justo la mentira que este capítulo desmonta.

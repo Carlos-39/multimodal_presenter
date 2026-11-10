@@ -11,7 +11,7 @@ import { Espera } from "./Espera";
  * una dice en una línea qué es, para no confundirse con las formas de VER el contenido ya
  * generado (Documento / Slides, en el header). Añadir otro generador = añadir otro bloque aquí.
  *
- * No genera nada por sí mismo: solo dispara los manejadores que ya existían (`onToggleDeck`,
+ * No genera nada por sí mismo: solo dispara los manejadores existentes (`onToggleDeck`,
  * narración). Nunca hay generación automática.
  */
 interface GeneratePanelProps {

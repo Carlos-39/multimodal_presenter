@@ -1,6 +1,6 @@
-"""Juez de calidad (Hito 7 dry run). Juez = Haiku 4.5 (Anthropic).
+"""Juez de calidad (dry run). Juez = Haiku 4.5 (Anthropic).
 
-LIMITACIÓN HONESTA (declarar en el informe): el juez es de la MISMA familia que el generador
+Limitación: el juez es de la MISMA familia que el generador
 (Sonnet), distinta generación/tamaño, no es el ideal cross-vendor (Gemini quedó bloqueado por
 acceso). Temperatura 0 y rúbrica fija para reducir varianza.
 """
@@ -17,7 +17,7 @@ UNANSWERABLE = "unanswerable"
 def apply_unanswerable_gate(
     category: str, condition: str, retrieved_pages: list[int], judge_score: float
 ) -> float:
-    """Corrección post-auditoría (Hito 7): endurece la métrica de `unanswerable`.
+    """Corrección post-auditoría: endurece la métrica de `unanswerable`.
 
     La auditoría del dataset encontró que la categoría premiaba el FALLO de recuperación:
     `lightrag_graph` sacaba 1.0 abstenéndose ("No se encuentra") tras recuperar CERO páginas

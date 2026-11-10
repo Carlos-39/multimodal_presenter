@@ -8,13 +8,13 @@ import { Pixelado } from "./Pixelado";
 /**
  * El problema que resuelve, demostrado con un interruptor en vez de contado con un ensayo.
  *
- * **Las dos versiones del párrafo tienen exactamente el mismo texto.** Lo único que cambia al
+ * Las dos versiones del párrafo tienen exactamente el mismo texto. Lo único que cambia al
  * pulsar es si cada afirmación trae de dónde sale. Ahí está el problema entero: un texto generado
  * se lee igual de bien tenga detrás un documento o no tenga nada, y a simple vista no hay forma
  * de distinguirlo.
  *
- * La cuarta afirmación no se puede anclar, y **pierde el enlace en vez de enseñar una cita que no
- * existe**. No es un adorno pesimista: es literalmente lo que hace `ground_section` cuando la cita
+ * La cuarta afirmación no se puede anclar, y pierde el enlace en vez de enseñar una cita que no
+ * existe. No es un adorno pesimista: es literalmente lo que hace `ground_section` cuando la cita
  * no aparece en el original (`status: "not_found"`, y la sección se queda sin fuente). Enseñar
  * solo los tres aciertos sería vender otra aplicación.
  */
@@ -26,7 +26,7 @@ const AFIRMACIONES: { texto: string; anclada: boolean }[] = [
 ];
 
 /**
- * El interruptor se mueve solo, **pero solo desde que la sección está en pantalla**.
+ * El interruptor se mueve solo, pero solo desde que la sección está en pantalla.
  *
  * Si arrancara al montar, el párrafo se habría estado volteando mientras nadie lo miraba y
  * llegarías a él en un estado cualquiera. Así llegas siempre a «sin fuente», que es la mitad que
@@ -42,7 +42,7 @@ export function Problema() {
   return (
     <section className="relative isolate overflow-hidden border-t border-border bg-surface-sunken/40">
       {/* La trama aparece al pasar por encima y se va al salir. No florece sola: en modo claro
-          competía con el texto justo mientras se lee, y una sección que se decora sola convierte
+          competiría con el texto justo mientras se lee, y una sección que se decora sola convierte
           en decorado lo que es el argumento del proyecto. Los puntos van en la tinta del texto,
           no en el acento: siempre lo contrario del papel, que es de donde sale el contraste. */}
       <Pixelado />
@@ -103,8 +103,8 @@ export function Problema() {
           </p>
         </div>
 
-        {/* La cifra sale del Registro de Hitos, de la medición del Hito 7 F2, y es la razón por la
-            que comprobar no se cobra aparte: se calcula donde ya se ancla cada cita. */}
+        {/* La cifra sale de medir el anclaje, y es la razón por la que comprobar no se cobra
+            aparte: se calcula donde ya se ancla cada cita. */}
         <p className="mt-9 max-w-[58ch] text-sm leading-[1.7] text-foreground-secondary">
           Localizar las frases de todas las secciones de un documento cuesta entre{" "}
           <span className="tabular text-foreground">80</span> y{" "}

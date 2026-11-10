@@ -1,13 +1,13 @@
 """El volcado de telemetría y el respaldo de la base.
 
-Son las dos piezas que convierten «los datos están en un volumen al que no llego» en «los datos
-están en mi máquina el mismo día». Lo que se fija aquí:
+Son las dos piezas que permiten sacar los datos del volumen del despliegue el mismo día. Lo que
+se fija aquí:
 
-1. **Sin token configurado, el endpoint no existe.** 404, como cualquier ruta inventada.
-2. **El token se compara entero.** Acertar el principio no sirve de nada.
-3. **Sale lo que entró**, en orden y sin reinterpretarlo: el crudo es el respaldo.
-4. **El respaldo de la base se hace con `VACUUM INTO`** y produce una base que de verdad abre y
-   trae los datos.
+1. Sin token configurado, el endpoint no existe. 404, como cualquier ruta inventada.
+2. El token se compara entero. Acertar el principio no sirve de nada.
+3. Sale lo que entró, en orden y sin reinterpretarlo: el crudo es el respaldo.
+4. El respaldo de la base se hace con `VACUUM INTO` y produce una base que abre y trae los
+   datos.
 """
 
 from __future__ import annotations
@@ -87,7 +87,7 @@ def test_sale_lo_que_entro_sin_reinterpretarlo(
     assert len(lineas) == 3
     assert [e["seq"] for e in lineas] == [0, 1, 2]
     assert {e["participant"] for e in lineas} == {"P07"}
-    # El sello del servidor viaja: es lo que permite cruzar con el reloj del facilitador.
+    # El sello del servidor viaja: es lo que permite cruzar con un reloj externo.
     assert all("received_at" in e for e in lineas)
 
 

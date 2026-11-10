@@ -1,9 +1,9 @@
 /**
  * El audio gana una fase previa; el resto entra por donde entraba.
  *
- * Dibujo propio, no captura: ilustra un concepto. Usa los tokens del 5k vía `currentColor` y
+ * Dibujo propio, no captura: ilustra un concepto. Usa los tokens del sistema de diseño vía `currentColor` y
  * variables, así que sigue al tema claro/oscuro sin dos versiones. La fase nueva va en tinta (el
- * acento, reservado a lo que de verdad cambia); lo que no cambió va en el gris de siempre, que es
+ * acento, reservado a lo que cambia); lo que no cambió va en el gris de siempre, que es
  * justo lo que el dibujo tiene que decir.
  */
 export function PipelineAudio() {

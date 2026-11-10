@@ -12,8 +12,8 @@ export const metadata: Metadata = {
  *
  * `/` es una puerta: la primera visita ve la portada y las siguientes van directas a la
  * aplicación. Eso está bien para quien llega, pero deja la portada sin dirección propia, y sin
- * ella no hay forma de volver. Era un defecto real: desde «Cómo se construyó», el enlace de
- * volver llevaba a `/` y, con la cookie puesta, aterrizaba en la aplicación.
+ * ella no hay forma de volver: desde «Cómo se construyó», un enlace a `/` con la cookie puesta
+ * llevaría a la aplicación.
  *
  * Aquí la portada siempre es la portada. Es a donde apuntan el enlace de volver del making of y
  * el nombre de la aplicación en su cabecera.

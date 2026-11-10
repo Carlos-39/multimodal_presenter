@@ -50,7 +50,7 @@ export default async function CapituloPage({ params }: { params: Promise<{ slug:
       <p className="mt-4 max-w-[60ch] text-sm leading-6 text-foreground-secondary">
         {capitulo.conclusion}
       </p>
-      <p className="mt-2 text-xs text-muted">{capitulo.hitos}</p>
+      <p className="mt-2 text-xs text-muted">{capitulo.etapa}</p>
 
       <div className="mt-10">
         <Bloques bloques={capitulo.bloques} />

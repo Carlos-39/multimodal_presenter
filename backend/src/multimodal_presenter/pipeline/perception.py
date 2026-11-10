@@ -1,6 +1,6 @@
 """Fase 0: Percepción de audio (LLM con entrada acústica nativa).
 
-Fase NUEVA y AISLADA: solo se activa para entradas de audio, antes del pipeline existente.
+Fase AISLADA: solo se activa para entradas de audio, antes del pipeline existente.
 Para texto, PDF e imagen no se ejecuta y el flujo de las Fases 1-3 no cambia en absoluto.
 
     audio (BinaryContent) → agente de percepción (Gemini) → AudioEvidence (tipado)
@@ -9,17 +9,17 @@ Para texto, PDF e imagen no se ejecuta y el flujo de las Fases 1-3 no cambia en 
 Por qué existe: Claude Sonnet (el motor de estructuración) no admite audio como modalidad de
 entrada en su API. La alternativa obvia (transcribir con un STT y pasar texto) aplana la
 fuente antes de que cualquier modelo la interprete, que es justo lo que el principio rector
-prohíbe y lo que el Hito 4 corrigió para PDF/imagen. Así que se delega SOLO la percepción a
+prohíbe y lo que se evita también para PDF/imagen. Así que se delega SOLO la percepción a
 un modelo que sí oye, y lo que entra a la Fase 2 es una representación estructurada
 (`AudioEvidence`), no una transcripción plana.
 
-Lo que NO se hizo (decisión cerrada, no reabrir): enrutar la estructuración completa del
+Lo que NO se hace: enrutar la estructuración completa del
 audio a Gemini. Partiría la narrativa "Sonnet estructura" en dos motores con calidades
-distintas: demasiado riesgo metodológico. La Fase 2 y su `FallbackModel` quedan intactos.
+distintas: demasiado riesgo. La Fase 2 y su `FallbackModel` quedan intactos.
 
 Modo de salida: `ToolOutput`. La percepción no se streamea (es un paso previo, no hay nada
 que mostrar en vivo), así que conviene la garantía de esquema a nivel de proveedor; misma
-elección que el juez semántico del 5a. El `PromptedOutput` de la Fase 2 no se toca.
+elección que el juez semántico. El `PromptedOutput` de la Fase 2 no se toca.
 """
 
 import logfire
@@ -83,7 +83,7 @@ async def run_perception(
 
     Punto ÚNICO de decisión "¿esto es audio?" dentro del pipeline, compartido por el camino
     completo y el de streaming para que ambos entren a la Fase 1 con la misma evidencia
-    (misma disciplina con la que el 5d refactorizó la Fase 3 a helpers por sección).
+    (misma disciplina que los helpers por sección de la Fase 3).
     """
     if not is_audio(media_type) or binary is None:
         return None
@@ -97,7 +97,7 @@ async def perceive_audio(audio: bytes, media_type: str, model: Model) -> AudioEv
     """Fase 0: pide al modelo acústico la anotación estructurada del audio.
 
     El audio viaja como `BinaryContent` nativo, el mismo mecanismo con el que el PDF y la
-    imagen llegan a la Fase 2 desde el Hito 4. Nunca se transcribe primero.
+    imagen llegan a la Fase 2. Nunca se transcribe primero.
     """
     with logfire.span("fase0.percepcion", media_type=media_type, bytes=len(audio)):
         result = await perception_agent.run(

@@ -5,13 +5,13 @@ automáticos. El documento entra como texto o como BINARIO multimodal nativo (PD
 `BinaryContent`): nunca como texto extraído de un binario.
 
 Modo de salida: `PromptedOutput` (el modelo escribe el JSON como su respuesta de texto y
-PydanticAI lo parsea). Se eligió sobre `ToolOutput` porque el streaming (Hito 5d) necesita
+PydanticAI lo parsea). Se eligió sobre `ToolOutput` porque el streaming necesita
 parciales incrementales: con `ToolOutput` la salida viaja como los argumentos de una tool
 call que PydanticAI solo resuelve al completarse, así que `stream_output()` no emite nada
 hasta el final (todas las secciones de golpe). Con `PromptedOutput` el JSON se transmite como
 texto token a token y `stream_output()` expone `Presentation` parciales → secciones una por
 una. El mismo agente sirve a `/transform` (no-streaming) y `/transform/stream` para que ambos
-caminos se comporten igual. Verificado empíricamente en el Hito 5d.
+caminos se comporten igual.
 
 Principio rector: el LLM decide lo interpretativo (redacción, núcleo/satélite, content_type,
 qué página citar). Lo determinista (tipos cerrados, validación de archivo, offsets de texto)

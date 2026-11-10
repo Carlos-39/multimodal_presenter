@@ -1,16 +1,16 @@
 /**
  * La misma regla, en los tres anchos.
  *
- * **Tres ventanas dibujadas a escala relativa, no tres plantillas.** Lo que la figura tiene que
+ * Tres ventanas dibujadas a escala relativa, no tres plantillas. Lo que la figura tiene que
  * dejar claro es que el contenido NUNCA se aplasta: cada umbral admite una columna más solo
  * cuando cabe con ancho legible, y cuando deja de caber, la columna no se encoge, se va.
  *
  * El contenido va en tinta en las tres: es lo único que está siempre, y verlo conservar su sitio
  * mientras lo de al lado desaparece es el argumento del capítulo.
  *
- * Las etiquetas van **a la izquierda de su caja y no centradas**: en el tercer ancho el panel se
- * superpone al contenido, y dos etiquetas centradas se pisaban hasta volverse ilegibles. Alinear
- * a la izquierda las separa sin mover ninguna caja.
+ * Las etiquetas van a la izquierda de su caja y no centradas: en el tercer ancho el panel se
+ * superpone al contenido, y dos etiquetas centradas se pisarían. Alinear a la izquierda las
+ * separa sin mover ninguna caja.
  */
 const X0 = 190;
 const ESCALA = 2.1;
@@ -96,7 +96,7 @@ export function Umbrales() {
               />
             ) : null}
 
-            {/* Encima: ocupa la mitad derecha del contenido, que es lo que hace de verdad. */}
+            {/* Encima: ocupa la mitad derecha del contenido, como en la aplicación. */}
             {v.encima ? (
               <Caja
                 x={DER_CONTENIDO - u(44)}

@@ -1,8 +1,8 @@
 /**
  * Los cuatro niveles de fidelidad, en orden de fuerza decreciente.
  *
- * **Es una escalera que baja, no una lista.** Cuatro entradas puestas en fila se leerían como
- * cuatro opciones equivalentes; escalonadas hacia abajo se lee lo que de verdad pasa: cada
+ * Es una escalera que baja, no una lista. Cuatro entradas puestas en fila se leerían como
+ * cuatro opciones equivalentes; escalonadas hacia abajo se lee lo que pasa: cada
  * formato devuelve una prueba más débil que el anterior, y el último no devuelve ninguna.
  *
  * Solo el primer peldaño lleva el resaltador, porque es el único donde la palabra «comprobada» es

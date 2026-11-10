@@ -1,4 +1,4 @@
-"""Spike F0: ¿se puede dibujar un recuadro sobre la parte exacta de una página de PDF?
+"""Spike: ¿se puede dibujar un recuadro sobre la parte exacta de una página de PDF?
 
 NO ES CÓDIGO DE PRODUCCIÓN. Es la verificación VISUAL previa a construir el localizador: dibuja
 los rectángulos calculados sobre un PNG de la página y los deja en disco para mirarlos con los
@@ -6,9 +6,9 @@ ojos. Si esto no cuadra, no tiene sentido construir nada encima.
 
 Lo que se quiere comprobar, en concreto:
 1. Que las coordenadas del texto se pueden llevar al píxel correcto de la página renderizada.
-2. Los dos casos que la investigación marcó como NO verificados: páginas con **CropBox**
-   recortado y páginas **rotadas** (`/Rotate`). Son los que romperían el mapeo.
-3. Que agrupar por línea funciona también a **dos columnas** (el riesgo propio de pypdfium2,
+2. Los dos casos que la investigación marcó como NO verificados: páginas con CropBox
+   recortado y páginas rotadas (`/Rotate`). Son los que romperían el mapeo.
+3. Que agrupar por línea funciona también a dos columnas (el riesgo propio de pypdfium2,
    que devuelve un rectángulo por carácter en vez de por línea).
 
 Decisión de mapeo: NO se deduce la transformación a mano (origen abajo-izquierda, desplazamiento
@@ -204,7 +204,7 @@ def main() -> None:
             84,
             None,
         ),
-        # El caso que de verdad estresa el agrupado por línea: una cita que CRUZA el salto de
+        # El caso que más estresa el agrupado por línea: una cita que CRUZA el salto de
         # columna. Si se agrupara por altura parecida, la última línea de la columna izquierda y
         # la primera de la derecha se fundirían en un rectángulo enorme que cruza la página.
         (

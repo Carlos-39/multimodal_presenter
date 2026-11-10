@@ -1,22 +1,22 @@
 """Localizador de regiones en PDF: dónde está, físicamente, una cita ya generada.
 
-Sube el PDF de **fidelidad de página** (Hito 5c: "te llevo a la página 7") a **fidelidad de
-región** ("está AQUÍ, en este recuadro"). Es el cuarto nivel del mismo esquema honesto que ya
-usan el texto (fidelidad exacta por offsets) y el audio (fidelidad de momento, A1).
+Sube el PDF de fidelidad de página ("te llevo a la página 7") a fidelidad de
+región ("está AQUÍ, en este recuadro"). Es el cuarto nivel del mismo esquema honesto que ya
+usan el texto (fidelidad exacta por offsets) y el audio (fidelidad de momento).
 
-**La tensión con "nunca aplanar", resuelta.** El principio rector dice que el documento no se
+La tensión con "nunca aplanar", resuelta. El principio rector dice que el documento no se
 aplana a texto antes de dárselo al modelo. Este módulo no lo viola, y la razón es estructural, no
-una promesa: corre **después** de que la generación terminó, sobre una cita **que el modelo ya
-escribió**, y su única salida son coordenadas. El LLM sigue recibiendo el PDF binario nativo y
+una promesa: corre después de que la generación terminó, sobre una cita que el modelo ya
+escribió, y su única salida son coordenadas. El LLM sigue recibiendo el PDF binario nativo y
 nunca ve nada de lo que hay aquí. Aplanar para que el MODELO interprete sería sustituir la fuente
 por un derivado; extraer geometría para que el LECTOR verifique es lo contrario: aumenta la
 trazabilidad de lo que el modelo ya dijo.
 
-**Localizar ≠ verificar** (mismo criterio que `start_s` en audio, A1). Encontrar la cita en la
+Localizar ≠ verificar (mismo criterio que `start_s` en audio). Encontrar la cita en la
 capa de texto NO cambia el estado de grounding: sigue siendo `unverified`. Lo que se gana es
 poder señalar dónde mirar, no una afirmación de que el contenido quedó verificado.
 
-**Alcance declarado, no limitación oculta:** solo PDFs con capa de texto nativa. Los escaneados
+Alcance declarado, no limitación oculta: solo PDFs con capa de texto nativa. Los escaneados
 (sin texto extraíble) degradan a `calidad: "page"`, exactamente el comportamiento de hoy. No
 se hace OCR: es una decisión de alcance consciente.
 """
@@ -48,7 +48,7 @@ Calidad = Literal["exact", "approximate", "page"]
 
 # Umbral del peldaño difuso. La investigación daba 85-90 y se toma el extremo CONSERVADOR: en
 # este proyecto un recuadro equivocado es peor que ningún recuadro, porque señalaría con
-# confianza un sitio que no es: justo la sobre-afirmación que eliminó el Hito 8A.1. Una cita
+# confianza un sitio que no es, que es justo la sobre-afirmación que se quiere evitar. Una cita
 # fiel con diferencias menores puntúa 93-100; una paráfrasis real baja de 85, así que 90 separa
 # bien los dos casos sin quedarse corto.
 UMBRAL_DIFUSO = 90.0
@@ -87,7 +87,7 @@ _PRECISION = 100
 class Region:
     """Un recuadro, en coordenadas NORMALIZADAS 0-1 sobre la página tal como se ve.
 
-    Origen arriba-izquierda y página **ya rotada**: el frontend solo multiplica por el tamaño de
+    Origen arriba-izquierda y página ya rotada: el frontend solo multiplica por el tamaño de
     su contenedor y posiciona en porcentaje. Nunca calcula escalas ni aplica rotaciones, todo
     eso se resolvió aquí, con el mismo motor que dibuja la página.
     """

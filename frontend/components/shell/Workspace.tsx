@@ -12,8 +12,8 @@ import {
 } from "@/lib/workspace";
 
 /**
- * Coordinador de la Escala 2 (Hito 5e): decide cómo conviven las columnas OPCIONALES
- * (fuente 5c + chat 6) con el contenido, sin tocar el núcleo fijo (header + nav).
+ * Coordinador del área de trabajo: decide cómo conviven las columnas OPCIONALES
+ * (fuente + chat) con el contenido, sin tocar el núcleo fijo (header + nav).
  *
  * La decisión (columna | overlay | oculto) es pura y vive en `lib/workspace.ts`; aquí solo se
  * observa el ancho y se pinta. El ancho SOLO cambia el layout al abrir/cerrar un panel o al
@@ -47,7 +47,7 @@ function useViewportWidth(): number {
 interface WorkspaceProps {
   children: React.ReactNode; // contenido (siempre presente)
   source: React.ReactNode | null; // panel de fuente, o null si no hay sección activa
-  chat: React.ReactNode; // panel de chat (placeholder hasta Hito 6)
+  chat: React.ReactNode; // panel de chat
   openOrder: PanelId[]; // paneles abiertos, el más reciente al final
   onClosePanel: (id: PanelId) => void;
 }
@@ -56,8 +56,8 @@ export function Workspace({ children, source, chat, openOrder, onClosePanel }: W
   const width = useViewportWidth();
   const layout = resolveWorkspace(openOrder, width);
 
-  // Progreso de lectura (Hito 5g): barra fina atada al scroll del contenido. Da sensación de
-  // avance en documentos largos sin reabrir el layout del 5e. 0 cuando no hay desplazamiento.
+  // Progreso de lectura: barra fina atada al scroll del contenido. Da sensación de
+  // avance en documentos largos sin reabrir el layout. 0 cuando no hay desplazamiento.
   const scrollRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
   const onScroll = useCallback(() => {
@@ -177,10 +177,10 @@ export function Workspace({ children, source, chat, openOrder, onClosePanel }: W
             onClick={() => onClosePanel(overlay.id)}
             className="absolute inset-0 z-10 bg-black/40"
           />
-          {/* El tope es «todo menos 44 px» y no «todo»: en un teléfono el panel se comía la
+          {/* El tope es «todo menos 44 px» y no «todo»: en un teléfono el panel se comería la
               pantalla entera menos una rendija de 35 px, demasiado estrecha para acertarle con el
-              dedo y demasiado ancha para parecer a propósito. 44 px es el mínimo que se puede
-              tocar, así que cerrar tocando fuera vuelve a ser una salida de verdad. En una
+              dedo y demasiado ancha para parecer intencionada. 44 px es el mínimo que se puede
+              tocar, así que cerrar tocando fuera es una salida real. En una
               pantalla ancha no cambia nada: el panel ya mide mucho menos que eso. */}
           <div
             className="absolute inset-y-0 right-0 z-20 max-w-[calc(100%-2.75rem)] bg-surface shadow-float"

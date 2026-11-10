@@ -1,7 +1,7 @@
 # Fixtures locales (NO se commitean)
 
-Esta carpeta es para **PDFs reales aportados** por el autor como prueba de humo del pipeline
-multimodal (Hito 5f, Parte A1). Su contenido está ignorado por git (salvo este README): los
+Esta carpeta es para **PDFs reales aportados** como prueba de humo del pipeline
+multimodal. Su contenido está ignorado por git (salvo este README): los
 documentos reales **no** se suben al repositorio.
 
 Solo los fixtures **sintéticos** generados por código (con verdad de referencia conocida) se
@@ -20,13 +20,12 @@ Los tests de humo detectan automáticamente los PDFs presentes aquí y los **rep
 tipos, si captó tablas/diagramas, alucinaciones) sin asertar cifras. Si la carpeta está vacía,
 esos casos simplemente se saltan.
 
-## `audio/`: clips de la mini-evaluación de audio (A1)
+## `audio/`: clips de la mini-evaluación de audio
 
-La subcarpeta `audio/` es para los **8 clips grabados por el autor** que alimentan la
-mini-evaluación de la entrada de audio (hallazgo A1 de la auditoría). Están ignorados por git
-igual que los PDFs: son grabaciones con la voz del autor y **no se suben al repositorio**.
+La subcarpeta `audio/` es para los **8 clips grabados** que alimentan la mini-evaluación de
+la entrada de audio. Están ignorados por git igual que los PDFs: son grabaciones de voz reales
+y **no se suben al repositorio**.
 
-- Guion de grabación, clip por clip: `docs/Guion_Clips_Audio_A1.md`.
 - Verdad de referencia (qué se diseñó en cada clip): `backend/scripts/audio_clips_manifest.json`.
 - Arnés que los consume: `uv run python scripts/eval_audio_evidence.py`.
 

@@ -1,26 +1,24 @@
 /**
- * Telemetría de comportamiento (Hito 8, Parte A), capa observacional del frontend.
+ * Telemetría de comportamiento, capa observacional del frontend.
  *
  * Punto ÚNICO de la responsabilidad "telemetría": id de sesión, contador, buffer y envío en lote.
- * Es un módulo singleton a propósito (no un contexto/prop-drilling): la telemetría es un concern
+ * Es un módulo singleton (no un contexto/prop-drilling): la telemetría es un concern
  * transversal, y así el componente que CONOCE el origen de una señal (p. ej. el ChatPanel, único
  * que distingue una pregunta sugerida de una escrita) la emite donde nace, sin enterrarla.
  *
- * Privacidad (Hito 8): NUNCA se manda contenido de documentos ni texto de preguntas. Solo
+ * Privacidad: NUNCA se manda contenido de documentos ni texto de preguntas. Solo
  * metadatos: qué control, cuándo, cuánto tiempo, qué tipo, ordinales, longitudes. El backend
  * además corta strings largos como barrera final.
  *
- * Invisible para el participante: todo es fire-and-forget; si el endpoint falla, la UI no se entera.
+ * Invisible para el usuario: todo es fire-and-forget; si el endpoint falla, la UI no se entera.
  *
  * ## Un evento no se da por entregado hasta que el servidor lo dice
  *
- * La primera versión vaciaba el buffer ANTES de saber si el envío había llegado, y el fallo del
- * `fetch` se descartaba en silencio. En las dos sesiones reales de la primera prueba se perdieron
- * 8 de 60 eventos (un 13 %), y se vieron porque `seq` es un contador sin huecos: faltaban el 3,
- * el 8, el 9… Lotes enteros. Un móvil que cambia de aplicación o pierde cobertura un segundo
- * basta.
+ * Vaciar el buffer ANTES de saber si el envío llegó, descartando en silencio el fallo del
+ * `fetch`, pierde lotes enteros: basta un móvil que cambia de aplicación o pierde cobertura un
+ * segundo. `seq` es un contador sin huecos, así que las ausencias se notan.
  *
- * Tres cosas cambian por eso:
+ * Por eso:
  *
  * 1. Los eventos se quedan en la cola hasta que el servidor confirma. Si falla, siguen ahí y se
  *    reintentan en el siguiente vaciado.
@@ -92,7 +90,7 @@ function randomId(): string {
   }
 }
 
-/** El facilitador puede fijar la etiqueta del participante por URL (`?p=P03`), sin login. */
+/** Etiqueta opcional de la sesión, fijada por URL (`?p=P03`), sin login. */
 function readParticipant(): string | null {
   try {
     const fromUrl = new URL(window.location.href).searchParams.get("p");
@@ -109,7 +107,7 @@ function readParticipant(): string | null {
 
 /**
  * Id de sesión: se genera una vez y vive en `sessionStorage` → sobrevive recargas de la misma
- * pestaña y muere al cerrarla (dura lo que dura la prueba). En modo privado o si el storage
+ * pestaña y muere al cerrarla. En modo privado o si el storage
  * falla, cae a un id efímero en memoria (la sesión sigue midiéndose, solo no sobrevive recarga).
  */
 function ensureSession(): string {
@@ -124,8 +122,8 @@ function ensureSession(): string {
     // El contador vive junto al id, y por la MISMA razón: el id sobrevive a una recarga, así que
     // si `seq` volviera a 0 la sesión tendría dos eventos con seq 0, dos con seq 1… y el orden
     // dentro de la sesión dejaría de ser inequívoco, justo lo que el contrato del backend pide
-    // de este campo ("contador monótono por sesión"). Pasa de verdad: una recarga en medio de la
-    // prueba basta, y el análisis ordena por `seq`.
+    // de este campo ("contador monótono por sesión"). Basta una recarga a mitad de sesión, y el
+    // análisis ordena por `seq`.
     seq = Number.parseInt(sessionStorage.getItem(SEQ_KEY) ?? "0", 10) || 0;
   } catch {
     sessionId = randomId();

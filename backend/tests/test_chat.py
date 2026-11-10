@@ -1,4 +1,4 @@
-"""Tests del chat anclado a fuentes (Hito 6) con el LLM mockeado."""
+"""Tests del chat anclado a fuentes con el LLM mockeado."""
 
 import asyncio
 import json

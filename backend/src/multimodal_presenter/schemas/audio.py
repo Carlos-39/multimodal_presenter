@@ -7,13 +7,13 @@ percepción a un modelo con entrada acústica nativa, que produce ESTA represent
 estructurada. Incluye, además del contenido verbal, hablantes, énfasis, pausas, eventos no
 verbales y condiciones acústicas: información que una transcripción plana descarta.
 
-**Este NO es parte del contrato público backend↔frontend.** Es una representación interna
+Este NO es parte del contrato público backend↔frontend. Es una representación interna
 entre la Fase 0 (percepción) y la Fase 2 (estructuración). Lo que llega al frontend sigue
-siendo la `Presentation` del Hito 1; del audio solo viaja el `source_kind="audio"` y el
+siendo la `Presentation`; del audio solo viaja el `source_kind="audio"` y el
 segundo aproximado de la cita (`SectionGrounding.start_s`).
 
-Disciplina de tipos: igual que el contrato del Hito 1, los rasgos categóricos son
-**conjuntos cerrados** (`Literal`), no texto libre, un `delivery` como string abierto
+Disciplina de tipos: igual que el contrato de la presentación, los rasgos categóricos son
+conjuntos cerrados (`Literal`), no texto libre: un `delivery` como string abierto
 dejaría al análisis posterior comparando sinónimos del modelo.
 
 Honestidad: `confidence` existe para que el anotador pueda declarar duda en vez de
@@ -33,7 +33,7 @@ class _Strict(BaseModel):
 
 
 # ─────────────────────────────────────────────────────────────
-# Enums: conjuntos cerrados (misma disciplina del Hito 1)
+# Enums: conjuntos cerrados (misma disciplina que el contrato)
 # ─────────────────────────────────────────────────────────────
 Confidence = Literal["alta", "media", "baja"]
 """Confianza del anotador en lo que afirma. `baja` es una respuesta legítima y esperada."""
@@ -133,14 +133,14 @@ class AudioEvidence(_Strict):
 
     @property
     def verbal_text(self) -> str:
-        """Contenido verbal concatenado. SOLO para localizar citas y como línea base de la
-        mini-evaluación: no se usa como documento para el grounding (ver `ground_section`)."""
+        """Contenido verbal concatenado. SOLO para localizar citas y como línea base de
+        comparación: no se usa como documento para el grounding (ver `ground_section`)."""
         return "\n".join(segment.text for segment in self.segments)
 
     def locate(self, quote: str) -> float | None:
         """Segundo aproximado del segmento que contiene `quote`, o None.
 
-        **Localiza, no verifica.** El estado de grounding del audio sigue siendo
+        Localiza, no verifica. El estado de grounding del audio sigue siendo
         `unverified`: la cita se busca contra la transcripción del modelo de percepción,
         un derivado aplanado de la señal: no contra el audio. Sirve para que el reproductor
         salte al momento, igual que `page` lleva a la página en PDF.

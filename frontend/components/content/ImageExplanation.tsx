@@ -5,11 +5,11 @@ import { fetchImageExplanation } from "@/lib/imageExplanation";
 import { SkeletonText } from "./Skeleton";
 
 /**
- * "Explicar esta imagen" (Hito 5h Parte 3). Control OPCIONAL junto a una imagen REAL del documento
+ * "Explicar esta imagen". Control OPCIONAL junto a una imagen REAL del documento
  * en el `SourcePanel`: pide al modelo una explicación accesible de lo que muestra. Colapsada por
- * defecto (progressive disclosure, Punto 9): no se muestra explicación no solicitada.
+ * defecto (progressive disclosure): no se muestra explicación no solicitada.
  *
- * Es trazabilidad REFORZADA sobre una imagen real, NO una ilustración generada (Parte 1): vive en
+ * Es trazabilidad REFORZADA sobre una imagen real, NO una ilustración generada (`GeneratedFigure`): vive en
  * el panel de fuente, sobre la imagen real, y no lleva etiqueta de "no verificable". Si falla, se
  * dice (honestidad), no queda en silencio.
  */

@@ -4,7 +4,7 @@ import { NARRATION_SKIP_S, type NarrationStatus } from "@/hooks/useNarration";
 import { Espera } from "./Espera";
 
 /**
- * Controles de la narración tipo audiolibro (núcleo fijo, Punto 8 · Hito 5g Parte 3). Viven
+ * Controles de la narración tipo audiolibro (núcleo fijo). Viven
  * dentro del bloque "Generar" del rail (`GeneratePanel`), junto a la presentación.
  *
  * Reproduce una narración generada aparte (guion sintetizado, NO el texto en pantalla). Nunca
@@ -46,8 +46,8 @@ export function AudioControls({
   return (
     <div className="mt-2.5">
       {/* `flex-wrap`: los cuatro botones no encogen (148 px con los huecos) y en el rail la fila
-          mide 190, así que al estado le quedaban 42 px. Una palabra como "documento" no cabe ahí
-          y no se puede partir, de modo que se salía del rail. Con el ancho mínimo de abajo, el
+          mide 190, así que al estado le quedan 42 px. Una palabra como "documento" no cabe ahí
+          y no se puede partir, de modo que se saldría del rail. Con el ancho mínimo de abajo, el
           estado baja a su propia línea cuando no cabe al lado, y se queda al lado cuando sí. */}
       <div className="flex flex-wrap items-center gap-2">
         <button

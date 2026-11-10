@@ -5,20 +5,19 @@ import { useEffect, useRef } from "react";
 /**
  * Una retícula de cubos que se inclinan hacia donde señalas, y sueltan una onda al pulsar.
  *
- * **Vive solo en la biblioteca vacía.** Donde hay tarjetas no entra: esas ya se encienden por el
+ * Vive solo en la biblioteca vacía. Donde hay tarjetas no entra: esas ya se encienden por el
  * borde al pasar el ratón, y dos cosas reaccionando al cursor en la misma pantalla compiten justo
- * cuando alguien está eligiendo un documento. Aquí no hay nada con qué competir ( la pantalla está
- * vacía por definición ) y es el momento en que más se agradece que algo se vea trabajado.
+ * cuando alguien está eligiendo un documento. Aquí no hay nada con qué competir (la pantalla está
+ * vacía por definición) y es el momento en que más se agradece que algo se vea trabajado.
  *
- * **Escrito desde cero.** Del componente original solo había el uso, no el código, así que esto
- * sale de la descripción y de una captura: rejilla de 8, inclinación máxima de 45 grados, radio de
+ * Escrito desde cero a partir de la descripción del componente original: rejilla de 8, inclinación máxima de 45 grados, radio de
  * influencia de 3 celdas, borde punteado y onda al pulsar.
  *
- * **Sin estado de React.** Son 64 transformaciones por fotograma: meterlas en estado sería volver
+ * Sin estado de React. Son 64 transformaciones por fotograma: meterlas en estado sería volver
  * a renderizar la pantalla entera sesenta veces por segundo para mover unas cajas. Se escriben al
  * DOM, como el pulgar del segmentado o la baraja de la portada.
  *
- * **Se para cuando no hay nadie.** Sin puntero encima y sin onda viva, el bucle se cancela: no
+ * Se para cuando no hay nadie. Sin puntero encima y sin onda viva, el bucle se cancela: no
  * queda nada corriendo detrás. Con «reducir movimiento» no se inclina ni ondea, se queda la
  * retícula quieta, que sigue siendo un dibujo.
  */

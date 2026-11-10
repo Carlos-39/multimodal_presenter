@@ -1,4 +1,4 @@
-"""Tests del contrato de datos (Hito 1).
+"""Tests del contrato de datos.
 
 La mitad importante de esta suite son los tests de RECHAZO: demuestran que el
 contrato hace estructuralmente imposible desalinear el tipo declarado y el contenido
@@ -185,14 +185,14 @@ def test_tabla_con_celda_vacia_sigue_exigiendo_el_ancho() -> None:
 # RECHAZO: campos obligatorios del contrato
 # ─────────────────────────────────────────────────────────────
 def test_section_without_source_is_rejected() -> None:
-    """Cada sección debe ser trazable a su fuente (Punto 4)."""
+    """Cada sección debe ser trazable a su fuente."""
     payload = {"id": "s1", "role": "core", "content": {"content_type": "text", "text": "x"}}
     with pytest.raises(ValidationError):
         Section.model_validate(payload)
 
 
 def test_section_without_role_is_rejected() -> None:
-    """Cada sección debe estar marcada núcleo/satélite (Punto 6)."""
+    """Cada sección debe estar marcada núcleo/satélite."""
     payload = {"id": "s1", "source": VALID_SOURCE, "content": {"content_type": "text", "text": "x"}}
     with pytest.raises(ValidationError):
         Section.model_validate(payload)
