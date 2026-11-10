@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { LandingGate } from "@/components/landing/LandingGate";
+import { YA_ESTUVO } from "@/components/landing/recuerdo";
 import WorkspaceClient from "./WorkspaceClient";
 
 /**
@@ -16,7 +17,6 @@ import WorkspaceClient from "./WorkspaceClient";
  * portada abriría una sesión de medición: leyendo la portada no se crea `mmp_session_id`; al
  * entrar, sí.
  */
-const YA_ESTUVO = "mmp_visto_landing";
 
 export default async function Page({
   searchParams,
@@ -35,7 +35,8 @@ export default async function Page({
   const abrir = typeof parametros.abrir === "string" ? parametros.abrir : undefined;
   if (abrir) return <WorkspaceClient abrir={abrir} />;
 
-  // Quien ya entró alguna vez no necesita que le presenten.
+  // Quien ya entró en esta visita no necesita que le presenten otra vez. La cookie es de sesión,
+  // así que al abrir el enlace otro día la portada vuelve a salir primero.
   //
   // Se mira el VALOR y no la presencia: cerrar sesión no borra una cookie, la deja vacía, y
   // `has()` la sigue dando por presente.
