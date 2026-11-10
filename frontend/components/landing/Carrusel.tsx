@@ -9,17 +9,16 @@ import { Baraja } from "./Baraja";
 /**
  * Las piezas que el sistema sabe hacer, una a una.
  *
- * **Avanza solo, pero se calla en cuanto alguien participa**, con las mismas reglas que el héroe
- * y el párrafo del problema: ver `useAvanceSolo`. Lo que esta pieza gana al compartirlas es la
- * cuarta, que antes no tenía: no empieza a girar hasta estar en pantalla, así que ya no te
- * encuentras una tarjeta a mitad de ciclo al llegar.
+ * Avanza solo, pero se calla en cuanto alguien participa, con las mismas reglas que el héroe
+ * y el párrafo del problema: ver `useAvanceSolo`. Al compartirlas gana también la cuarta: no
+ * empieza a girar hasta estar en pantalla, así que no se llega a una tarjeta a mitad de ciclo.
  *
- * **La lámina entra por el lado del que vienes**, y tarda lo mismo la pases tú o la pase el
+ * La lámina entra por el lado del que vienes, y tarda lo mismo la pases tú o la pase el
  * tiempo. Que el clic acelerase la animación lo haría sentir como una interrupción en vez de como
  * el mando. El punto activo cuenta lo que falta para el siguiente: sin eso la lámina cambia de
  * golpe y parece que la página hace cosas por su cuenta.
  *
- * Las flechas y los puntos son botones de verdad, así que funciona con el teclado.
+ * Las flechas y los puntos son botones reales, así que funciona con el teclado.
  */
 const INTERVALO_MS = 7000;
 
@@ -99,9 +98,9 @@ export function Carrusel() {
             </div>
           </div>
 
-          {/* La baraja en lugar del panel único: así se ve que hay cinco y cuáles son, que es lo
-              que unos puntos no pueden decir. El comportamiento no cambia, sigue siendo el mismo
-              `useAvanceSolo` con sus flechas, sus puntos y su cuenta. */}
+          {/* La baraja deja ver que hay cinco y cuáles son, que es lo que unos puntos no pueden
+              decir. El comportamiento es el mismo `useAvanceSolo` con sus flechas, sus puntos y
+              su cuenta. */}
           <Baraja indice={indice} />
         </div>
       </div>

@@ -2,12 +2,12 @@
 
 Herramienta de comprensión en paralelo al texto estructurado (transform) y al audio (narración):
 una síntesis NUEVA pensada para el formato diapositiva, generada releyendo el DOCUMENTO ORIGINAL
-(como el chat del Hito 6), no re-componiendo las `Section` ya generadas (eso es la vista de slides
-del 5h, que es otra cosa). On-demand y cacheada por documento.
+(como el chat), no re-componiendo las `Section` ya generadas (eso es la vista de slides, que es
+otra cosa). On-demand y cacheada por documento.
 
 Trazabilidad por slide (mix honesto): se ancla a una cita exacta cuando es limpio; se marca como
 `is_synthesis` cuando simplifica contenido complejo sin cita exacta; `not_found` si el modelo diera
-una cita inexistente. Imágenes: reusa el pipeline de ilustraciones del 5h (gpt-image-1) con su
+una cita inexistente. Imágenes: reusa el pipeline de ilustraciones (gpt-image-1) con su
 etiqueta obligatoria: sin sistema de imágenes paralelo.
 """
 
@@ -40,11 +40,11 @@ _CIFRA_MAX = 16
 
 #: Lo que cabe en el cuerpo de una lámina, en caracteres. Unas 35 palabras en español.
 #:
-#: Lo aplica el CÓDIGO recortando, no el plan rechazando, y la diferencia costó un fin de semana
-#: de producción. Como tope del plan, un cuerpo de 70 palabras no invalidaba su lámina: invalidaba
-#: la presentación COMPLETA, porque el modelo devuelve el deck entero de una vez. Pydantic se lo
-#: devolvía para que lo corrigiera, el modelo volvía a pasarse, y a la segunda saltaba
-#: «Exceeded maximum output retries» y catorce láminas buenas se iban con la mala.
+#: Lo aplica el CÓDIGO recortando, no el plan rechazando. Como tope del plan, un cuerpo de 70
+#: palabras no invalidaría su lámina: invalidaría la presentación COMPLETA, porque el modelo
+#: devuelve el deck entero de una vez. Pydantic se lo devuelve para que lo corrija, el modelo
+#: vuelve a pasarse, y a la segunda salta «Exceeded maximum output retries» y las láminas buenas
+#: se van con la mala.
 #:
 #: Recortar no es resignarse: el tope existe porque un párrafo en una diapositiva deja de ser una
 #: diapositiva, y quedarse con las frases que caben es exactamente eso, hecho sin pedirle permiso
@@ -156,7 +156,7 @@ class _ComparacionPlan(BaseModel):
 
 class _SlidePlan(BaseModel):
     papel: PapelDeSlide = "afirmacion"
-    #: Sin `min_length` ni `max_length` en todo el plan, a propósito. Un tope aquí no recorta la
+    #: Sin `min_length` ni `max_length` en todo el plan, deliberadamente. Un tope aquí no recorta la
     #: lámina que se pasa: rechaza el deck entero, porque el modelo lo devuelve de una vez. Los
     #: topes se aplican al montar cada diapositiva, donde lo que falla es UNA.
     title: str = ""
@@ -212,10 +212,9 @@ def _doc_parts(extraction: ExtractionResult) -> list[str | BinaryContent]:
 def _presupuesto_de_imagenes(n_slides: int) -> int:
     """Cuántas imágenes puede llevar una presentación de `n_slides`.
 
-    Proporcional y no fijo. El tope de dos era arbitrario: lo puse bajo cuando el problema era que
-    sobraban imágenes, pero ahora cada una pasa por un filtro que mira el dibujo y descarta las
-    decorativas, así que se puede aflojar sin que vuelva la basura. Lo que sigue costando dinero
-    es que una descartada ya se pagó, y por eso el techo se queda.
+    Proporcional y no fijo. Cada imagen pasa por un filtro que mira el dibujo y descarta las
+    decorativas, así que el tope no necesita ser bajo para evitar imágenes de relleno. Lo que
+    sigue costando dinero es que una descartada ya se pagó, y por eso el techo se queda.
     """
     return min(5, max(2, -(-n_slides // 4)))
 
@@ -391,9 +390,9 @@ async def generate_deck(
                     )
                 )
             except ValidationError as exc:
-                # Lo que entra aquí lo escribió un modelo, y una lámina que no valida se llevaba
-                # por delante la PRESENTACIÓN ENTERA con un 500. Pasó en producción: el plan
-                # admitía una cifra más larga de la que el contrato acepta.
+                # Lo que entra aquí lo escribió un modelo, y una lámina que no valida se llevaría
+                # por delante la PRESENTACIÓN ENTERA con un 500 (por ejemplo, si el plan admite
+                # una cifra más larga de la que el contrato acepta).
                 #
                 # Se registra el campo que falló, no el valor: lo que hace falta para arreglarlo
                 # es saber QUÉ campo se desincronizó, y el valor es contenido del documento.

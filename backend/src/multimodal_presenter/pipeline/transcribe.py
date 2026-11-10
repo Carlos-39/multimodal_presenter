@@ -1,6 +1,6 @@
 """Transcripción de voz a texto para la caja del chat (entrada por voz).
 
-OpenAI `gpt-4o-mini-transcribe` (misma clave que el TTS del 5g). SOLO convierte audio→texto para
+OpenAI `gpt-4o-mini-transcribe` (misma clave que el TTS). SOLO convierte audio→texto para
 que el usuario lo revise y lo envíe si quiere: NUNCA interpreta comandos ni envía nada por su
 cuenta. Si falla, se propaga el error para que el frontend lo muestre (honestidad), nunca en
 silencio ni insertando texto vacío.
@@ -27,6 +27,6 @@ async def transcribe_audio(settings: Settings, audio: bytes, filename: str) -> s
     response = await client.audio.transcriptions.create(
         model=settings.openai_transcribe_model,
         file=(filename or "audio.webm", audio),
-        language="es",  # la evaluación es en español: mejora precisión y latencia
+        language="es",  # la interfaz es en español: mejora precisión y latencia
     )
     return (response.text or "").strip()

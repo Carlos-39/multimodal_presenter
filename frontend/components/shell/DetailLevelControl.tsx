@@ -4,7 +4,7 @@ import type { DetailLevel } from "@/lib/detail";
 import { Segmented } from "./Segmented";
 
 /**
- * Selector de nivel de detalle (Punto 11): control explícito del usuario, sin detección
+ * Selector de nivel de detalle: control explícito del usuario, sin detección
  * automática. Parte del núcleo fijo (Stable Core): su posición y comportamiento no cambian
  * entre presentaciones.
  */

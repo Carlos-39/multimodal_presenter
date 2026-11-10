@@ -6,12 +6,12 @@ Nivel barato (determinista): grounding de fuentes, adaptado al tipo de fuente.
 - PDF/imagen: NO se puede verificar por substring sin aplanar el binario (contra el
   principio rector). Las secciones quedan `unverified`; para PDF se conserva la página que
   aporta el modelo y, si tiene capa de texto, la REGIÓN dentro de ella (ver `pdf_locator`).
-  La región localiza, no verifica: el estado no cambia. La VERIFICACIÓN sigue siendo TODO(Hito5).
+  La región localiza, no verifica: el estado no cambia. La VERIFICACIÓN sigue pendiente (TODO).
 - Audio: también `unverified`, con el segundo aproximado (`start_s`) en vez de la página. La
   cita se LOCALIZA en la transcripción de la Fase 0 para poder saltar al momento, pero eso no
   la verifica contra la señal; ver `schemas/transform.py` para el razonamiento completo.
 
-Nivel LLM (coherencia semántica): interfaz real ya cableada, hoy no-op. TODO(Hito2.1).
+Nivel LLM (coherencia semántica): interfaz real ya cableada, hoy no-op (TODO).
 """
 
 from dataclasses import dataclass
@@ -115,7 +115,7 @@ def ground_section(
 
     if extraction.source_kind == "audio":
         assert extraction.audio_evidence is not None
-        # `unverified`, el MISMO estado de PDF/imagen y a propósito no uno nuevo: la cita se
+        # `unverified`, el MISMO estado de PDF/imagen y no uno nuevo: la cita se
         # busca contra la transcripción de la Fase 0, que es un derivado aplanado de la señal.
         # Encontrarla ahí NO la verifica contra el audio. Lo que se gana es el momento
         # (`start_s`), el análogo de `page`: lleva al punto del audio sin afirmar verificación.
@@ -145,11 +145,11 @@ def ground_quote(
     extraction: ExtractionResult,
     localizador: PdfLocator | None = None,
 ) -> QuoteAnchor:
-    """Ancla una CITA suelta (respuesta de chat, Hito 6) con la misma regla determinista.
+    """Ancla una CITA suelta (respuesta de chat) con la misma regla determinista.
 
     - Sin cita → `not_found` sin fuente: el modelo no pudo anclar; no se inventa una.
     - Texto: si la cita existe → `verified` con offsets; si no → `not_found` (fabricación).
-    - Binario (PDF/imagen): `unverified`, conservando la página (Caso B del 5c).
+    - Binario (PDF/imagen): `unverified`, conservando la página.
     - Audio: `unverified` con el MOMENTO (tercer valor), nunca `verified`. La cita se localiza
       en la transcripción de la Fase 0, que es un derivado aplanado de la señal: encontrarla
       ahí no la verifica contra el audio. Mismo criterio que `ground_section`.
@@ -209,21 +209,21 @@ class SectionIdDeduper:
     sección sola no sabe de las demás). Cuando el modelo repite un id, dos cosas se rompen a la
     vez, y ninguna de forma ruidosa:
 
-    1. **El join del grounding queda ambiguo:** `SectionGrounding.section_id` apunta a
+    1. El join del grounding queda ambiguo: `SectionGrounding.section_id` apunta a
        `Section.id`, así que con ids repetidos no se sabe qué entrada corresponde a qué sección.
-    2. **El frontend puede PERDER una sección:** React usa el id como `key` de la lista y, con
+    2. El frontend puede PERDER una sección: React usa el id como `key` de la lista y, con
        claves repetidas, su propia documentación advierte que puede omitir o duplicar hijos.
 
     Se observó con documentos reales (ids `sec-1` y `s1` repetidos), de forma intermitente: con
     unos documentos pasa y con otros no, lo que lo hace más difícil de ver, no menos grave.
 
-    **Por qué se CORRIGE y no se rechaza.** Rechazar en el contrato obligaría a reintentar toda
+    Por qué se CORRIGE y no se rechaza: rechazar en el contrato obligaría a reintentar toda
     la generación por un id repetido, y si el modelo insiste el usuario se queda sin nada. Es el
-    mismo criterio que la regla de isomorfismo (Hito 5a): lo determinista se corrige en código,
+    mismo criterio que la regla de isomorfismo: lo determinista se corrige en código,
     de forma reproducible, en vez de tumbar el resultado. El renombrado se traza en Logfire, se
     corrige, no se esconde.
 
-    Es stateful a propósito: el mismo objeto recorre toda la presentación, y en streaming vive
+    Es stateful deliberadamente: el mismo objeto recorre toda la presentación, y en streaming vive
     durante todo el stream, para que el id ya emitido cuente al deduplicar los siguientes.
     """
 
@@ -302,9 +302,9 @@ async def verify_semantic_coherence(
 ) -> SemanticCoherenceReport:
     """Fase 3 (nivel LLM): coherencia semántica de los gráficos contra la fuente.
 
-    Segunda pasada de LLM (Punto 3). Enfocada en gráficos para el Hito 5a. Es una llamada
+    Segunda pasada de LLM, enfocada en gráficos. Es una llamada
     adicional al modelo; queda trazada en Logfire (instrumentación global de PydanticAI).
-    Si no hay gráficos, no llama al modelo. TODO(Hito5x): extender a otros tipos de contenido.
+    Si no hay gráficos, no llama al modelo. TODO: extender a otros tipos de contenido.
     """
     charts = [s for s in presentation.sections if isinstance(s.content, ChartContent)]
     if not charts:

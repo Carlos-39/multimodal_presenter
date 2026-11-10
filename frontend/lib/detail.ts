@@ -1,14 +1,14 @@
 import type { Section } from "./types";
 
 /**
- * Nivel de detalle (Punto 11): control explícito del usuario, sin detección automática.
- * - `summary`: solo los núcleos (`core`), contenido completo y autosuficiente (Punto 9).
+ * Nivel de detalle: control explícito del usuario, sin detección automática.
+ * - `summary`: solo los núcleos (`core`), contenido completo y autosuficiente.
  * - `detailed`: núcleos + satélites (profundidad adicional).
  */
 export type DetailLevel = "summary" | "detailed";
 
 /**
- * Default: resumen (progressive disclosure, Punto 9). El núcleo se muestra primero, completo;
+ * Default: resumen (progressive disclosure). El núcleo se muestra primero, completo;
  * el detalle es una invitación a un clic, no un obstáculo.
  */
 export const DEFAULT_DETAIL_LEVEL: DetailLevel = "summary";

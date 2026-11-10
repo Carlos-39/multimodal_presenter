@@ -1,63 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { PORTON, decide, esLaPropiaMaquina } from "@/lib/acceso";
 import { politicaDeSeguridad } from "@/lib/csp";
 
 /**
- * Lo que se decide ANTES de que exista la página.
+ * La política de contenido de cada página, decidida antes de que exista la respuesta.
  *
- * Se llama `proxy.ts` y no `middleware.ts` porque en Next 16 ese nombre quedó obsoleto: la
- * documentación que trae el propio paquete lo dice y la función se exporta como `proxy`.
+ * Se llama `proxy.ts` y no `middleware.ts` porque en Next 16 ese nombre quedó obsoleto y la
+ * función se exporta como `proxy`. Vive aquí y no en la configuración estática porque necesita un
+ * *nonce* nuevo en cada petición.
  *
- * Hace dos cosas, y las dos tienen que pasar antes de que exista una respuesta:
- *
- * 1. **El portón**: si hay código configurado, nadie entra sin él. Ver `lib/acceso.ts`.
- * 2. **La política de contenido**, que necesita un *nonce* nuevo en cada petición y por eso no
- *    puede vivir en la configuración estática.
- *
- * **Corre antes que los `rewrites`**, y eso es justo lo que hace que el portón sirva de algo: el
- * orden documentado es cabeceras → redirecciones → *proxy* → `beforeFiles` → archivos →
- * `afterFiles`, y nuestro reenvío de `/api/*` es `afterFiles`. Un `curl` a `/api/transform/stream`
- * sin permiso se queda aquí y no llega al backend, que es donde costaría dinero.
- *
- * Y una advertencia que está en esa misma documentación y conviene respetar: esto «no debe confiar
- * en módulos compartidos ni en variables globales». Nada de lo que se haga aquí guarda estado
- * entre peticiones: por eso el contador de intentos no está aquí, sino en el login.
+ * La documentación de Next advierte que esto no debe depender de módulos compartidos ni de
+ * variables globales, así que no guarda estado entre peticiones.
  */
 export function proxy(request: NextRequest) {
   const ruta = request.nextUrl.pathname;
-
-  const decision = decide({
-    url: request.nextUrl,
-    cookie: request.cookies.get(PORTON.COOKIE)?.value,
-    codigo: process.env.ACCESO_CODIGO,
-  });
-
-  if (decision.tipo === "rechaza-api") {
-    return NextResponse.json({ detail: "Necesitas el enlace de acceso." }, { status: 401 });
-  }
-
-  if (decision.tipo === "entra") {
-    const respuesta = NextResponse.redirect(new URL(decision.volverA, request.url), 303);
-    respuesta.cookies.set(PORTON.COOKIE, decision.cookie, {
-      httpOnly: true, // el permiso no se toca desde JavaScript
-      sameSite: "lax",
-      // `Secure` salvo en la propia máquina. Se mira el HOST y no `NODE_ENV` a propósito: una
-      // cookie `Secure` sobre http no se guarda, así que atarla al modo dejaba un bucle de
-      // redirecciones en cuanto alguien levantara la build de producción en local para probarla.
-      // Y `localhost` ya cuenta como origen de confianza para el navegador, así que no se pierde
-      // nada. Donde esto viva de verdad habrá https y la cookie irá marcada.
-      secure: !esLaPropiaMaquina(request.nextUrl.hostname),
-      maxAge: PORTON.DURACION_S,
-      path: "/",
-    });
-    return respuesta;
-  }
-
-  if (decision.tipo === "pide-codigo") {
-    const destino = new URL(PORTON.RUTA, request.url);
-    destino.searchParams.set("destino", decision.destino);
-    return NextResponse.redirect(destino, 303);
-  }
 
   // Las respuestas de `/api/*` no son documentos que el navegador renderice: son JSON, bytes de un
   // PDF o un flujo de eventos. Una política de contenido ahí no protege nada y sí puede estorbar
@@ -67,7 +22,7 @@ export function proxy(request: NextRequest) {
   const nonce = crypto.randomUUID().replace(/-/g, "");
   const politica = politicaDeSeguridad(ruta, nonce, process.env.NODE_ENV === "development");
 
-  // La cabecera va en la PETICIÓN además de en la respuesta: Next lee de ahí el nonce para
+  // La cabecera va en la petición además de en la respuesta: Next lee de ahí el nonce para
   // ponérselo a sus propios scripts. Sin eso, la política bloquearía al propio framework.
   const cabeceras = new Headers(request.headers);
   cabeceras.set("content-security-policy", politica);

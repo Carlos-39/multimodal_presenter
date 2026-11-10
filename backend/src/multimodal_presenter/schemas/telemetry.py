@@ -1,10 +1,10 @@
-"""Telemetría de comportamiento (Hito 8), capa observacional, NO el contrato de datos.
+"""Telemetría de comportamiento, capa observacional, NO el contrato de datos.
 
-Este schema vive aparte a propósito: NO importa ni referencia `Presentation`/`Section`/
+Este schema vive aparte deliberadamente: NO importa ni referencia `Presentation`/`Section`/
 `GroundingReport`. La telemetría observa la interacción, no modifica el pipeline.
 
-El payload (`data`) solo admite primitivos cortos. Es una barrera *server-side* a la promesa de
-privacidad del Hito 8: aunque el frontend se equivocara, un valor largo (contenido del documento,
+El payload (`data`) solo admite primitivos cortos. Es una barrera *server-side* de
+privacidad: aunque el frontend se equivocara, un valor largo (contenido del documento,
 texto de una pregunta) se rechaza aquí. Solo entran metadatos: enums, ordinales, longitudes, ms.
 """
 
@@ -36,7 +36,7 @@ Primitive = str | int | float | bool | None
 
 
 class TelemetryEvent(BaseModel):
-    """Un evento de comportamiento del usuario durante una sesión de evaluación."""
+    """Un evento de comportamiento del usuario durante una sesión de uso."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -64,12 +64,11 @@ class TelemetryEvent(BaseModel):
 class TelemetryBatch(BaseModel):
     """Lote de eventos (el frontend los envía agrupados, no uno por request).
 
-    Los eventos entran SIN tipar y se validan **uno por uno** en `valid_events()`, a propósito.
-    Con `list[TelemetryEvent]` un solo evento malo invalidaba el request completo y se perdían
+    Los eventos entran SIN tipar y se validan uno por uno en `valid_events()`, deliberadamente.
+    Con `list[TelemetryEvent]` un solo evento malo invalidaría el request completo y se perderían
     hasta 50 eventos buenos del mismo lote, en silencio: el frontend es fire-and-forget y no se
-    enteraba. En una sesión de evaluación que no se puede repetir, eso es perder datos de verdad
-    (se vio al añadir un evento nuevo mientras el backend seguía corriendo con el schema viejo:
-    el lote entero respondía 422).
+    entera (pasa, por ejemplo, con un evento nuevo mientras el backend sigue corriendo con el
+    schema viejo: el lote entero responde 422).
 
     La barrera de privacidad NO se relaja: cada evento pasa por el mismo `TelemetryEvent`
     estricto, así que un string largo (contenido colado) se sigue rechazando. Lo único que cambia

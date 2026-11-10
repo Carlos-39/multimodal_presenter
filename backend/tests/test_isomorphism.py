@@ -1,4 +1,4 @@
-"""Tests de la regla determinista de isomorfismo de gráficos (Hito 5a)."""
+"""Tests de la regla determinista de isomorfismo de gráficos."""
 
 from multimodal_presenter.pipeline.isomorphism import (
     admissible_chart_types,
@@ -102,7 +102,7 @@ def test_misaligned_degraded_to_table() -> None:
 
 
 def test_correction_is_deterministic() -> None:
-    # Misma forma inválida → misma corrección siempre (Punto 1.5).
+    # Misma forma inválida → misma corrección siempre.
     args = ("pie", ["2020", "2021", "2022"], [{"name": "v", "values": [1, 2, 3]}])
     first, _ = enforce_isomorphism(_chart_pres(*args))
     second, _ = enforce_isomorphism(_chart_pres(*args))

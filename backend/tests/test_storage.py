@@ -1,16 +1,16 @@
-"""Almacenamiento (F0 de login + persistencia): esquema, migraciones y documentos en disco.
+"""Almacenamiento: esquema, migraciones y documentos en disco.
 
 Todo contra una base TEMPORAL: estos tests no pueden tocar los datos reales de la máquina, igual
 que los de telemetría escriben en `tmp_path`.
 
 Lo que se fija aquí, por orden de importancia:
 
-1. **Que las claves foráneas estén encendidas.** En SQLite vienen apagadas por defecto y son por
+1. Que las claves foráneas estén encendidas. En SQLite vienen apagadas por defecto y son por
    conexión: sin ellas, los `ON DELETE CASCADE` del esquema no hacen nada y borrar un usuario
    deja sus presentaciones colgando. Es un fallo silencioso, así que se comprueba.
-2. **Que guardar sea idempotente y direccionable por contenido**, que es lo que permite no
+2. Que guardar sea idempotente y direccionable por contenido, que es lo que permite no
    duplicar bytes ni coordinar nada.
-3. **Que no se puedan guardar bytes bajo un id ajeno.** El id es la ruta y la clave primaria: un
+3. Que no se puedan guardar bytes bajo un id ajeno. El id es la ruta y la clave primaria: un
    desajuste ahí deja el almacén mintiendo de forma indetectable.
 """
 
@@ -104,7 +104,7 @@ def test_las_claves_foraneas_estan_encendidas(migrada: Settings) -> None:
 
 
 def test_borrar_un_usuario_se_lleva_sus_presentaciones(migrada: Settings) -> None:
-    """La cascada solo funciona si las foráneas están encendidas: esto lo prueba de verdad."""
+    """La cascada solo funciona si las foráneas están encendidas: esto lo prueba."""
 
     async def flujo() -> int:
         async with db.conectar(migrada) as conn:
@@ -140,19 +140,19 @@ def test_borrar_un_usuario_se_lleva_sus_presentaciones(migrada: Settings) -> Non
 
 
 def test_el_email_no_distingue_mayusculas(migrada: Settings) -> None:
-    """Nadie espera que Carlos@x.com y carlos@x.com sean dos cuentas distintas."""
+    """Nadie espera que Ana@x.com y ana@x.com sean dos cuentas distintas."""
     import sqlite3
 
     async def flujo() -> None:
         async with db.conectar(migrada) as conn:
             await conn.execute(
                 "INSERT INTO usuarios (id, email, password_hash, creado_en) VALUES (?,?,?,?)",
-                ("u1", "Carlos@x.com", "h", db.ahora()),
+                ("u1", "Ana@x.com", "h", db.ahora()),
             )
             await conn.commit()
             await conn.execute(
                 "INSERT INTO usuarios (id, email, password_hash, creado_en) VALUES (?,?,?,?)",
-                ("u2", "carlos@x.com", "h", db.ahora()),
+                ("u2", "ana@x.com", "h", db.ahora()),
             )
             await conn.commit()
 

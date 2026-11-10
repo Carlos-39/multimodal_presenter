@@ -1,5 +1,5 @@
 {
-  "_nota": "Verdad de referencia de la mini-evaluación de audio (hallazgo A1). Cada clip declara qué se diseñó al grabarlo; el arnés (eval_audio_evidence.py) mide contra esto. Si al grabar cambió algo, se corrige AQUÍ antes de correr: la auditoría del dataset del Hito 7 mostró lo que cuesta no revisar la verdad de referencia a tiempo. Guion de grabación en docs/Guion_Clips_Audio_A1.md.",
+  "_nota": "Verdad de referencia de la evaluación de audio. Cada clip declara qué se diseñó al grabarlo; el arnés (eval_audio_evidence.py) mide contra esto. Si al grabar cambió algo, se corrige aquí antes de correr.",
   "_claves": "Las frases se buscan en el texto generado, así que cada una lista variantes de superficie: lo dicho en voz ('cuarenta y dos por ciento') y lo que el modelo probablemente escriba ('42'). Basta con que aparezca UNA.",
   "clips": [
     {

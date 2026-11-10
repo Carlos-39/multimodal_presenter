@@ -8,12 +8,11 @@ import { MUESTRAS } from "./muestras";
 /**
  * El héroe: la aplicación, jugable, antes de entrar.
  *
- * **Sustituye a una ilustración que se reproducía una vez y se quedaba muerta.** El argumento del
- * proyecto es un gesto (pulsas una frase escrita y te lleva a la del original) y un gesto se
- * demuestra, no se describe. Aquí se pulsa de verdad: no hay llamadas a la API ni coste por
- * visita, el contenido es fijo, pero el movimiento es el mismo que dentro.
+ * El argumento del proyecto es un gesto (pulsas una frase escrita y te lleva a la del original) y
+ * un gesto se demuestra, no se describe. Aquí se pulsa igual que dentro: no hay llamadas a la API ni coste por
+ * visita, el contenido es fijo, pero el movimiento es el mismo.
  *
- * **Y se recorre solo, porque la mayoría de quien llega no pulsa nada.** El recorrido es plano y
+ * Y se recorre solo, porque la mayoría de quien llega no pulsa nada. El recorrido es plano y
  * atraviesa las tres entradas (las dos secciones del texto, las dos del PDF, las dos de la
  * grabación), así que quien se quede mirando ve las tres clases de prueba sin hacer nada. En
  * cuanto alguien toca un control se detiene para siempre: ver `useAvanceSolo`.
@@ -63,9 +62,9 @@ export function Demostracion() {
   /**
    * Pulsar una sección enciende su frase, y asegura que la frase esté a la vista.
    *
-   * En móvil los dos paneles se apilan y el documento queda arriba: pulsar una sección podía
-   * resaltar algo fuera de la pantalla, o sea no demostrar nada. `block: "nearest"` **no hace nada
-   * si el documento ya se ve**, así que en escritorio no mueve ni un píxel y en un móvil estrecho
+   * En móvil los dos paneles se apilan y el documento queda arriba: pulsar una sección podría
+   * resaltar algo fuera de la pantalla, o sea no demostrar nada. `block: "nearest"` no hace nada
+   * si el documento ya se ve, así que en escritorio no mueve ni un píxel y en un móvil estrecho
    * sube exactamente lo que falte.
    */
   function verSeccion(j: number) {

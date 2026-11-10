@@ -1,10 +1,10 @@
 """Endpoints de transformación y chat.
 
-- `POST /transform` ( multipart (texto y/o archivo), respuesta única con el envelope.
-- `POST /transform/stream` ) igual entrada, pero emite las secciones por SSE (Hito 5d).
-- `POST /chat/stream` ( chat anclado a fuentes por SSE (Hito 6): relee el documento (cacheado)
+- `POST /transform`: multipart (texto y/o archivo), respuesta única con el envelope.
+- `POST /transform/stream`: igual entrada, pero emite las secciones por SSE.
+- `POST /chat/stream`: chat anclado a fuentes por SSE. Relee el documento (cacheado)
   y responde con texto en vivo + un ancla verificada al final.
-- `POST /chat/suggestions` ) preguntas sugeridas específicas a una sección (Hito 6).
+- `POST /chat/suggestions`: preguntas sugeridas específicas a una sección.
 """
 
 import json
@@ -92,14 +92,14 @@ def _cupo(categoria: str, atributo: str, mensaje: str):
 
 
 #: Lo caro: transformar un documento son unas décimas de dólar, y el deck y las ilustraciones
-#: generan imágenes. Un participante hace una transformación, quizá dos.
+#: generan imágenes. Un uso normal es una transformación, quizá dos.
 cupo_de_generacion = _cupo(
     "gen",
     "limite_generacion_por_hora",
     "Se alcanzó el límite de documentos por hora.",
 )
 #: Lo barato pero no gratis: cada turno de chat, cada tanda de sugeridas y cada adelanto son una
-#: llamada al modelo. Una sesión de evaluación hace del orden de treinta o cuarenta.
+#: llamada al modelo. Un uso normal hace del orden de treinta o cuarenta.
 cupo_de_conversacion = _cupo(
     "conv",
     "limite_conversacion_por_hora",
@@ -151,7 +151,7 @@ def _parse_audio_evidence(
     El chat, las preguntas sugeridas y el deck vuelven a pasar el documento al motor de
     estructuración, que no admite audio. En vez de re-percibir el audio en cada petición (que
     costaría de más y, peor, haría que el "documento" cambiara entre turnos porque la percepción
-    es probabilística) el frontend **reenvía la MISMA evidencia** que produjo la Fase 0 durante
+    es probabilística) el frontend reenvía la MISMA evidencia que produjo la Fase 0 durante
     la transformación. Así el documento es idéntico en todos los turnos y no se paga dos veces.
 
     Devuelve None para texto, PDF e imagen: esas rutas no cambian en absoluto.
@@ -192,7 +192,7 @@ async def parse_document_inputs(
     `document_id` del almacén. La tercera es la que hace falta cuando alguien abre una
     presentación guardada desde otro navegador, donde ya no existe el `File` original.
 
-    **El `document_id` exige cuenta Y propiedad.** Sin esa comprobación bastaría conocer un id
+    El `document_id` exige cuenta Y propiedad. Sin esa comprobación bastaría conocer un id
     (que es un hash del contenido, pero aun así) para leer el documento de otra persona.
     """
     text_value = text.strip() if text else None
@@ -328,14 +328,14 @@ async def transform_stream_endpoint(
             ):
                 yield f"data: {event.model_dump_json()}\n\n"
         except Exception:
-            # El participante ve una frase corta; el registro se queda con la causa. Sin esta
-            # línea el fallo era indiagnosticable: la respuesta ya iba por el stream, así que
-            # uvicorn registraba «200 OK», el navegador enseñaba «se interrumpió» y en los
-            # registros del servidor no quedaba absolutamente nada que mirar. Pasó en producción.
+            # El usuario ve una frase corta; el log se queda con la causa. Sin esta línea el
+            # fallo es indiagnosticable: la respuesta ya va por el stream, así que uvicorn
+            # registra «200 OK», el navegador enseña «se interrumpió» y en los logs del
+            # servidor no queda nada que mirar.
             logfire.exception("transformación: el stream murió a mitad")
             # Dice que está A MEDIAS, no solo que falló. Cuando el stream muere ya hay
             # secciones en pantalla, y media presentación se lee exactamente igual que una
-            # presentación corta: sin esta frase, el participante se lleva un documento
+            # presentación corta: sin esta frase, el usuario se lleva un documento
             # truncado creyendo que eso era todo.
             err = StreamError(
                 message="La generación se interrumpió a medias: lo que hay está incompleto."
@@ -398,9 +398,9 @@ async def chat_stream_endpoint(
             ):
                 yield f"data: {event.model_dump_json()}\n\n"
         except Exception:
-            # Igual que en la transformación: la causa va al registro, no al participante.
-            # La longitud de la pregunta sí, el texto no, la telemetría del Hito 8 no manda
-            # contenido y este registro no va a ser la puerta de atrás por la que se cuele.
+            # Igual que en la transformación: la causa va al log, no al usuario.
+            # La longitud de la pregunta sí, el texto no: la telemetría no manda contenido
+            # y este log no va a ser la puerta de atrás por la que se cuele.
             logfire.exception(
                 "chat: el stream murió a mitad (pregunta de {n} caracteres)",
                 n=len(question_value),
@@ -426,7 +426,7 @@ async def chat_suggestions_endpoint(
     model: Model = Depends(get_model),
     settings: Settings = Depends(get_settings),
 ) -> SuggestionsResponse:
-    """Preguntas sugeridas específicas a una sección (Punto 9). Relee el documento (cacheado)."""
+    """Preguntas sugeridas específicas a una sección. Relee el documento (cacheado)."""
     text_value, binary, media_type, filename = await parse_document_inputs(
         text, file, settings, document_id, usuario
     )
@@ -459,7 +459,7 @@ async def summary_endpoint(
     model: Model = Depends(get_summary_model),
     settings: Settings = Depends(get_settings),
 ) -> SummaryResponse:
-    """Adelanto corto del contenido (Hito 5g), con un modelo liviano (Haiku).
+    """Adelanto corto del contenido, con un modelo liviano (Haiku).
 
     El frontend lo pide EN PARALELO a /transform/stream: da un preview de qué trata lo subido
     mientras el pipeline completo (Sonnet) trabaja. Es un extra no crítico; si falla, el frontend
@@ -494,7 +494,7 @@ async def narration_endpoint(
     model: Model = Depends(get_model),
     settings: Settings = Depends(get_settings),
 ) -> Response:
-    """Narración tipo audiolibro (Hito 5g Parte 3). Devuelve mp3 (audio/mpeg).
+    """Narración tipo audiolibro. Devuelve mp3 (audio/mpeg).
 
     On-demand y cacheada por documento: pedir la misma narración otra vez usa la caché (no
     regenera guion ni audio). Si el TTS no está configurado o falla, responde con error visible
@@ -507,7 +507,7 @@ async def narration_endpoint(
     except Exception as exc:  # fallo del proveedor TTS / red → error visible, no silencio
         # `from exc` encadena la causa en el traceback, pero FastAPI atiende la HTTPException y
         # ese traceback no llega a ninguna parte. Sin esta línea, «no se pudo generar la
-        # narración» es todo lo que existe, aquí y en los registros.
+        # narración» es todo lo que existe, aquí y en los logs.
         logfire.exception("narración: el proveedor de voz falló")
         raise HTTPException(status_code=502, detail="No se pudo generar la narración.") from exc
     return Response(content=audio, media_type="audio/mpeg")
@@ -574,7 +574,7 @@ async def explain_image_endpoint(
     model: Model = Depends(get_model),
     settings: Settings = Depends(get_settings),
 ) -> ImageExplanationResponse:
-    """Explica bajo demanda una imagen REAL del documento (Hito 5h Parte 3, extensión de 4+6).
+    """Explica bajo demanda una imagen REAL del documento.
 
     Solo para fuentes binarias (PDF/imagen): el modelo relee el binario nativo y explica la imagen
     en lenguaje accesible. La atribución es la propia imagen (se muestra junto a ella en el
@@ -641,7 +641,7 @@ async def deck_endpoint(
     """Presentación en diapositivas GENERADA (guion propio, desde la fuente). On-demand.
 
     Relee el documento original (como el chat) y sintetiza un deck pensado para slides. Distinto de
-    la vista de slides del 5h (re-composición sin generación). Si no hay clave de OpenAI, el deck se
+    la vista de slides (re-composición sin generación). Si no hay clave de OpenAI, el deck se
     genera igual pero sin imágenes de apoyo (degradación honesta, no falla).
     """
     text_value, binary, media_type, filename = await parse_document_inputs(
@@ -658,9 +658,8 @@ async def deck_endpoint(
     try:
         return await generate_deck(model, settings, extraction)
     except Exception as exc:  # el modelo o el proveedor fallaron → error visible, no un 500 pelado
-        # Mismo motivo que en la narración: sin esta línea, el registro guarda una traza de
-        # pydantic y ni una palabra sobre QUÉ documento ni en qué fase. Esa falta de contexto es
-        # lo que convirtió el último fallo de /deck en dos días de conjeturas.
+        # Mismo motivo que en la narración: sin esta línea, el log guarda una traza de
+        # pydantic y ni una palabra sobre QUÉ documento ni en qué fase.
         logfire.exception(
             "deck: no se pudo generar la presentación (fuente: {kind})",
             kind=extraction.source_kind,
@@ -678,7 +677,7 @@ async def illustrations_endpoint(
     model: Model = Depends(get_summary_model),
     settings: Settings = Depends(get_settings),
 ) -> IllustrationsResponse:
-    """Ilustraciones de apoyo generadas (Hito 5h Parte 1). On-demand tras la transformación.
+    """Ilustraciones de apoyo generadas. On-demand tras la transformación.
 
     El frontend solo lo llama para documentos de fuente TEXTO (condición 1: un texto no trae
     imágenes). Clasifica los núcleos (Haiku) y genera imagen (Ideogram primario, gpt-image-1 de
@@ -706,7 +705,7 @@ async def telemetry_endpoint(
     batch: TelemetryBatch,
     settings: Settings = Depends(get_settings),
 ) -> Response:
-    """Ingesta de telemetría de comportamiento (Hito 8, capa observacional).
+    """Ingesta de telemetría de comportamiento (capa observacional).
 
     Recibe un lote de eventos por JSON (el frontend agrupa y usa `sendBeacon`). El schema es
     aparte del contrato de datos y corta strings largos: nunca entra contenido del documento ni
@@ -718,7 +717,7 @@ async def telemetry_endpoint(
     if descartados:
         # Se traza y se sigue: antes un evento malo invalidaba el lote entero y se perdían los
         # buenos que venían con él (ver `TelemetryBatch`). Perder un evento es aceptable; perder
-        # 50 de una sesión irrepetible, no.
+        # 50 de golpe, no.
         logfire.warn(
             "telemetría: {descartados} de {total} eventos descartados por el schema",
             descartados=descartados,
@@ -736,21 +735,20 @@ async def telemetry_volcado_endpoint(
 ) -> StreamingResponse:
     """Devuelve los JSONL de telemetría, concatenados, para bajarlos desde el despliegue.
 
-    **Por qué existe.** Los eventos se escriben en un volumen al que no se llega sin la CLI de la
-    plataforma, y durante las sesiones hay que mirarlos el mismo día: una sesión que salió rara se
-    diagnostica con los datos delante, no la semana siguiente. Esto es el camino corto.
+    Por qué existe: los eventos se escriben en un volumen al que no se llega sin la CLI de la
+    plataforma, y a veces hay que mirarlos el mismo día. Esto es el camino corto.
 
-    **Por qué devuelve el crudo y no los CSV.** El exportador que produce los agregados ya existe,
-    está probado y es el que se usó con los datos de desarrollo. Reimplementarlo aquí sería tener
+    Por qué devuelve el crudo y no los CSV: el exportador que produce los agregados ya existe
+    y está probado. Reimplementarlo aquí sería tener
     dos verdades sobre qué significa cada columna; se baja el crudo y se corre el de siempre
     (`scripts/bajar_telemetria.py` hace las dos cosas de un tirón).
 
-    **Qué sale por aquí.** Metadatos anónimos: el schema de entrada ya rechaza cualquier cadena de
-    más de 40 caracteres, así que no hay contenido de documentos ni texto de preguntas. El
-    participante es `Pxx`, que es el seudónimo que promete el consentimiento. Aun así va detrás de
-    un token, porque son los datos de un experimento con personas.
+    Qué sale por aquí: metadatos anónimos. El schema de entrada ya rechaza cualquier cadena de
+    más de 40 caracteres, así que no hay contenido de documentos ni texto de preguntas, y la
+    etiqueta de participante es un seudónimo `Pxx`. Aun así va detrás de un token, porque son
+    datos de uso de personas.
 
-    Sin `TELEMETRIA_TOKEN` configurado esto **no existe**: 404, como cualquier ruta inventada. Una
+    Sin `TELEMETRIA_TOKEN` configurado esto no existe: 404, como cualquier ruta inventada. Una
     puerta que anuncia que está cerrada es una invitación a probar la llave.
     """
     esperado = settings.telemetria_token
@@ -761,9 +759,8 @@ async def telemetry_volcado_endpoint(
     # diferir, y `compare_digest` sobre str exige ASCII y lanza si llega otra cosa.
     recibido = (x_telemetria_token or "").encode("utf-8")
     if not secrets.compare_digest(recibido, esperado.encode("utf-8")):
-        # 401 y no 404 porque para llegar hasta aquí ya hubo que pasar el portón: a estas alturas
-        # esconder el endpoint no gana nada y sí cuesta media hora de depuración el día que el
-        # token esté mal escrito.
+        # 401 y no 404: quien llega aquí ya sabe que el endpoint existe, y un 404 haría pasar un
+        # token mal escrito por una ruta inexistente.
         raise HTTPException(status_code=401, detail="Token de telemetría incorrecto.")
 
     carpeta = resolve_telemetry_dir(settings)

@@ -1,11 +1,11 @@
 """Copia consistente de la base, con la aplicación corriendo.
 
-**No es `cp`.** Copiar el archivo en caliente puede pillar la base a mitad de una transacción, y
+No es `cp`. Copiar el archivo en caliente puede pillar la base a mitad de una transacción, y
 con WAL hay además un segundo archivo con cambios que todavía no están en el principal: la copia
 puede abrir perfectamente y haber perdido lo último, o no abrir. `VACUUM INTO` lo hace desde
 dentro de SQLite, que sabe esperar a un punto coherente, y de paso compacta.
 
-Dónde escribe por defecto, y por qué importa: **dentro del volumen**. Así la copia programada del
+Dónde escribe por defecto, y por qué importa: dentro del volumen. Así la copia programada del
 volumen se lleva un respaldo ya consistente, en vez de una foto del archivo vivo. Es lo que
 convierte «hay copias» en «hay copias que sirven».
 

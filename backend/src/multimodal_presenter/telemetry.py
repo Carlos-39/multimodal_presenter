@@ -1,15 +1,15 @@
-"""Registro de la telemetría de comportamiento (Hito 8).
+"""Escritura de los eventos de telemetría de comportamiento.
 
 Dos destinos, por diseño:
-- **Logfire**, marcado con el atributo `ux=True` → se filtra del resto de trazas (spans de LLM y
+- Logfire, marcado con el atributo `ux=True` → se filtra del resto de trazas (spans de LLM y
   de pipeline, que genera la auto-instrumentación). Cada evento es un log *info* (un punto en el
   tiempo; la duración ya viene calculada en el payload), no un span.
-- **JSONL local**, una línea por evento. Es el registro PRIMARIO para el análisis: Logfire está en
-  modo "if-token-present" (sin token no envía), así que las sesiones de evaluación no pueden
-  depender de él. El JSONL funciona sin red ni token y se cruza trivialmente con NASA-TLX.
+- JSONL local, una línea por evento. Es el destino PRIMARIO para el análisis: Logfire está en
+  modo "if-token-present" (sin token no envía), así que no se puede depender de él. El JSONL
+  funciona sin red ni token.
 
-La carpeta del JSONL vive FUERA de OneDrive y del repo por defecto (mismo criterio que los
-experimentos del Hito 7): evita el ruido de sincronización y no arrastra datos de personas al git.
+La carpeta del JSONL vive FUERA de OneDrive y del repo por defecto: evita el ruido de
+sincronización y no arrastra datos de personas al git.
 """
 
 from __future__ import annotations

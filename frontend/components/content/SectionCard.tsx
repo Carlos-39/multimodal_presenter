@@ -7,7 +7,7 @@ import { SourceCitation, UnanchoredNotice } from "./SourceCitation";
 /**
  * Tarjeta de UNA sección: cabecera (núcleo/satélite) + contenido (Generative UI) + notas +
  * atribución de fuente. Fuente ÚNICA de este render: la comparten la vista de scroll
- * (`ContentArea`) y la vista de slides (Hito 5h Parte 2), para que la trazabilidad y el aspecto
+ * (`ContentArea`) y la vista de slides, para que la trazabilidad y el aspecto
  * sean idénticos entre ambas: una slide no es contenido nuevo, es el mismo contenido re-compuesto.
  */
 interface SectionCardProps {
@@ -77,7 +77,7 @@ export function SectionCard({
         </div>
       ) : null}
 
-      {/* Ilustración de apoyo GENERADA (Hito 5h Parte 1): etiqueta permanente, borde punteado y
+      {/* Ilustración de apoyo GENERADA: etiqueta permanente, borde punteado y
           banda propia; sin fuente ni grounding. Ver `GeneratedFigure`. */}
       {section.illustration ? (
         <GeneratedFigure illustration={section.illustration} className="mt-4" />
@@ -95,7 +95,7 @@ export function SectionCard({
             {section.source.quote}
           </SourceCitation>
         ) : (
-          // not_found (Hito 8): NO se ofrece "ver fuente" (sería fingir una cita que no ancla);
+          // not_found: NO se ofrece "ver fuente" (sería fingir una cita que no ancla);
           // aviso honesto, como el chat. No se descarta la sección.
           <UnanchoredNotice>{UNANCHORED_NOTICE}</UnanchoredNotice>
         )}

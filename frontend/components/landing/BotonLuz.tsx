@@ -5,15 +5,15 @@ import { useCallback, useRef } from "react";
 /**
  * El botón principal de la portada: una superficie que recoge la luz donde la señalas.
  *
- * **Por qué solo aquí.** Dentro de la aplicación mandan la calma y la seriedad, y un botón que
+ * Por qué solo aquí. Dentro de la aplicación mandan la calma y la seriedad, y un botón que
  * reluce al lado de un documento sería ruido. La portada es otro trabajo: es lo primero que ve
  * alguien que todavía no sabe qué es esto, y una superficie que contesta al dedo dice que la cosa
- * está viva antes que cualquier frase que yo escriba.
+ * está viva antes que cualquier frase.
  *
- * **Contesta, no empieza.** Sin puntero no hay brillo. Es la diferencia entre un efecto y un
+ * Contesta, no empieza. Sin puntero no hay brillo. Es la diferencia entre un efecto y un
  * reclamo: lo que se mueve solo en una página hay que mirarlo aunque no quieras.
  *
- * **Vive en el componente y no en un paquete.** La referencia pinta esto con WebGL: un renderer,
+ * Vive en el componente y no en un paquete. La referencia pinta esto con WebGL: un renderer,
  * un programa y un shader para un degradado que el navegador ya sabe hacer. Además un lienzo no
  * puede leer los tokens, así que el color del botón habría que pasárselo a mano y se desincroniza
  * con el tema a la primera.

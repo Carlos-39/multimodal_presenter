@@ -1,4 +1,4 @@
-"""Adelanto inicial del contenido (Hito 5g).
+"""Adelanto inicial del contenido.
 
 Un resumen MUY corto de qué contiene lo que el usuario subió, para que sepa a qué se va a
 enfrentar antes de ver la presentación estructurada completa. Usa un modelo liviano (Haiku) y

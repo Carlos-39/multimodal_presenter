@@ -6,8 +6,8 @@ import { Barra } from "./Barra";
 /**
  * Las tres muestras de la demostración del héroe.
  *
- * **Son tres porque el camino de vuelta es distinto en cada una, y eso es exactamente lo que hay
- * que enseñar.** No son tres adornos del mismo truco:
+ * Son tres porque el camino de vuelta es distinto en cada una, y eso es exactamente lo que hay
+ * que enseñar. No son tres adornos del mismo truco:
  *
  * - `texto`   → la cita se comprueba carácter por carácter contra el original (`verified`).
  * - `pdf`     → no hay texto plano que comparar, así que no se verifica; lo que se gana es un
@@ -17,7 +17,7 @@ import { Barra } from "./Barra";
  *
  * Esa jerarquía sale del contrato de `ground_section`, no de lo que quedaría bonito prometer.
  *
- * **Una imagen no está aquí a propósito.** Para una imagen vuelve la cita como texto pero no hay
+ * Una imagen se deja fuera. Para una imagen vuelve la cita como texto pero no hay
  * página, ni región, ni momento: no existe un punto al que llevar a nadie. Es un límite real, así
  * que vive en las preguntas frecuentes y no en el héroe.
  *
@@ -99,7 +99,7 @@ function DocumentoPdf({ activa }: { activa: string | null }) {
               key={i}
               /* El borde de 2 px está SIEMPRE, y solo cambia de color: así encender la región no
                  desplaza ni una línea de la página. Con `shadow-[…var(--highlight)]` el valor no
-                 llegaba a `--tw-shadow` y el recuadro no se pintaba. */
+                 llega a `--tw-shadow` y el recuadro no se pinta. */
               className={`flex flex-col gap-[6px] rounded-[3px] border-2 px-1 py-[3px] transition-colors duration-500 ${
                 puesta ? "border-highlight" : "border-transparent"
               }`}

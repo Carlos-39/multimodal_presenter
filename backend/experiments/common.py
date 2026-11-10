@@ -1,4 +1,4 @@
-"""Núcleo común del experimento Hito 7 (RAG vs GraphRAG). NO es código de producción.
+"""Núcleo común del experimento RAG vs GraphRAG. NO es código de producción.
 
 Centraliza: carga de claves, cliente Anthropic (con truststore para el SSL de Windows),
 tabla de precios + cálculo de USD, versiones congeladas, render/segmentado de páginas PDF
@@ -23,7 +23,7 @@ import truststore
 from anthropic import AsyncAnthropic
 from pypdf import PdfReader, PdfWriter
 
-truststore.inject_into_ssl()  # almacén de certificados del sistema (SSL de Windows, ver 5f)
+truststore.inject_into_ssl()  # almacén de certificados del sistema (SSL de Windows)
 
 # La consola de Windows (cp1252) no codifica acentos/flechas del reporte; utf-8/replace lo evita.
 try:

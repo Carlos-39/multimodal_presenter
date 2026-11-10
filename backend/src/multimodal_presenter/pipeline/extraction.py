@@ -2,10 +2,9 @@
 
 Maneja tres tipos de fuente:
 - Texto plano: se divide en párrafos con offsets (base para el grounding por substring).
-- Binario (PDF/imagen): NO se aplana a texto (eso destruiría tablas/diagramas/layout y es
-  justo el error del PoC que corrige este hito). Se conserva el binario tal cual para
-  pasarlo al modelo como contenido multimodal nativo (Fase 2). La validación de tipo y
-  tamaño del archivo vive en `uploads.py`.
+- Binario (PDF/imagen): NO se aplana a texto (eso destruiría tablas/diagramas/layout). Se
+  conserva el binario tal cual para pasarlo al modelo como contenido multimodal nativo (Fase 2).
+  La validación de tipo y tamaño del archivo vive en `uploads.py`.
 - Audio: tampoco se aplana con un STT. Lo percibe la Fase 0 (`perception.py`) con un modelo
   de entrada acústica nativa, y aquí llega ya como `AudioEvidence`. El binario se conserva
   igualmente, porque sigue siendo la fuente real a la que apunta la atribución.
@@ -24,7 +23,7 @@ def compute_document_id(payload: bytes) -> str:
     """Id DIRECCIONABLE POR CONTENIDO de un documento: el mismo contenido da el mismo id.
 
     Es público porque el almacén de documentos (`storage.documents`) lo necesita para comprobar
-    que unos bytes se guardan bajo el id que de verdad les corresponde. Que la regla viva en un
+    que unos bytes se guardan bajo el id que les corresponde. Que la regla viva en un
     solo sitio es lo que hace que esa comprobación signifique algo.
     """
     return f"doc-{hashlib.sha256(payload).hexdigest()[:12]}"

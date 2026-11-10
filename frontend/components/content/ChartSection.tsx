@@ -23,7 +23,7 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { columnDecimals, formatNumber } from "@/lib/format";
 import type { ChartContent } from "@/lib/types";
 
-// Paleta categórica validada (CVD-safe, guía dataviz), vía tokens CSS → cambia con el tema.
+// Paleta categórica validada (CVD-safe), vía tokens CSS → cambia con el tema.
 // Confinada a las marcas de datos; el resto del gráfico usa el chrome neutro.
 const PALETTE = [
   "var(--chart-1)",
@@ -82,7 +82,7 @@ const LEGEND = {
 
 /**
  * Render de gráficos con Recharts. Renderiza lo que llega: el TIPO ya viene decidido por la regla
- * determinista de isomorfismo del backend (Hito 5a); aquí solo se cuida la lectura, números en
+ * determinista de isomorfismo del backend; aquí solo se cuida la lectura, números en
  * español, valores a la vista cuando caben, y nada que compita con los datos.
  */
 // SSR-safe: false en el servidor, true en el cliente, sin setState en un efecto.
@@ -289,12 +289,6 @@ export function ChartSection({ content }: { content: ChartContent }) {
       {/* Con una sola serie no hay leyenda: su nombre va como pie del gráfico, para no perderlo. */}
       {!showLegend && chart_type !== "pie" && data.series[0] ? (
         <p className="pt-2 text-center text-xs text-muted">{data.series[0].name}</p>
-      ) : null}
-      {chart_type === "scatter" ? (
-        <p className="pt-2 text-xs text-muted">
-          Nota: la forma de datos para dispersión (x/y) se refina en un hito posterior
-          (isomorfismo). TODO(Hito5)
-        </p>
       ) : null}
     </div>
   );

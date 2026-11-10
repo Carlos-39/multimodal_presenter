@@ -1,16 +1,15 @@
-"""Contrato de datos tipado de una presentación estructurada (Hito 1).
+"""Contrato de datos tipado de una presentación estructurada.
 
-Este módulo es la **frontera entre backend y frontend**: todo lo demás se monta
+Este módulo es la frontera entre backend y frontend: todo lo demás se monta
 encima de este contrato.
 
 Principio de diseño crítico: cierre del hueco `content_type`↔`content`:
-    El PoC anterior tenía `content_type` y `content` como campos independientes sin
-    validación cruzada, así que se podía declarar `content_type="chart"` con un simple
-    string como contenido y pasaba la validación. Aquí eso es **estructuralmente
-    imposible**: no existe un campo `content_type` suelto a nivel de `Section`. El
-    discriminador vive DENTRO de cada bloque de contenido, y `Section.content` es una
-    *discriminated union* de Pydantic. El tipo declarado y el contenido real no pueden
-    desalinearse porque son el mismo objeto.
+    Con `content_type` y `content` como campos independientes sin validación cruzada,
+    se podría declarar `content_type="chart"` con un simple string como contenido y
+    pasaría la validación. Aquí eso es estructuralmente imposible: no existe un campo
+    `content_type` suelto a nivel de `Section`. El discriminador vive DENTRO de cada bloque
+    de contenido, y `Section.content` es una *discriminated union* de Pydantic. El tipo
+    declarado y el contenido real no pueden desalinearse porque son el mismo objeto.
 
 Todos los modelos usan `extra="forbid"`: cualquier campo inesperado se rechaza (refuerza
 el cierre del hueco: no se pueden colar campos de otro tipo de contenido).
@@ -34,9 +33,9 @@ class _Strict(BaseModel):
 # Enums: conjuntos cerrados (no texto libre)
 # ─────────────────────────────────────────────────────────────
 class SectionRole(StrEnum):
-    """Heurística núcleo/satélite (Punto 6 de las decisiones de diseño).
+    """Heurística núcleo/satélite.
 
-    Alimenta los modos resumen/detallado del frontend (Punto 11): núcleo → resumen,
+    Alimenta los modos resumen/detallado del frontend: núcleo → resumen,
     satélite → detallado.
     """
 
@@ -45,15 +44,15 @@ class SectionRole(StrEnum):
 
 
 class ChartType(StrEnum):
-    """Conjunto cerrado de tipos de gráfico admitidos (Punto 3, isomorfismo).
+    """Conjunto cerrado de tipos de gráfico admitidos (isomorfismo).
 
     El conjunto es cerrado (no texto libre). Qué tipo es *estructuralmente válido* según la
-    forma real de los datos lo decide la regla determinista de `pipeline/isomorphism.py`
-    (Hito 5a), que corrige el tipo si el LLM elige fuera de lo admisible.
+    forma real de los datos lo decide la regla determinista de `pipeline/isomorphism.py`,
+    que corrige el tipo si el LLM elige fuera de lo admisible.
 
     Nota sobre SCATTER: requiere pares numéricos (x, y) que la forma actual de `ChartData`
     (categorías + series) no modela, así que la regla de isomorfismo nunca lo admite hoy.
-    TODO(Hito5x): soportar scatter exige evolucionar `ChartData` a puntos (x, y); fuera de 5a.
+    TODO: soportar scatter exige evolucionar `ChartData` a puntos (x, y).
     """
 
     LINE = "line"
@@ -63,19 +62,19 @@ class ChartType(StrEnum):
 
 
 # ─────────────────────────────────────────────────────────────
-# Atribución de fuente: no decorativa (Punto 4)
+# Atribución de fuente: no decorativa
 # ─────────────────────────────────────────────────────────────
 class SourceReference(_Strict):
     """Referencia al fragmento del documento original del que proviene la sección.
 
-    Modelada para el resaltado interactivo directo sobre el documento fuente (Punto 4):
+    Modelada para el resaltado interactivo directo sobre el documento fuente:
     al hacer clic en una afirmación, el frontend deberá localizar y resaltar el fragmento
     exacto. Por eso incluye el texto citado y coordenadas para localizarlo.
     """
 
     document_id: str = Field(min_length=1, description="Identificador del documento fuente.")
     quote: str = Field(min_length=1, description="Fragmento exacto citado (lo que se resaltará).")
-    page: int | None = Field(default=None, ge=1, description="Página en el PDF fuente (Hito 4).")
+    page: int | None = Field(default=None, ge=1, description="Página en el PDF fuente.")
     char_start: int | None = Field(
         default=None, ge=0, description="Offset inicial en el texto extraído."
     )
@@ -149,7 +148,7 @@ class ChartSeries(_Strict):
 class ChartData(_Strict):
     categories: list[str] = Field(min_length=1)
     series: list[ChartSeries] = Field(min_length=1)
-    # La regla de isomorfismo (Hito 5a) deriva la forma de estos datos (alineación,
+    # La regla de isomorfismo deriva la forma de estos datos (alineación,
     # nº de series, orden temporal) en `pipeline/isomorphism.py` y corrige/degrada el
     # gráfico si el tipo elegido no es admisible.
 
@@ -173,7 +172,7 @@ ILLUSTRATION_LABEL = "Ilustración de apoyo (generada, no proviene del documento
 
 
 class GeneratedIllustration(_Strict):
-    """Ilustración de apoyo GENERADA (Hito 5h Parte 1). NO es contenido trazable.
+    """Ilustración de apoyo GENERADA. NO es contenido trazable.
 
     Es un campo APARTE de `Section` (no un `SectionContent` ni un `Section`), y DELIBERADAMENTE
     carece de `SourceReference`: es estructuralmente imposible que tenga estado de grounding, para
@@ -213,7 +212,7 @@ class Section(_Strict):
     role: SectionRole  # obligatorio: fuerza la clasificación núcleo/satélite
     source: SourceReference  # obligatorio: cada sección debe ser trazable a su fuente
     content: SectionContent
-    # Apoyo visual generado (opcional, Hito 5h Parte 1). SIN fuente ni grounding: no es contenido
+    # Apoyo visual generado (opcional). SIN fuente ni grounding: no es contenido
     # trazable, es una ayuda didáctica declarada como tal. Default None → backward-compatible.
     illustration: GeneratedIllustration | None = None
 

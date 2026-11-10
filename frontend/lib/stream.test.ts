@@ -31,8 +31,7 @@ describe("entregaSSE: cuando el navegador no entrega el cuerpo por partes", () =
 
   it("lee la respuesta entera y entrega los mismos eventos", async () => {
     // Es el navegador de dentro de WhatsApp: `response.body` no existe, así que no hay
-    // `getReader()` y la respuesta solo se puede leer al final. Antes esto se trataba como un
-    // fallo aunque el HTTP fuera 200.
+    // `getReader()` y la respuesta solo se puede leer al final. No es un fallo: el HTTP es 200.
     const res = { ok: true, body: null, text: async () => SSE } as unknown as Response;
     const vistos: unknown[] = [];
     await entregaSSE(res, (e) => vistos.push(e));
@@ -53,7 +52,7 @@ describe("entregaSSE: cuando el navegador no entrega el cuerpo por partes", () =
   });
 
   it("y por partes entrega lo mismo, en el mismo orden", async () => {
-    // El troceo cae a propósito EN MITAD de un evento: así se comprueba que el buffer aguanta.
+    // El troceo cae EN MITAD de un evento: así se comprueba que el buffer aguanta.
     const trozos = [SSE.slice(0, 30), SSE.slice(30, 70), SSE.slice(70)];
     let i = 0;
     const res = {

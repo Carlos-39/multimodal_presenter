@@ -287,7 +287,7 @@ def _mock_todos_los_modelos() -> None:
     Incluir `get_summary_model` NO es decorativo: FastAPI resuelve las dependencias ANTES de
     entrar al cuerpo del endpoint, así que `/summary` construye su modelo aunque la petición
     vaya a terminar en un 415. Sin este override, el test pasa en una máquina con
-    `ANTHROPIC_API_KEY` en el `.env` y **falla en el CI**, que corre sin claves a propósito.
+    `ANTHROPIC_API_KEY` en el `.env` y falla en el CI, que corre sin claves.
     """
     app.dependency_overrides[get_model] = _structuring_model
     app.dependency_overrides[get_summary_model] = lambda: TestModel(custom_output_text="adelanto")
@@ -336,7 +336,7 @@ def test_audio_sin_proveedor_de_percepcion_da_503_claro(
 def test_m4a_se_acepta_por_su_tipo_real_no_por_el_nombre(wav_bytes: bytes) -> None:
     """Un archivo con nombre `.m4a` y content-type `audio/m4a` que en realidad ES un WAV.
 
-    La detección por magic bytes manda sobre lo que declara el cliente (guarda del Hito 4,
+    La detección por magic bytes manda sobre lo que declara el cliente (guarda existente,
     intacta): se acepta como audio y el pipeline sigue. Al quitar OpenRouter desapareció la
     salvedad que tenía M4A, así que ya no hay formato de audio admitido que la ruta de
     percepción no pueda transportar.

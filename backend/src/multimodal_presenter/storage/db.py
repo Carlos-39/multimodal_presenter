@@ -1,13 +1,13 @@
 """Base de datos: conexión y migraciones.
 
-SQLite y no Postgres, y no es la opción "de juguete": para un prototipo que se usa en sesiones
-presenciales de una persona a la vez, un servidor que hay que levantar antes de cada sesión es
-una pieza más que puede fallar delante del participante. La que añade riesgo es la otra.
+SQLite y no Postgres, y no es la opción "de juguete": para un prototipo que usa una persona a
+la vez, un servidor que hay que levantar antes de cada uso es una pieza más que puede fallar.
+La que añade riesgo es la otra.
 
-Sin ORM a propósito. Seis tablas no lo justifican, y SQLModel arrastraría SQLAlchemy y su propio
-modelo de usuario, que pelearía con la decisión de mantener la propiedad FUERA del contrato. Las
-migraciones son scripts SQL numerados y un corredor de cuarenta líneas: auditable de un vistazo,
-que es como está hecho el resto del proyecto.
+Sin ORM, deliberadamente. Seis tablas no lo justifican, y SQLModel arrastraría SQLAlchemy y su
+propio modelo de usuario, que pelearía con la decisión de mantener la propiedad FUERA del
+contrato. Las migraciones son scripts SQL numerados y un corredor de cuarenta líneas: auditable
+de un vistazo, que es como está hecho el resto del proyecto.
 """
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ _FORMAS_DE_ID = re.compile(r"doc-[0-9a-f]{12}|pre-[0-9a-f]{16}")
 def valida_id_de_ruta(identificador: str) -> str:
     """Devuelve el id si puede formar parte de una ruta; lanza `ValueError` si no.
 
-    **No es validación de entrada: es cerrar la puerta por dentro.** Hoy no se puede llegar aquí
+    No es validación de entrada: es cerrar la puerta por dentro. Hoy no se puede llegar aquí
     con un id inventado, porque los dos caminos que leen del disco comprueban antes la propiedad
     contra la base y un id con `..` dentro no está en ninguna tabla. Pero esa defensa vive en los
     endpoints, no en la función que arma la ruta: el día que alguien añada un tercer camino y se le
@@ -78,7 +78,7 @@ async def conectar(settings: Settings) -> AsyncIterator[aiosqlite.Connection]:
 
     Dos ajustes que son fáciles de dar por supuestos y no lo son:
 
-    - `foreign_keys=ON` es **por conexión** y viene apagado por defecto en SQLite. Sin él, los
+    - `foreign_keys=ON` es por conexión y viene apagado por defecto en SQLite. Sin él, los
       `ON DELETE CASCADE` del esquema no hacen nada y borrar un usuario deja sus presentaciones
       colgando. Hay un test que lo fija.
     - `journal_mode=WAL` deja que una lectura no bloquee a una escritura. Es persistente en el
@@ -105,7 +105,7 @@ async def conectar(settings: Settings) -> AsyncIterator[aiosqlite.Connection]:
 async def respaldar(settings: Settings, destino: Path) -> Path:
     """Copia consistente de la base, con la aplicación corriendo. Devuelve la ruta escrita.
 
-    **No es `cp`, y la diferencia importa.** Copiar el archivo en caliente puede pillar la base a
+    No es `cp`, y la diferencia importa. Copiar el archivo en caliente puede pillar la base a
     mitad de una transacción, y con WAL hay además un segundo archivo (el `-wal`) con cambios que
     todavía no están en el principal: la copia resultante puede abrir perfectamente y haber perdido
     lo último, o no abrir. `VACUUM INTO` lo hace desde dentro de SQLite, que sabe esperar a un

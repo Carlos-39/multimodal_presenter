@@ -5,7 +5,7 @@ import { ArrowsOut, Sparkle, X } from "@phosphor-icons/react";
 import type { GeneratedIllustration } from "@/lib/types";
 
 /**
- * Ilustración de apoyo GENERADA (Hito 5h Parte 1). Pieza única para las secciones y para la
+ * Ilustración de apoyo GENERADA. Pieza única para las secciones y para la
  * presentación generada, así el trato es idéntico en ambas.
  *
  * Honestidad primero: etiqueta permanente SIEMPRE visible (no tooltip), borde punteado y banda

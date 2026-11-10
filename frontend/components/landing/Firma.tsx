@@ -5,25 +5,25 @@ import { useEffect, useRef } from "react";
 /**
  * El nombre de la aplicación, enseñando cómo está hecho.
  *
- * **Por qué está donde está.** Va al final, justo encima del enlace a «Cómo se construyó», y ese
+ * Por qué está donde está. Va al final, justo encima del enlace a «Cómo se construyó», y ese
  * sitio es la mitad de la idea: un logotipo que destapa sus propias líneas de construcción (el
  * contorno de cada letra, su caja, sus medidas en píxeles) pegado a la invitación a ver cómo se
  * construyó todo lo demás. En cualquier otro punto de la portada sería un efecto bonito; aquí dice
  * algo. Es el mismo criterio con el que el proyecto entero decide qué se queda: que signifique.
  *
- * Una lupa recorre el nombre y, a su paso, las letras cambian de **relleno a contorno punteado**,
+ * Una lupa recorre el nombre y, a su paso, las letras cambian de relleno a contorno punteado,
  * con su recuadro de selección y sus cotas. Se pueden arrastrar y vuelven con un muelle.
  *
- * **Sin librería ni WebGL**: es un lienzo 2D. Cada letra se dibuja una vez a dos imágenes (maciza
+ * Sin librería ni WebGL: es un lienzo 2D. Cada letra se dibuja una vez a dos imágenes (maciza
  * y punteada) y luego solo se componen; redibujar texto en cada fotograma sería mucho más caro.
  *
- * Adaptado del TechText de la galería, con tres cambios:
+ * Adaptado de un componente TechText, con tres cambios:
  *
- * - **Los colores salen de los tokens** y se vuelven a leer al cambiar de tema. Un lienzo no sabe
+ * - Los colores salen de los tokens y se vuelven a leer al cambiar de tema. Un lienzo no sabe
  *   de CSS: sin esto el nombre se quedaría con la tinta del modo contrario.
- * - **La tipografía también**, heredada del contenedor, así que es la Archivo de la aplicación y
+ * - La tipografía también, heredada del contenedor, así que es la Archivo de la aplicación y
  *   no una fuente escrita a mano que se desincronice el día que cambie.
- * - **Fuera el modo de revelado por área**, que es el otro efecto que traía. Usamos el de letra, y
+ * - Fuera el modo de revelado por área, que es el otro efecto que traía. Se usa el de letra, y
  *   lo que no se usa no se mantiene: mismo criterio que con el postprocesado del shader.
  *
  * Se para cuando no se ve y cuando no hay nada moviéndose: no es un bucle que corra siempre.
@@ -571,8 +571,8 @@ export function Firma({ text = "Multimodal Presenter", className = "" }: FirmaPr
       /*
        * `h-full` aquí no es decorativo: el lienzo mide `h-full`, y si este contenedor queda de
        * alto automático se retroalimentan (el lienzo toma su alto del padre, el padre crece con el
-       * lienzo) y la caja se dispara. Medido: 556 px donde tenía que haber 128, montándose encima
-       * de lo de abajo. El alto lo pone quien lo usa.
+       * lienzo) y la caja se dispara hasta montarse encima de lo de abajo. El alto lo pone quien
+       * lo usa.
        */
       className={`relative h-full w-full touch-pan-y select-none font-sans ${className}`}
       role="img"

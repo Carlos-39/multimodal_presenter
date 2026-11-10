@@ -1,4 +1,4 @@
-"""Test trivial del health check (Hito 0).
+"""Test trivial del health check.
 
 Verifica que la app FastAPI levanta y responde. Con Logfire en modo
 `send_to_logfire="if-token-present"`, este test corre sin token en CI sin problema.

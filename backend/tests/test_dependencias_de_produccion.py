@@ -4,14 +4,14 @@ Este archivo existe por un fallo concreto que solo apareció al desplegar, y que
 entero porque la forma del error es la lección:
 
 El visor de página dibuja el PDF con `render_pagina`, que convierte el bitmap de pypdfium2 a PNG
-con `bitmap.to_pil()`. Eso necesita **Pillow**. Pillow no estaba declarada en ninguna parte: llegaba
-arrastrada por `matplotlib`, que es dependencia de DESARROLLO. Así que en mi máquina funcionaba, en
+con `bitmap.to_pil()`. Eso necesita Pillow. Pillow no estaba declarada en ninguna parte: llegaba
+arrastrada por `matplotlib`, que es dependencia de DESARROLLO. Así que en desarrollo funcionaba, en
 el CI funcionaba (porque instala el grupo dev) y en la imagen de producción, que se instala con
 `--no-dev`, el endpoint respondía 502 «No se pudo dibujar la página».
 
 Lo peor no es el fallo: es que era invisible para todas las comprobaciones que teníamos. Los 330
 tests pasaban. Por eso el arreglo no es solo añadir Pillow, sino dejar aquí el centinela y, en el
-CI, un paso que monta el entorno de producción de verdad y comprueba que puede dibujar.
+CI, un paso que monta el entorno de producción y comprueba que puede dibujar.
 """
 
 from __future__ import annotations

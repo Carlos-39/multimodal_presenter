@@ -2,15 +2,15 @@
 
 Hay dos usos y no son el mismo problema, aunque compartan la mecánica:
 
-- **Intentos de entrar.** El secreto lo elige una persona, así que contar sirve. Se cuentan los
+- Intentos de entrar. El secreto lo elige una persona, así que contar sirve. Se cuentan los
   FALLOS y un acierto borra el historial.
-- **Lo que cuesta dinero.** Cada presentación son décimas de dólar reales. Aquí se cuentan TODAS
+- Lo que cuesta dinero. Cada presentación son décimas de dólar reales. Aquí se cuentan TODAS
   las llamadas, salgan bien o mal, porque lo que se está limitando es el gasto y no el acierto.
 
-**En memoria del proceso, no en la base.** Un intento fallido no merece una escritura en SQLite y
-el registro no es un dato que haya que conservar. La limitación hay que decirla: se reinicia con
-cada despliegue y con dos instancias cada una contaría por su cuenta. Con una instancia (que es
-como está desplegado esto) es lo correcto.
+En memoria del proceso, no en la base. Un intento fallido no merece una escritura en SQLite y
+el historial de intentos no es un dato que haya que conservar. La limitación hay que decirla: se
+reinicia con cada despliegue y con dos instancias cada una contaría por su cuenta. Con una
+instancia (que es como está desplegado esto) es lo correcto.
 """
 
 from __future__ import annotations

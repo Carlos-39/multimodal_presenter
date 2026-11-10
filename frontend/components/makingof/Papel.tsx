@@ -6,25 +6,23 @@ import type { Acto } from "@/lib/makingOf";
 /**
  * El papel del «cómo se construyó», con el tono de su acto.
  *
- * **Lo que cambia es el acto, no el capítulo.** Cinco tonos para catorce capítulos: dentro de un
- * acto el papel no se mueve, y cuando se mueve es porque la historia ha cambiado de parte. Un
- * color por página no diría nada; uno por acto dice en qué mitad del relato estás sin que haya
- * que leer nada.
+ * Lo que cambia es el acto, no el capítulo. Un tono por acto: dentro de un acto el papel no se
+ * mueve, y cuando se mueve es porque la historia ha cambiado de parte. Un color por página no
+ * diría nada; uno por acto dice en qué parte del relato se está sin que haya que leer nada.
  *
- * **La historia se va aclarando**: empieza en el tono hundido (los cimientos) y acaba en el de las
- * tarjetas. No es un degradado bonito: es que al final del relato las cosas están resueltas.
+ * Los tonos se aclaran a lo largo del relato: empieza en el tono hundido del primer acto y acaba
+ * en el de las tarjetas.
  *
- * Dos momentos distintos, y a propósito no se solapan:
+ * Dos momentos distintos, que no se solapan:
  *
- * - **Al llegar**, el tono entra despacio (dos segundos) desde el papel neutro. Evita el fogonazo
- *   de un color que cambia de golpe en una pantalla hecha para leer, y deja algo que se asienta
- *   mientras empiezas.
- * - **Al cambiar de acto** ya dentro, el papel se cambia por celdas, de la esquina de arriba a la
+ * - Al llegar, el tono entra despacio (dos segundos) desde el papel neutro. Evita el fogonazo de
+ *   un color que cambia de golpe en una pantalla hecha para leer.
+ * - Al cambiar de acto ya dentro, el papel se cambia por celdas, de la esquina de arriba a la
  *   izquierda hacia abajo. Es un corte, que es lo que un cambio de acto es.
  *
  * Quien decide cuándo ha terminado el barrido es un reloj y no el evento `finish` de la animación:
  * ese solo se despacha si el documento se está pintando, así que en una pestaña de fondo el papel
- * se quedaría a medias para siempre. Es la misma lección que costó la mecha de eliminar.
+ * se quedaría a medias para siempre.
  */
 const CELDA = 64;
 const PASO_MS = 460;

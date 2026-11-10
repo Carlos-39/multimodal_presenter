@@ -1,13 +1,13 @@
-"""Localizador de regiones en PDF (F1), la escalera de matching y la degradación honesta.
+"""Localizador de regiones en PDF, la escalera de matching y la degradación honesta.
 
 Lo que estos tests fijan, por orden de importancia:
 
-1. **Que degrada, nunca falla.** Una cita que no se encuentra devuelve `calidad: "page"`, que
+1. Que degrada, nunca falla. Una cita que no se encuentra devuelve `calidad: "page"`, que
    es el comportamiento que el sistema ya tenía. Es lo que permite activar esto sin arriesgar
    nada de lo que ya funciona.
-2. **Que no inventa precisión.** Un recuadro equivocado es peor que ningún recuadro: señalaría
+2. Que no inventa precisión. Un recuadro equivocado es peor que ningún recuadro: señalaría
    con confianza un sitio que no es. Por eso hay tests de las reglas de contención y del umbral.
-3. **Que la geometría aguanta los dos casos que el spike marcó como riesgo**: páginas rotadas y
+3. Que la geometría aguanta los dos casos que el spike marcó como riesgo: páginas rotadas y
    citas que cruzan un salto de columna.
 
 Los PDFs se construyen aquí, con una línea por `cell`, para controlar EXACTAMENTE dónde cae cada
@@ -55,7 +55,7 @@ def _pdf(lineas: list[str], *, paginas_extra: int = 0) -> bytes:
 
 
 def _pdf_dos_columnas(izquierda: list[str], derecha: list[str]) -> bytes:
-    """Dos columnas de verdad: la izquierda termina y la derecha empieza arriba otra vez."""
+    """Dos columnas reales: la izquierda termina y la derecha empieza arriba otra vez."""
     pdf = FPDF(unit="pt", format="A4")
     pdf.add_font("dejavu", "", str(_TTF))
     pdf.set_font("dejavu", size=11)
@@ -300,7 +300,7 @@ def test_la_normalizacion_no_toca_las_mayusculas() -> None:
 
 
 # ─────────────────────────────────────────────────────────────
-# Citas con elipsis: lo que el modelo hace de verdad
+# Citas con elipsis: lo que el modelo hace en la práctica
 # ─────────────────────────────────────────────────────────────
 def test_una_cita_con_elipsis_se_busca_por_fragmentos(localizador) -> None:
     """Caso encontrado verificando con un documento real, no inventado.

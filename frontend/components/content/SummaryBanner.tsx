@@ -2,8 +2,8 @@ import type { SummaryStatus } from "@/lib/types";
 import { SkeletonText } from "./Skeleton";
 
 /**
- * Adelanto inicial del contenido (Hito 5g). Estado transitorio en la zona dinámica, antes/junto
- * a las primeras secciones del streaming (5d). No toca el núcleo fijo. Sigue el principio de
+ * Adelanto inicial del contenido. Estado transitorio en la zona dinámica, antes/junto
+ * a las primeras secciones del streaming. No toca el núcleo fijo. Sigue el principio de
  * honestidad del sistema: si el adelanto falla, se dice, no se oculta.
  */
 interface SummaryBannerProps {

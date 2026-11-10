@@ -5,20 +5,14 @@ import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 /**
- * Las dos voces del 5k siguen siendo dos, y siguen significando lo mismo: **la serifa es el
- * documento, la sans es la herramienta**. Lo que cambió son las caras, y una asignación que estaba
- * mal.
+ * Dos voces tipográficas: la serifa es el documento, la sans es la herramienta.
  *
- * El motivo del cambio: papel cálido con serifa para el cuerpo es, literalmente, la casa de
- * Claude. El sistema era coherente y defendible, y aterrizó en el sitio donde está todo el mundo.
- *
- * Y la asignación mal puesta: «Entiende un documento difícil» **no lo dice el documento, lo dice
- * la aplicación**: iba en serifa, o sea en la voz equivocada. Los titulares de la portada pasan a
- * la sans. Lo que viene del documento (secciones, citas, diapositivas, panel de fuente) y el
+ * «Entiende un documento difícil» no lo dice el documento, lo dice la aplicación, así que los
+ * titulares de la portada van en sans. Lo que viene del documento (secciones, citas, diapositivas, panel de fuente) y el
  * relato del «cómo se construyó», que es material de lectura, conservan la serifa.
  */
 
-// Voz de la HERRAMIENTA: navegación, controles, etiquetas, y ahora también los titulares.
+// Voz de la HERRAMIENTA: navegación, controles, etiquetas y titulares.
 const archivo = Archivo({
   variable: "--font-app-sans",
   subsets: ["latin"],

@@ -27,13 +27,12 @@ export function parseSSE<T = StreamEvent>(buffer: string): { events: T[]; rest: 
 /**
  * Entrega los eventos de una respuesta SSE, llegue por partes o de una sola pieza.
  *
- * **Lo de "una sola pieza" no es un caso teórico: es el navegador de dentro de WhatsApp.** Los
+ * Lo de "una sola pieza" no es un caso teórico: es el navegador de dentro de WhatsApp. Los
  * webviews embebidos no siempre exponen `response.body`, así que no hay `getReader()` y la
- * respuesta solo se puede leer entera, al final. Antes eso se trataba como un fallo (`!res.body`
- * lanzaba aunque el HTTP fuera 200) y costaba caro de dos maneras: el chat moría con «La
- * generación se interrumpió», y la transformación caía al endpoint no-streaming, que **vuelve a
- * generar desde cero**. O sea, pagar dos veces la misma presentación por abrir el enlace desde un
- * chat, que es exactamente como van a llegar los participantes.
+ * respuesta solo se puede leer entera, al final. Tratarlo como un fallo (`!res.body` aunque el
+ * HTTP sea 200) costaría caro de dos maneras: el chat moriría con «La generación se
+ * interrumpió», y la transformación caería al endpoint no-streaming, que vuelve a generar desde
+ * cero. O sea, pagar dos veces la misma presentación por abrir el enlace desde un chat.
  *
  * Leída entera se pierde el efecto de escritura en vivo, y nada más: llegan los mismos eventos,
  * en el mismo orden y con el mismo contenido.

@@ -13,7 +13,7 @@
 # ─────────────────────────────── 1. entorno ───────────────────────────────
 FROM python:3.12-slim AS entorno
 
-# `uv` fijado por versión, la misma que uso en mi máquina. Una imagen que se construye distinta
+# `uv` fijado por versión, la misma que en desarrollo. Una imagen que se construye distinta
 # cada semana no es reproducible, y entonces «funciona en Railway» no significa nada.
 COPY --from=ghcr.io/astral-sh/uv:0.9.18 /uv /usr/local/bin/uv
 
@@ -28,7 +28,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
-# Y ahora el proyecto. `--no-editable` lo instala de verdad dentro del entorno, así que la imagen
+# Y ahora el proyecto. `--no-editable` lo instala dentro del entorno, así que la imagen
 # final no necesita el código fuente al lado: las migraciones `.sql` viajan dentro del paquete.
 COPY src/ src/
 RUN uv sync --frozen --no-dev --no-editable
@@ -48,8 +48,8 @@ ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     # El volumen. Las dos variables van explícitas porque su valor por defecto cae en el home del
-    # usuario, que aquí es efímero: un redespliegue se llevaría las cuentas, la biblioteca y (lo
-    # que de verdad no se puede repetir) la telemetría de una sesión.
+    # usuario, que aquí es efímero: un redespliegue se llevaría las cuentas, la biblioteca y la
+    # telemetría, que no se puede repetir.
     DATA_DIR=/datos/base \
     TELEMETRY_DIR=/datos/telemetria \
     # Sin esto la cookie de sesión viaja sin `Secure`.

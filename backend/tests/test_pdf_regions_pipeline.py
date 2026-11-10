@@ -1,4 +1,4 @@
-"""Integración del localizador de regiones (F2): que la región LLEGUE al contrato.
+"""Integración del localizador de regiones: que la región LLEGUE al contrato.
 
 El módulo en sí ya está probado aparte (`test_pdf_locator.py`). Lo que se fija aquí es el
 cableado, que es donde se rompen estas cosas: que los tres caminos que abren el panel de fuente
@@ -88,7 +88,7 @@ def test_una_seccion_de_pdf_lleva_su_region(pdf_con_texto: bytes) -> None:
 
 
 def test_el_streaming_tambien_la_lleva(pdf_con_texto: bytes) -> None:
-    """El camino que usa la app de verdad es el streaming, no el de una sola respuesta."""
+    """El camino que usa la app es el streaming, no el de una sola respuesta."""
     modelo = TestModel(custom_output_text=json.dumps(_presentacion(CITA, 1)))
 
     async def run() -> list:

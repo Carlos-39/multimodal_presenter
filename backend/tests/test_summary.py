@@ -1,4 +1,4 @@
-"""Tests del endpoint POST /summary (adelanto inicial, Hito 5g) con el modelo mockeado."""
+"""Tests del endpoint POST /summary (adelanto inicial) con el modelo mockeado."""
 
 import pytest
 from fastapi.testclient import TestClient

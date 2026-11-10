@@ -6,18 +6,17 @@ import { formatTimestamp } from "@/lib/audio";
 /**
  * Lo que se enseña mientras algo tarda y no se sabe cuánto.
  *
- * **El reloj es la pieza, no el adorno.** Generar la presentación o la narración son esperas
- * ciegas: el servidor no manda avances, así que hasta ahora lo único que había era un círculo
- * girando: y un círculo girando a los cinco segundos y a los cuarenta y cinco dice exactamente lo
+ * El reloj es la pieza, no el adorno. Generar la presentación o la narración son esperas
+ * ciegas: el servidor no manda avances, y un círculo girando a los cinco segundos y a los cuarenta y cinco dice exactamente lo
  * mismo. Con el tiempo delante, la espera deja de ser un agujero: sabes si esto va como siempre o
  * si ya pasa algo raro.
  *
- * **La vuelta es indeterminada a propósito.** Una barra que se llena prometería un porcentaje que
+ * La vuelta es indeterminada. Una barra que se llena prometería un porcentaje que
  * nadie ha medido. Las otras dos cosas que se mueven solas en la aplicación (el puntico del
  * carrusel y la mecha de eliminar) recorren un tiempo CONOCIDO, y por eso tienen principio y fin;
  * esta no lo tiene porque no lo hay.
  *
- * **Si falla, las mismas celdas se recolocan en una cruz** y el reloj se queda parado en el tiempo
+ * Si falla, las mismas celdas se recolocan en una cruz y el reloj se queda parado en el tiempo
  * que llegó a costar. No hace falta otro icono: es el mismo objeto contando cómo acabó.
  *
  * Es decoración para quien no ve la pantalla (`aria-hidden`): los tres sitios donde se usa ya

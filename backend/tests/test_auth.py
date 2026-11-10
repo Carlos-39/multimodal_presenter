@@ -1,13 +1,12 @@
-"""Cuentas (F1 de login + persistencia): registrarse, entrar, salir, y el modo invitado.
+"""Cuentas: registrarse, entrar, salir, y el modo invitado.
 
 Lo que más importa de este archivo no son los casos felices, sino tres cosas:
 
-1. **Que la aplicación siga funcionando sin cuenta.** No es una cortesía: las sesiones de
-   evaluación del Hito 8 corren sin login, así que si entrar se vuelve obligatorio, el Hito 8 se
-   rompe. Hay un test dedicado a eso.
-2. **Que no se pueda averiguar quién tiene cuenta.** El error de entrar no distingue entre correo
+1. Que la aplicación siga funcionando sin cuenta. El modo invitado se usa sin login, así que
+   si entrar se vuelve obligatorio, se rompe. Hay un test dedicado a eso.
+2. Que no se pueda averiguar quién tiene cuenta. El error de entrar no distingue entre correo
    desconocido y contraseña incorrecta.
-3. **Que salir revoque de verdad**, no solo borre la cookie del navegador.
+3. Que salir revoque el token, no solo borre la cookie del navegador.
 """
 
 from __future__ import annotations
@@ -17,7 +16,7 @@ from fastapi.testclient import TestClient
 
 from multimodal_presenter.main import app
 
-CREDENCIALES = {"email": "carlos@ejemplo.com", "contrasena": "unaclavelarga"}
+CREDENCIALES = {"email": "ana@ejemplo.com", "contrasena": "unaclavelarga"}
 
 
 @pytest.fixture
@@ -39,7 +38,7 @@ def test_registrarse_deja_la_sesion_abierta(client: TestClient) -> None:
     """Registrarse y tener que entrar a continuación es un paso de más."""
     r = client.post("/auth/registro", json=CREDENCIALES)
     assert r.status_code == 201
-    assert r.json()["email"] == "carlos@ejemplo.com"
+    assert r.json()["email"] == "ana@ejemplo.com"
     assert "mmp_sesion" in r.cookies
     assert client.get("/auth/yo").status_code == 200
 
@@ -66,9 +65,9 @@ def test_no_se_puede_repetir_el_correo(client: TestClient) -> None:
 
 
 def test_el_correo_no_distingue_mayusculas(client: TestClient) -> None:
-    """Nadie espera que Carlos@x.com y carlos@x.com sean dos cuentas."""
+    """Nadie espera que Ana@x.com y ana@x.com sean dos cuentas."""
     client.post("/auth/registro", json=CREDENCIALES)
-    r = client.post("/auth/registro", json={**CREDENCIALES, "email": "CARLOS@Ejemplo.com"})
+    r = client.post("/auth/registro", json={**CREDENCIALES, "email": "ANA@Ejemplo.com"})
     assert r.status_code == 400
 
 
@@ -94,7 +93,7 @@ def test_entrar_con_las_credenciales_correctas(client: TestClient) -> None:
     client.post("/auth/salir")
     r = client.post("/auth/entrar", json=CREDENCIALES)
     assert r.status_code == 200
-    assert client.get("/auth/yo").json()["email"] == "carlos@ejemplo.com"
+    assert client.get("/auth/yo").json()["email"] == "ana@ejemplo.com"
 
 
 def test_el_error_de_entrar_no_dice_si_el_correo_existe(client: TestClient) -> None:
@@ -145,13 +144,13 @@ def test_yo_sin_sesion_responde_que_no_hay_nadie(client: TestClient) -> None:
 
 
 # ─────────────────────────────────────────────────────────────
-# Modo invitado: el Hito 8 depende de esto
+# Modo invitado
 # ─────────────────────────────────────────────────────────────
 def test_la_aplicacion_funciona_sin_cuenta(client: TestClient) -> None:
-    """Las sesiones de evaluación corren SIN login. Si entrar se volviera obligatorio, se rompen.
+    """El modo invitado funciona SIN login. Si entrar se volviera obligatorio, se rompe.
 
-    Se comprueba sobre la telemetría a propósito: es la pieza de la que depende el Hito 8, y
-    tiene que seguir aceptando eventos de alguien que nunca creó una cuenta.
+    Se comprueba sobre la telemetría: tiene que seguir aceptando eventos de alguien que nunca
+    creó una cuenta.
     """
     evento = {
         "session_id": "sesion-sin-cuenta",
@@ -216,7 +215,7 @@ def test_cinco_fallos_cierran_la_puerta_un_rato(client: TestClient) -> None:
     r = client.post("/auth/entrar", json=MAL)
     assert r.status_code == 429
     assert int(r.headers["Retry-After"]) > 0
-    # El mensaje dice cuánto falta: sin eso, quien se equivocó de verdad no sabe si esperar un
+    # El mensaje dice cuánto falta: sin eso, quien se equivocó no sabe si esperar un
     # minuto o volver mañana.
     assert "min" in r.json()["detail"]
 

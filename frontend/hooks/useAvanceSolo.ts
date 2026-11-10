@@ -6,29 +6,27 @@ import { useCallback, useEffect, useState } from "react";
  * Un recorrido que avanza solo, y que se calla en cuanto alguien participa.
  *
  * La portada tiene tres piezas que enseñan algo paso a paso (la demostración del héroe, el
- * párrafo con y sin fuente, y el carrusel de capacidades), y **la mayoría de quien llega no pulsa
- * nada**. Si no se mueven solas, no enseñan nada. Pero un carrusel que sigue girando mientras
+ * párrafo con y sin fuente, y el carrusel de capacidades), y la mayoría de quien llega no pulsa
+ * nada. Si no se mueven solas, no enseñan nada. Pero un carrusel que sigue girando mientras
  * intentas leer una tarjeta es exactamente el motivo por el que los carruseles tienen mala fama,
  * así que las tres se rigen por las mismas cuatro reglas:
  *
- * 1. **Se para al pasar el ratón y al enfocar con el teclado**, y sigue al salir.
- * 2. **Se calla para siempre en cuanto alguien pulsa un control.** A partir de ahí manda quien
+ * 1. Se para al pasar el ratón y al enfocar con el teclado, y sigue al salir.
+ * 2. Se calla para siempre en cuanto alguien pulsa un control. A partir de ahí manda quien
  *    mira: ya decidió qué quiere ver y nada se lo va a quitar de delante.
- * 3. **No arranca si el sistema pide reducir movimiento.** Queda quieto en el primer paso.
- * 4. **No arranca hasta que la pieza está en pantalla** (`listo`). Si no, el párrafo del problema
+ * 3. No arranca si el sistema pide reducir movimiento. Queda quieto en el primer paso.
+ * 4. No arranca hasta que la pieza está en pantalla (`listo`). Si no, el párrafo del problema
  *    se habría volteado solo mientras nadie lo veía, y llegarías a él en un estado cualquiera en
  *    vez de verlo cambiar.
  *
- * Es el mismo criterio que ya cumplía el carrusel a mano. Lo que cambia es que ahora está escrito
- * una vez: tres copias de esta lógica se habrían separado en silencio.
+ * Está escrito una vez: tres copias de esta lógica se separarían en silencio.
  */
 /**
  * Devuelve `i` dentro de `[0, total)`, dando la vuelta por los dos lados.
  *
- * El `% total` de JavaScript conserva el signo, así que `-1 % 6` es `-1` y no `5`. La fórmula
- * anterior del carrusel (`(i + total) % total`) arreglaba un solo paso por debajo de cero, que es
- * lo único que podía pasar con su botón «Anterior». Esta aguanta cualquier salto, que es lo que
- * hace falta ahora que el mismo recorrido lo comparten tres piezas con distinto número de pasos.
+ * El `% total` de JavaScript conserva el signo, así que `-1 % 6` es `-1` y no `5`. La forma
+ * `(i + total) % total` solo arregla un paso por debajo de cero; esta aguanta cualquier salto,
+ * que es lo que hace falta cuando el recorrido lo comparten piezas con distinto número de pasos.
  */
 export function enRango(i: number, total: number): number {
   return ((i % total) + total) % total;

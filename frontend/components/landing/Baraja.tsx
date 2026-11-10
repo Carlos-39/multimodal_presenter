@@ -7,19 +7,17 @@ import { CAPACIDADES } from "./capacidades";
  * Las capacidades como una baraja en perspectiva: la de delante abierta, las demás detrás,
  * asomando el nombre.
  *
- * **Lo que gana respecto al panel único** no es el efecto, es que se VE que hay cinco y cuáles
- * son. Antes había una lámina y unos puntos; un punto no dice qué hay dentro, y una pila de
- * tarjetas con su título asomando sí.
+ * Frente a un panel único con puntos, lo que se gana no es el efecto, es que se VE que hay cinco
+ * y cuáles son: un punto no dice qué hay dentro, y una pila de tarjetas con su título asomando sí.
  *
- * **Lo que NO cambia** es el comportamiento, que estaba ganado y no se regala: sigue avanzando
- * sola, callándose en cuanto alguien participa, con sus flechas y sus puntos de verdad, su cuenta
- * atrás y su pausa al pasar el ratón. Esto es la presentación.
+ * El comportamiento es el del carrusel: avanza sola, se calla en cuanto alguien participa, con
+ * sus flechas y sus puntos, su cuenta atrás y su pausa al pasar el ratón. Esto es la presentación.
  *
- * **Sin GSAP.** La referencia usa 70 kB de librería para mover cinco cajas; esto son transiciones
+ * Sin GSAP. La referencia usa 70 kB de librería para mover cinco cajas; esto son transiciones
  * CSS escritas al DOM. El `elastic.out` del ejemplo se cambia por un rebote corto: una goma
  * elástica de dos segundos en una página que se lee no es sobriedad, es un juguete.
  *
- * **La posición se escribe en el DOM**, no en estado de React: son cinco transformaciones por
+ * La posición se escribe en el DOM, no en estado de React: son cinco transformaciones por
  * paso y meterlas en estado volvería a renderizar la sección entera por algo que no cambia ni un
  * dato. Mismo criterio que el pulgar del segmentado.
  *

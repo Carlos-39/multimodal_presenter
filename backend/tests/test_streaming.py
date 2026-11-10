@@ -1,4 +1,4 @@
-"""Tests del pipeline en streaming (Hito 5d), con LLM mockeado."""
+"""Tests del pipeline en streaming, con LLM mockeado."""
 
 import asyncio
 

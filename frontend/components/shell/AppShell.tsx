@@ -16,20 +16,19 @@ import { Segmented } from "./Segmented";
 import { ThemeToggle } from "./ThemeToggle";
 
 /**
- * Núcleo estructural fijo (Stable Core Pattern, Punto 8).
+ * Núcleo estructural fijo (Stable Core Pattern).
  *
  * El marco (header y rail de navegación/controles) NO cambia según el contenido generado.
  * Lo dinámico es `children` (contenido + columnas opcionales, que gestiona `Workspace`).
  *
- * Dos familias de controles, separadas a propósito para que no se confundan:
- * - VER (header): cómo se muestra el contenido YA generado ( Documento | Slides y Resumen |
- *   Detallado. No generan nada.
- * - GENERAR (rail, `GeneratePanel`): piezas NUEVAS a partir del documento ) presentación y
- *   narración.
+ * Dos familias de controles, separadas para que no se confundan:
+ * - VER (header): cómo se muestra el contenido YA generado (Documento | Slides y Resumen |
+ *   Detallado). No generan nada.
+ * - GENERAR (rail, `GeneratePanel`): piezas NUEVAS a partir del documento (presentación y
+ *   narración).
  *
- * Cambio consciente en el Hito 5e: el chat dejó de ser un rail SIEMPRE presente (como en el
- * Hito 3) y pasó a ser una COLUMNA OPCIONAL de la Escala 2 (`Workspace`), gobernada desde este
- * header por un toggle. El nav sí sigue fijo: nunca compite por espacio.
+ * El chat no es un rail SIEMPRE presente sino una COLUMNA OPCIONAL (`Workspace`), gobernada
+ * desde este header por un toggle. El nav sí sigue fijo: nunca compite por espacio.
  */
 interface AppShellProps {
   sections: Section[];
@@ -50,7 +49,7 @@ interface AppShellProps {
    * Es un hueco y no props concretas porque el armazón no tiene por qué saber que existen las
    * cuentas. Y van AQUÍ, dentro de la fila de controles, no flotando encima: un botón `fixed`
    * queda fuera de este `flex`, nada le reserva sitio y en ventanas estrechas se monta sobre el
-   * de al lado. Pasó con «Entrar» sobre «Chat».
+   * de al lado.
    */
   acciones?: ReactNode;
   deckReady: boolean; // la presentación ya se generó
@@ -138,17 +137,17 @@ export function AppShell({
     <div className="flex h-[100dvh] flex-col">
       {/* Header fijo.
           Hasta `lg` son DOS filas y no una envuelta: arriba quién eres y qué puedes hacer con tu
-          cuenta, abajo los dos controles de VER. Dejarlo al `flex-wrap` repartía los controles en
-          tres o cuatro renglones distintos cada vez que cambiaba una etiqueta, y un marco que se
+          cuenta, abajo los dos controles de VER. Dejarlo al `flex-wrap` repartiría los controles en
+          tres o cuatro renglones distintos cada vez que cambia una etiqueta, y un marco que se
           recoloca solo es un marco que no se aprende.
-          El corte es `lg` y no `sm` por lo mismo: con `sm` el teléfono bajaba los controles de VER
-          y la tableta bajaba los de la cuenta, la misma cabecera plegándose de dos maneras
-          distintas según la anchura. Ahora se pliega igual en todo el camino, y solo se estira
-          cuando de verdad cabe entera. */}
+          El corte es `lg` y no `sm` por lo mismo: con `sm` el teléfono bajaría los controles de VER
+          y la tableta los de la cuenta, la misma cabecera plegándose de dos maneras distintas
+          según la anchura. Así se pliega igual en todo el camino, y solo se estira cuando cabe
+          entera. */}
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border bg-surface px-4 py-2.5 lg:justify-between">
         <div className="flex min-w-0 flex-1 items-baseline gap-2">
           {/* El nombre lleva a la portada. Es el sitio convencional y descubrible para volver al
-              inicio, y es un enlace de verdad: funciona con el teclado, con el botón central y
+              inicio, y es un enlace real: funciona con el teclado, con el botón central y
               con «abrir en pestaña nueva». Va a `/inicio` y no a `/`, porque `/` es la puerta que
               con la cookie puesta devuelve aquí mismo. */}
           <Link
@@ -163,12 +162,12 @@ export function AppShell({
         {/* En móvil esta fila baja entera (`basis-full`) y queda debajo de la marca; en cuanto hay
             sitio vuelve a su lugar. Los dos controles de VER se quedan en la cabecera y no se
             esconden en un menú por un motivo que no es estético: `view_change` y
-            `detail_mode_change` son los eventos que mide el Hito 8. Enterrarlos cambiaría lo que
+            `detail_mode_change` son eventos de telemetría. Enterrarlos cambiaría lo que
             significa la medición: pasaría a medir cuánto cuesta encontrar el botón. */}
         <div className="order-3 flex basis-full flex-wrap items-center justify-end gap-x-3 gap-y-2 lg:order-2 lg:basis-auto">
           <GroundingIndicator grounding={grounding} />
           {/* `flex-wrap`: en una pantalla de 320 px los dos controles juntos miden más que la
-              fila, y sin esto no se encogían: se comían el margen derecho hasta pegarse al
+              fila, y sin esto no se encogen: se comen el margen derecho hasta pegarse al
               borde. Partirse en dos renglones es lo correcto: son dos preguntas distintas (cómo
               se ve y cuánto detalle), no una sola barra que haya que mantener entera. */}
           <div className="flex flex-wrap items-center justify-end gap-2 border-border lg:flex-nowrap lg:border-l lg:pl-3">
@@ -189,10 +188,8 @@ export function AppShell({
         {/* El tema y la cuenta se quedan arriba, al lado del nombre: en móvil son lo que uno busca
             «en la esquina», y no tienen nada que ver con leer el documento.
 
-            El atajo a la presentación que vivía aquí para pantallas angostas desaparece, y no es
-            una pérdida: ahora la presentación está en la hoja de «Generar», al lado de la
-            narración, que es donde siempre debió estar. Era un parche que tapaba la mitad del
-            agujero: la narración seguía sin existir en el móvil. */}
+            La presentación no tiene atajo aquí en pantallas angostas: está en la hoja de
+            «Generar», al lado de la narración. */}
         <div className="order-2 flex items-center justify-end gap-2 lg:order-3 lg:border-l lg:border-border lg:pl-3">
           {/* El chat no es una acción que pasa y se acaba: es un estado que se queda. Un
               rectángulo que cambia de color obliga a recordar qué color era «abierto».
@@ -234,7 +231,7 @@ export function AppShell({
           </div>
         </aside>
 
-        {/* Zona dinámica: contenido + columnas opcionales (Workspace, Escala 2 del Hito 5e).
+        {/* Zona dinámica: contenido + columnas opcionales (Workspace).
             El foco vive AQUÍ y no en el armazón entero: el rail y la cabecera son el marco, y un
             marco no se ilumina. */}
         <main className="foco min-w-0 flex-1 overflow-hidden">{children}</main>

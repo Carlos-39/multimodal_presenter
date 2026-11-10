@@ -1,12 +1,12 @@
 """Almacén de documentos: los bytes originales de lo que la gente sube.
 
-**Por qué guardarlos y no solo la presentación.** Hoy el frontend conserva el `File` y lo reenvía
+Por qué guardarlos y no solo la presentación: el frontend conserva el `File` y lo reenvía
 en cada petición. Quien vuelva mañana desde otro navegador no lo tiene, y el documento original
 hace falta para el chat, las sugeridas, el deck, las ilustraciones, la narración, el visor de
-página y el **panel de fuente**. Una presentación guardada sin su documento se puede leer pero no
+página y el panel de fuente. Una presentación guardada sin su documento se puede leer pero no
 interrogar ni verificar, y la verificabilidad es justo lo que este proyecto afirma.
 
-**Direccionable por contenido.** La clave es el `document_id` que ya calcula el pipeline:
+Direccionable por contenido. La clave es el `document_id` que ya calcula el pipeline:
 `doc-{sha256(bytes)[:12]}`. Eso da tres cosas gratis: el mismo documento subido dos veces ocupa
 una sola copia, la ruta se deriva del id (no hay una ruta guardada que pueda desincronizarse), y
 guardar es idempotente.

@@ -1,8 +1,8 @@
 /**
  * El hueco del prototipo, y por qué ya no se puede escribir.
  *
- * **Lo que la figura tiene que hacer ver es que la diferencia no es una validación añadida, sino
- * una forma distinta.** A la izquierda dos campos hermanos que nada obliga a coincidir; a la
+ * Lo que la figura tiene que hacer ver es que la diferencia no es una validación añadida, sino
+ * una forma distinta. A la izquierda dos campos hermanos que nada obliga a coincidir; a la
  * derecha un solo objeto donde el tipo y el contenido son la misma cosa. Por eso el dibujo de la
  * derecha tiene una caja menos, no una más: cerrar el hueco quitó una pieza.
  *

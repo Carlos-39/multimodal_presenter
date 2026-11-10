@@ -1,4 +1,4 @@
-"""Condiciones 3 y 4: LightRAG naive (control) e hybrid (GraphRAG real) (Hito 7).
+"""Condiciones 3 y 4: LightRAG naive (control) e hybrid (GraphRAG real).
 
 LightRAG en modo librería: LLM del grafo = Haiku (barato); embeddings de texto = Voyage. Se usa
 SOLO para recuperar contexto (`only_need_context=True`); la respuesta la genera Sonnet con las
@@ -21,7 +21,7 @@ from lightrag.utils import EmbeddingFunc
 
 from .common import HAIKU, VOYAGE_TEXT, Usage, anthropic_client, require_voyage_key
 
-# HALLAZGO / workaround (declarar en el informe): LightRAG 1.5.7 crashea durante `ainsert` al hacer
+# Workaround: LightRAG 1.5.7 crashea durante `ainsert` al hacer
 # copy.deepcopy de `ObservableAddonParams` (subclase de dict que dispara `on_change` en cada
 # __setitem__; al reconstruir la copia, dispara el callback sobre una instancia a medio construir →
 # AttributeError '_addon_params'). Este __deepcopy__ devuelve una copia DESACOPLADA (sin observer),

@@ -12,7 +12,7 @@ const BACKEND_URL = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
  * cada vez.
  */
 const CABECERAS_DE_SEGURIDAD = [
-  // Dos años. Sin `includeSubDomains` ni `preload` a propósito: mientras esto viva bajo el
+  // Dos años. Sin `includeSubDomains` ni `preload`: mientras esto viva bajo el
   // subdominio de una plataforma, comprometer a los vecinos o entrar en una lista de la que se
   // sale a mano no es nuestro a decidir.
   { key: "Strict-Transport-Security", value: "max-age=63072000" },
@@ -20,7 +20,7 @@ const CABECERAS_DE_SEGURIDAD = [
   // Lo mismo que `frame-ancestors 'none'`, para navegadores que no entienden aquello.
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  // **El micrófono se queda**: la pregunta por voz del chat lo necesita, y una lista de permisos
+  // El micrófono se queda: la pregunta por voz del chat lo necesita, y una lista de permisos
   // copiada de cualquier sitio lo habría apagado sin que nadie se enterara hasta usarlo.
   {
     key: "Permissions-Policy",

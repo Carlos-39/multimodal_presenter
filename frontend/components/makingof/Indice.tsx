@@ -7,19 +7,17 @@ import { CAPITULOS } from "@/content/makingOf";
 import { ACTOS, escrito, type Acto } from "@/lib/makingOf";
 
 /**
- * Los catorce capítulos como un árbol: los cinco actos y sus capítulos colgando.
+ * Los capítulos como un árbol: cada acto con sus capítulos colgando.
  *
- * **Los actos no me los inventé para esto**: están en el contenido desde que se escribió el
- * primer capítulo, y cada capítulo ya sabe a cuál pertenece. El índice y el tono del papel salen
- * del mismo dato, así que no son dos ideas sino una.
+ * Cada capítulo declara a qué acto pertenece. El índice y el tono del papel salen de ese mismo
+ * dato.
  *
- * **La rama del capítulo donde estás va en acento, y el tronco por encima de ella también.** No
- * es un subrayado: es un recorrido, y de un vistazo dice cuánto llevas dentro del acto.
+ * La rama del capítulo actual va en acento, y el tronco por encima de ella también. No es un
+ * subrayado: es un recorrido, y de un vistazo dice cuánto se lleva dentro del acto.
  *
- * **Sin SVG.** El original que inspiró esto calcula las curvas con filas de altura fija, y los
- * títulos de aquí ocupan dos líneas («El hueco que no puede volver a abrirse»): con filas
- * variables el dibujo se descuadra entero. Cada codo es un `::before` con una esquina redondeada,
- * que se adapta solo.
+ * Sin SVG. Unas curvas calculadas en SVG exigen filas de altura fija, y aquí un título puede
+ * ocupar dos líneas: con filas variables el dibujo se descuadra. Cada codo es un `::before` con
+ * una esquina redondeada, que se adapta solo.
  *
  * Tampoco lleva iconos: estos capítulos van numerados, y el número ya es el marcador.
  */
@@ -29,7 +27,7 @@ interface IndiceProps {
   /**
    * `rail` abre solo el acto actual y deja plegar los demás, es una columna estrecha al lado de
    * algo que se está leyendo. `portada` los abre todos y se dibuja al entrar: ahí el árbol no
-   * acompaña a nada, **es** lo que se viene a mirar.
+   * acompaña a nada, es lo que se viene a mirar.
    */
   variante?: "rail" | "portada";
   onIr?: () => void;
@@ -41,8 +39,8 @@ export function Indice({ actual, variante = "rail", onIr }: IndiceProps) {
   const actoActual = CAPITULOS.find((c) => c.slug === actual)?.acto;
   const [plegados, setPlegados] = useState<Set<Acto>>(() => {
     if (variante === "portada") return new Set();
-    // En el rail se pliega todo menos el acto en el que estás: catorce títulos largos en una
-    // columna de 15rem son cero orientación.
+    // En el rail se pliega todo menos el acto actual: todos los títulos abiertos en una columna
+    // de 15rem no orientan.
     return new Set(ORDEN.filter((a) => a !== actoActual));
   });
 

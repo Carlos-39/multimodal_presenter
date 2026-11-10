@@ -1,7 +1,7 @@
-"""Pipeline de transformación en STREAMING (Hito 5d).
+"""Pipeline de transformación en STREAMING.
 
 Emite secciones COMPLETAS una por una (grano por Section) a medida que el LLM las termina,
-vía `agent.run_stream` + `stream_output()` (Ruta A: PydanticAI valida objetos parciales; el
+vía `agent.run_stream` + `stream_output()` (PydanticAI valida objetos parciales; el
 backend solo reenvía una sección cuando ya está completa, nunca JSON a medio construir).
 
 Cada sección pasa por la Fase 3 POR SECCIÓN (grounding + isomorfismo) antes de emitirse, así

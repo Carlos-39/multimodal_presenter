@@ -1,8 +1,7 @@
 """Biblioteca: guardar una presentación y volver a ella después.
 
-Estos son los únicos endpoints que EXIGEN cuenta. Todo lo demás sigue funcionando sin ella: las
-sesiones de evaluación del Hito 8 corren sin login, y entrar añade *guardar y volver*, no
-habilita usar el sistema.
+Estos son los únicos endpoints que EXIGEN cuenta. Todo lo demás sigue funcionando sin ella: entrar
+añade *guardar y volver*, no habilita usar el sistema.
 
 El documento viaja con la presentación al guardarla, y no se guarda solo al transformar. Es
 deliberado: así no se almacena el documento de alguien que nunca pidió guardar nada. Guardar es
@@ -255,7 +254,7 @@ async def guardar_narracion_endpoint(
 ) -> None:
     """Guarda el mp3 de la narración, tal cual llega.
 
-    Se comprueba que de verdad sea un mp3 y que quepa en el límite. No es desconfianza del
+    Se comprueba que sea un mp3 y que quepa en el límite. No es desconfianza del
     frontend: es que lo que se escribe en disco con el nombre de alguien debe ser lo que dice
     ser, y un archivo que no suena es peor que no tener narración, porque parece que sí hay.
     """
@@ -345,7 +344,7 @@ def _disposicion(nombre: str | None) -> str:
     Se muestra en el navegador (`inline`), que es lo que necesita el panel de fuente: el visor de
     PDF y el `<img>` no descargan, enseñan.
 
-    **El nombre lo eligió quien subió el archivo, así que se codifica en vez de interpolarse.** Un
+    El nombre lo eligió quien subió el archivo, así que se codifica en vez de interpolarse. Un
     nombre con un salto de línea dentro partiría la cabecera en dos y dejaría añadir las que
     quisiera. La forma `filename*=UTF-8''…` de la RFC 6266 es además la única que admite acentos,
     así que lo seguro y lo correcto coinciden.
